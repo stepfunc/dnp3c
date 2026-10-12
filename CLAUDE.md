@@ -28,6 +28,10 @@ dnp3c is licensed GPL-3.0-only, copyright Step Function I/O LLC.
 
 `main` is protected: changes go through a branch and a pull request, including for admins.
 
+## Releasing
+
+Pushing a tag releases that version (`.github/workflows/release.yml`): the tag is the version, e.g. `0.1.0`, or `0.1.0-RC1` for a release candidate. The job builds and tests it, publishes `io.stepfunc:dnp3c` to Maven Central, and creates a GitHub release with the CLI zip and the runnable jar. Publishing to Central can't be undone, so tag only what's ready.
+
 ## Downstream users
 
-`stepfunc/dnp3` CI builds its `conformance` plugin against this repo's `main` and the `io.stepfunc:dnp3c` artifact. It is moving to tagged releases. Changes to `IntegrationPlugin` break that plugin.
+`stepfunc/dnp3` builds its `conformance` plugin against the `io.stepfunc:dnp3c` release on Maven Central. Changes to `IntegrationPlugin` break that plugin, so a release that changes it needs a matching dnp3 PR.

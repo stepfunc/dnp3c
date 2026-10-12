@@ -65,7 +65,7 @@ sections:
 
 ## Library
 
-The library jar, `io.stepfunc:dnp3c`, is attached to each release. See [Automating the tests](docs/automation.md) for writing an integration plugin and running it in CI.
+The library jar, `io.stepfunc:dnp3c`, is published to Maven Central. See [Automating the tests](docs/automation.md) for writing an integration plugin and running it in CI.
 
 ## Known limitations
 

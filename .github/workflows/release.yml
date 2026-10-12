@@ -1,0 +1,48 @@
+name: Release
+
+# a tag (e.g. 0.1.0) builds and tests that version, publishes it to Maven Central, and creates a GitHub release with the
+# CLI zip once Central has published it; publishing to Central can't be undone. Each step can be rerun: a version
+# that's already on Central is skipped, and the GitHub release's files are replaced
+on:
+  push:
+    tags: ['*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ github.ref_name }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+      - name: Set the version from the tag
+        run: mvn -B -q org.codehaus.mojo:versions-maven-plugin:2.17.1:set -DnewVersion="$VERSION" -DgenerateBackupPoms=false
+      - name: Build and test
+        run: mvn -B -P release verify
+      - name: Import the PGP key
+        id: import_gpg
+        uses: crazy-max/ghaction-import-gpg@v7
+        with:
+          gpg_private_key: ${{ secrets.SFIO_PGP_PRIVATE_KEY }}
+          passphrase: ${{ secrets.SFIO_PGP_PRIVATE_KEY_PASSPHRASE }}
+      - name: Publish to Maven Central
+        env:
+          FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
+          PASSPHRASE: ${{ secrets.SFIO_PGP_PRIVATE_KEY_PASSPHRASE }}
+          CENTRAL_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          CENTRAL_TOKEN: ${{ secrets.MAVEN_CENTRAL_TOKEN }}
+        run: ./.github/central-bundle.sh && ./.github/central-upload.sh
+      - name: Create the GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            target/dnp3c-${{ github.ref_name }}.zip
+            target/dnp3c-${{ github.ref_name }}-cli.jar
+          prerelease: ${{ contains(github.ref_name, '-') }}

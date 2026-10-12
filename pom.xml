@@ -25,6 +25,21 @@
         </license>
     </licenses>
 
+    <developers>
+        <developer>
+            <name>Step Function I/O</name>
+            <email>info@stepfunc.io</email>
+            <organization>Step Function I/O LLC</organization>
+            <organizationUrl>https://stepfunc.io</organizationUrl>
+        </developer>
+    </developers>
+
+    <scm>
+        <url>https://github.com/stepfunc/dnp3c</url>
+        <connection>scm:git:https://github.com/stepfunc/dnp3c.git</connection>
+        <developerConnection>scm:git:git@github.com:stepfunc/dnp3c.git</developerConnection>
+    </scm>
+
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <!-- the oldest Java the compiled classes run on -->
@@ -47,6 +62,7 @@
         <maven.surefire-plugin.version>3.6.0</maven.surefire-plugin.version>
         <maven-shade-plugin.version>3.6.2</maven-shade-plugin.version>
         <maven-assembly-plugin.version>3.8.0</maven-assembly-plugin.version>
+        <maven-source-plugin.version>3.3.1</maven-source-plugin.version>
     </properties>
 
     <build>
@@ -180,6 +196,61 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <!-- what Maven Central needs besides the jar and the pom: the sources and the docs, as jars -->
+            <id>release</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <!-- Central requires a javadoc jar; scaladoc 3.9 can't build one (it fails on its own Jackson
+                             dependencies), so it carries the user guides, which document the plugin API -->
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-jar-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>attach-docs</id>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                                <configuration>
+                                    <classifier>javadoc</classifier>
+                                    <classesDirectory>${project.basedir}/docs</classesDirectory>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-source-plugin</artifactId>
+                        <version>${maven-source-plugin.version}</version>
+                        <executions>
+                            <execution>
+                                <id>attach-sources</id>
+                                <goals>
+                                    <goal>jar-no-fork</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>net.alchim31.maven</groupId>
+                        <artifactId>scala-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <!-- so the sources jar has the Scala sources -->
+                                <id>add-scala-sources</id>
+                                <goals>
+                                    <goal>add-source</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 
     <dependencyManagement>
         <dependencies>
