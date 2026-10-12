@@ -7,6 +7,22 @@ dnp3c can be used in two ways:
 - **As a command-line tool**, for testing a device by hand. Steps the harness can't perform over DNP3, such as cycling power or generating events, are prompted for.
 - **As a library**, for automated testing, e.g. in CI. You implement `IntegrationPlugin` to perform those steps on your device and run the procedures with `io.stepfunc.dnp3c.conformance.Harness`.
 
+![dnp3c running section 8.5 against an outstation](docs/images/run.gif)
+
+*Section 8.5 (Class Data) run against the outstation of the [dnp3](https://github.com/stepfunc/dnp3) library, by the conformance tests its CI runs. Their `IntegrationPlugin` generates the events that a tester would otherwise generate by hand.*
+
+## The report
+
+Commercial DNP3 test tools save their results in proprietary formats. dnp3c writes plain HTML and pcap files:
+
+- **The report is a web page.** It shows every procedure with its result, and it opens in any browser. You can archive it, email it, or publish it next to a release, and nobody needs a license to read it.
+- **Every result can be traced.** Each procedure links to a log of every step, every frame it sent and received, decoded at each layer, and every check with its outcome.
+- **The traffic is in Wireshark's format.** With capture on, each procedure's traffic is saved as a pcap that opens in Wireshark, decoded as DNP3.
+
+![The report's summary](docs/images/report.png)
+
+![A procedure's log](docs/images/log.png)
+
 ## Requirements
 
 Java 17 or newer.
@@ -23,45 +39,6 @@ dnp3c -help                              # list the commands and test sections
 ```
 
 Results, including `report.html`, are written to the directory set by `test.output.directory`. See [Testing a device by hand](docs/manual-testing.md) for the whole workflow.
-
-```
-$ dnp3c -help
-       __           _____
-  ____/ /___  ____ |__  /_____
- / __  / __ \/ __ \ /_ </ ___/
-/ /_/ / / / / /_/ /__/ / /__
-\__,_/_/ /_/ .___/____/\___/
-          /_/
-
-DNP3 conformance testing engine
-
-Copyright Step Function I/O LLC
-https://stepfunc.io
-
- usage:  dnp3c [-adapters] [-config <arg>] [-describe <arg>] [-disabled]
-    [-help] [-options] [-report] [-run <arg>] [-write <arg>]
-
-     Options                              Description
- -adapters           List all of the available network adapters and their
-                      addresses
- -config <arg>       Path to configuration file
- -describe <arg>     Describe the steps to be executed in the specified
-                      procedure
- -disabled           List all optional test procedures that are disabled by
-                      configuration
- -help               Print this help information
- -options            List all of the available configuration file options
- -report             Generate an HTML report containing all the results
- -run <arg>          Run the specified test section/procedure
- -write <arg>        Write a default configuration file to the specified
-                      path
-
-sections:
-
-6                             Link Layer
-7                             Transport Layer
-8                             Application Layer
-```
 
 ## Library
 
