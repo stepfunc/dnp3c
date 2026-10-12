@@ -112,3 +112,46 @@ dnp3c -adapters
 ```
 
 Set `tcp.capture.adapter` to the address of the adapter that reaches the DUT, exactly as `-adapters` prints it, including the leading `/`, e.g. `/192.168.1.10`. Only traffic on the DUT's port is captured. Leave the option empty to turn capture off.
+
+## Commands
+
+`dnp3c -help` lists the commands and the test sections:
+
+```
+$ dnp3c -help
+       __           _____
+  ____/ /___  ____ |__  /_____
+ / __  / __ \/ __ \ /_ </ ___/
+/ /_/ / / / / /_/ /__/ / /__
+\__,_/_/ /_/ .___/____/\___/
+          /_/
+
+DNP3 conformance testing engine
+
+Copyright Step Function I/O LLC
+https://stepfunc.io
+
+ usage:  dnp3c [-adapters] [-config <arg>] [-describe <arg>] [-disabled]
+    [-help] [-options] [-report] [-run <arg>] [-write <arg>]
+
+     Options                              Description
+ -adapters           List all of the available network adapters and their
+                      addresses
+ -config <arg>       Path to configuration file
+ -describe <arg>     Describe the steps to be executed in the specified
+                      procedure
+ -disabled           List all optional test procedures that are disabled by
+                      configuration
+ -help               Print this help information
+ -options            List all of the available configuration file options
+ -report             Generate an HTML report containing all the results
+ -run <arg>          Run the specified test section/procedure
+ -write <arg>        Write a default configuration file to the specified
+                      path
+
+sections:
+
+6                             Link Layer
+7                             Transport Layer
+8                             Application Layer
+```
