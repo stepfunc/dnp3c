@@ -1,0 +1,5 @@
+# Reformat sources with scalafmt
+db9cc4c845da75af93088940884c7d2ebf2644c9
+
+# Apply scalafmt to the files the earlier format pass skipped
+29a30cf52e52e976484fee77beac7477d2840aa1

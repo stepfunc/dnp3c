@@ -1,0 +1,281 @@
+/**
+* Step Function I/O styling for dnp3c reports
+*/
+
+:root {
+  --sf-blue: #004e98;
+  --sf-blue-light: #e6edf4;
+  --sf-ink: #21241c;
+  --sf-slate: #364144;
+  --sf-grey: #66717a; /* 5:1 on white, so small text stays readable */
+  --sf-line: #dee1e2;
+  --sf-wash: #f5f7f8;
+  --pass: #1f7a35;
+  --pass-bg: #e3f6e1;
+  --fail: #b02a37;
+  --fail-bg: #fbe4e6;
+  --skip: #8a6400;
+  --skip-bg: #fff3cd;
+  --mono: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  color: var(--sf-ink);
+  background-color: white;
+  font-family: Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 15px;
+  font-weight: 300;
+  line-height: 1.5;
+}
+
+a {
+  color: var(--sf-blue);
+}
+
+/**
+* Header and footer
+*/
+
+header {
+  background-color: var(--sf-blue);
+  color: white;
+  padding: 20px 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 32px;
+}
+
+header a {
+  color: white;
+}
+
+.logo {
+  display: block;
+  width: 150px;
+  height: auto;
+}
+
+h1 {
+  margin: 0;
+  font-family: Barlow, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.heading p {
+  margin: 4px 0 0 0;
+  opacity: 0.8;
+}
+
+.heading p.dut {
+  opacity: 1;
+  font-size: 16px;
+}
+
+.dut strong {
+  font-weight: 600;
+}
+
+.context {
+  margin-top: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.total {
+  padding: 2px 12px;
+  border-radius: 12px;
+  background-color: white;
+  font-weight: 600;
+}
+
+.total.pass { color: var(--pass); }
+.total.fail { color: var(--fail); }
+.total.skip { color: var(--skip); }
+.total.no-result { color: var(--sf-grey); }
+
+main {
+  padding: 24px 32px;
+}
+
+footer {
+  background-color: var(--sf-ink);
+  color: #cfd4d5;
+  padding: 16px 32px;
+  font-size: 13px;
+}
+
+footer a {
+  color: white;
+}
+
+footer strong {
+  color: white;
+  font-weight: 600;
+}
+
+table {
+  border-collapse: collapse;
+}
+
+td, th {
+  padding: 3px 12px;
+  vertical-align: top;
+}
+
+/**
+* Main report
+*/
+
+table.results {
+  width: 100%;
+}
+
+table.results th {
+  text-align: left;
+  font-family: Barlow, sans-serif;
+  font-weight: 600;
+  color: var(--sf-slate);
+  border-bottom: 2px solid var(--sf-line);
+}
+
+table.results tr.procedure > td {
+  border-bottom: 1px solid var(--sf-line);
+}
+
+table.results tr.procedure:hover > td {
+  background-color: var(--sf-wash);
+}
+
+table.results td:first-child {
+  font-family: var(--mono);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+tr.level1 > td:first-child { padding-left: 24px; }
+tr.level2 > td:first-child { padding-left: 40px; }
+tr.level3 > td:first-child { padding-left: 56px; }
+tr.level4 > td:first-child { padding-left: 72px; }
+
+tr.section > td {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  font-family: Barlow, sans-serif;
+  font-weight: 600;
+}
+
+tr.section.level0 > td {
+  background-color: var(--sf-blue);
+  color: white;
+}
+
+tr.section.level1 > td {
+  background-color: var(--sf-blue-light);
+  color: var(--sf-blue);
+}
+
+tr.section.level2 > td {
+  background-color: var(--sf-wash);
+  color: var(--sf-slate);
+}
+
+tr.incomplete > td {
+  color: var(--sf-grey);
+}
+
+tr.incomplete > td:first-child {
+  text-decoration: line-through;
+}
+
+/* the result column, shown as a badge */
+td.pass a, td.fail a, td.skip a {
+  display: inline-block;
+  min-width: 52px;
+  padding: 0 10px;
+  border-radius: 10px;
+  text-align: center;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+td.pass a { color: var(--pass); background-color: var(--pass-bg); }
+td.fail a { color: var(--fail); background-color: var(--fail-bg); }
+td.skip a { color: var(--skip); background-color: var(--skip-bg); }
+
+/* a procedure's id (underlined, as links are) and its result badge open its log */
+td.pass a:hover, td.fail a:hover, td.skip a:hover {
+  text-decoration: underline;
+}
+
+p.hint {
+  color: var(--sf-slate);
+}
+
+td.no-result, td.unimplemented {
+  color: var(--sf-grey);
+}
+
+/**
+* Procedure logs
+*/
+
+table.log {
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+table.log td {
+  padding: 1px 8px;
+}
+
+table.log td:first-child,
+table.log td:nth-child(2) {
+  color: var(--sf-grey);
+  white-space: nowrap;
+}
+
+tr.info > td:nth-child(3) { color: var(--sf-ink); }
+tr.warn > td:nth-child(3) { color: var(--skip); font-weight: 600; }
+tr.error > td:nth-child(3) { color: var(--fail); font-weight: 600; }
+tr.plugin > td:nth-child(3) { color: #117a8b; }
+tr.transmit > td:nth-child(3) { color: var(--sf-blue); }
+tr.receive > td:nth-child(3) { color: var(--pass); }
+
+/* raw link layer bytes are de-emphasized */
+tr.data-level-1 > td:nth-child(3) { color: var(--sf-grey); }
+
+/* the beginning of a test step */
+tr.note:not(.detail-level-0) > td:nth-child(3) {
+  padding-top: 10px;
+  color: var(--sf-slate);
+  font-family: Barlow, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* the description of a test step */
+tr.note.detail-level-0 > td:nth-child(3) {
+  color: var(--sf-slate);
+  font-family: Poppins, sans-serif;
+}
+
+/* object headers, and their decoded objects */
+tr.data-level-4.detail-level-0 > td:nth-child(3) {
+  padding-left: 28px;
+}
+
+tr.data-level-4.detail-level-1 > td:nth-child(3) {
+  padding-left: 48px;
+  color: var(--sf-slate);
+}

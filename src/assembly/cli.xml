@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- the CLI download: dnp3c-<version>/bin launchers, lib/dnp3c.jar (runnable) and the license -->
+<assembly xmlns="http://maven.apache.org/ASSEMBLY/2.2.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/ASSEMBLY/2.2.0 https://maven.apache.org/xsd/assembly-2.2.0.xsd">
+    <id>cli</id>
+    <formats>
+        <format>zip</format>
+    </formats>
+    <includeBaseDirectory>true</includeBaseDirectory>
+    <files>
+        <file>
+            <source>${project.build.directory}/${project.build.finalName}-cli.jar</source>
+            <outputDirectory>lib</outputDirectory>
+            <destName>dnp3c.jar</destName>
+        </file>
+        <file>
+            <source>src/assembly/bin/dnp3c</source>
+            <outputDirectory>bin</outputDirectory>
+            <fileMode>0755</fileMode>
+            <lineEnding>unix</lineEnding>
+            <filtered>true</filtered>
+        </file>
+        <file>
+            <source>src/assembly/bin/dnp3c.cmd</source>
+            <outputDirectory>bin</outputDirectory>
+            <lineEnding>dos</lineEnding>
+            <filtered>true</filtered>
+        </file>
+        <file>
+            <source>LICENSE</source>
+        </file>
+    </files>
+</assembly>

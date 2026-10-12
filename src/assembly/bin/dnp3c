@@ -1,0 +1,29 @@
+#!/bin/sh
+# Runs the dnp3c CLI with the Java in JAVA_HOME, or on the PATH, which must be version @java.release@ or newer.
+
+required=@java.release@
+
+if [ -n "$JAVA_HOME" ]; then
+  java="$JAVA_HOME/bin/java"
+else
+  java=java
+fi
+
+if ! command -v "$java" > /dev/null 2>&1; then
+  echo "dnp3c needs Java $required or newer, but no Java was found." >&2
+  echo "Install one, e.g. from https://adoptium.net, and put it on the PATH or set JAVA_HOME." >&2
+  exit 1
+fi
+
+# java.specification.version is e.g. "17", or "1.8" for Java 8
+major=$("$java" -XshowSettings:properties -version 2>&1 |
+  sed -n 's/^ *java\.specification\.version = \(1\.\)\{0,1\}\([0-9]*\).*/\2/p')
+
+if [ -z "$major" ] || [ "$major" -lt "$required" ]; then
+  echo "dnp3c needs Java $required or newer, but $java is an older or unrecognized Java." >&2
+  echo "Install a newer one, e.g. from https://adoptium.net, and put it on the PATH or set JAVA_HOME." >&2
+  exit 1
+fi
+
+home=$(cd "$(dirname "$0")/.." && pwd)
+exec "$java" -jar "$home/lib/dnp3c.jar" "$@"

@@ -1,0 +1,64 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright Step Function I/O LLC
+
+package io.stepfunc.dnp3c.conformance.s8.s88
+
+import io.stepfunc.dnp3c.conformance.api.Options
+import io.stepfunc.dnp3c.dnp3.{ ScriptedDut, StubDriver }
+import io.stepfunc.dnp3c.dnp3.app.{ AppFunction, IIN, Message }
+import io.stepfunc.dnp3c.protocol.Hex
+import org.junit.runner.RunWith
+import org.scalatestplus.junit.JUnitRunner
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.funsuite.AnyFunSuite
+
+@RunWith(classOf[JUnitRunner])
+class Procedure882Test extends AnyFunSuite with Matchers {
+
+  // the wait step 4 asks for after the restart response, or None if the response is rejected
+  private def waitFor(objects: String): Option[Long] = {
+    val restart = new Procedure882.RestartDelay
+    val accepted = scala.util
+      .Try(restart.record.validate(StubDriver.reporter(), Message.parse(Hex.from("C0 81 00 00 " + objects))))
+      .isSuccess
+    Option.when(accepted) {
+      val driver = new StubDriver(StubDriver.reporter()) {}
+      restart.waitOut.run(driver)
+      driver.clock.slept.sum
+    }
+  }
+
+  test("step 4 waits out the reported delay, coarse (g52v1, seconds) or fine (g52v2, milliseconds), plus 1 s") {
+    waitFor("34 01 07 01 02 00") should equal(Some(3000L))
+    waitFor("34 02 07 01 F4 01") should equal(Some(1500L))
+  }
+
+  test("after the restart, the next request goes out on a new connection") {
+    // answers the restart with a 500 ms delay, and anything else with a null response; counts the requests written
+    // before each disconnect
+    class Dut
+        extends ScriptedDut(
+          StubDriver.reporter(),
+          request =>
+            if (request.function == AppFunction.coldRestart)
+              (IIN.empty, Message.parse(Hex.from("C0 81 00 00 34 02 07 01 F4 01")).headers)
+            else (IIN.DEVICE_RESTART, Nil)
+        ) {
+      val closedAfter = scala.collection.mutable.ListBuffer.empty[Int]
+      override def close(): Unit = closedAfter += requests.count(_.function != AppFunction.confirm)
+    }
+    val dut = new Dut
+    Console.withIn(new java.io.StringReader(""))(
+      Procedure882.configure(Options.from(Map())).steps.foreach(s => scala.util.Try(s.step.run(dut))))
+    // the restart is the first request, then the READ
+    dut.closedAfter.toList should equal(List(1))
+    dut.requests.map(_.function).filter(_ != AppFunction.confirm).take(2).toList should equal(
+      List(AppFunction.coldRestart, AppFunction.read))
+  }
+
+  test("the restart response must be a single time delay object header") {
+    waitFor("33 01 07 01 00 00 00 00 00 00") should equal(None) // another object
+    waitFor("34 02 07 01 00 00 34 02 07 01 00 00") should equal(None) // two
+    waitFor("") should equal(None)
+  }
+}

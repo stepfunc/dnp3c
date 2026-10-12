@@ -1,0 +1,356 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright Step Function I/O LLC
+
+package io.stepfunc.dnp3c.dnp3
+
+import io.stepfunc.dnp3c.dnp3.app._
+import io.stepfunc.dnp3c.dnp3.app.objects.AttributeValue
+
+class DefaultIntegrationPlugin extends IntegrationPlugin {
+  override def cyclePower(reporter: PluginReporter): Unit = {
+    ManualSteps.UserAction(reporter, "Cycle power to the DUT, and wait until it has restarted and accepts connections")
+  }
+
+  override def setLinkLayerConfirm(reporter: PluginReporter, value: Boolean): Unit = {
+    ManualSteps.UserAction(
+      reporter,
+      s"${enableDisable(value)} data link confirmation requests on the DUT's transmissions")
+  }
+
+  override def setSelfAddressSupport(reporter: PluginReporter, value: Boolean): Unit = {
+    ManualSteps.UserAction(reporter, s"${enableDisable(value)} self address support")
+  }
+
+  override def checkBinaryOutputOperate(reporter: CheckReporter, index: Int): Option[DeferredCheck] = {
+    ManualSteps.verification(reporter, s"Check that binary control point $index operate", Nil)
+  }
+
+  override def checkBinaryOutputNotOperate(reporter: CheckReporter): Option[DeferredCheck] = {
+    ManualSteps.verification(reporter, "Check that NO binary control point operated", Nil)
+  }
+
+  override def checkAnalogOutputOperate(reporter: CheckReporter, index: Int): Option[DeferredCheck] = {
+    ManualSteps.verification(reporter, s"Check that analog output point $index operate", Nil)
+  }
+
+  override def checkAnalogOutputNotOperate(reporter: CheckReporter): Option[DeferredCheck] = {
+    ManualSteps.verification(reporter, "Check that NO analog output point operated", Nil)
+  }
+
+  override def generateInputChanges(reporter: PluginReporter, kind: InputKind[?]): Unit = {
+    val action = kind match {
+      case InputKind.Counter => "Make every counter count up, generating counter change events"
+      case _ => s"Generate ${kind.name} change events"
+    }
+    generate(reporter, action)
+  }
+
+  override def generateExactInputEvents(reporter: PluginReporter, kind: InputKind[?], numEvents: Int): Unit = {
+    generate(reporter, s"Generate $numEvents ${kind.name} change event(s)")
+  }
+
+  override def generateClassEvents(reporter: PluginReporter, eventClass: EventClass): Unit = {
+    generate(reporter, s"Generate $eventClass events")
+  }
+
+  override def generateExactClassEvents(reporter: PluginReporter, eventClass: EventClass, numEvents: Int): Unit = {
+    generate(reporter, s"Generate $numEvents $eventClass event(s)")
+  }
+
+  override def generateBinaryInputPattern(reporter: PluginReporter): Unit = {
+    generate(reporter, "Set the binary inputs to a known pattern")
+  }
+
+  override def generateDoubleBitBinaryInputPattern(reporter: PluginReporter): Unit = {
+    generate(reporter, "Set the double-bit binary inputs to a known pattern")
+  }
+
+  override def generateAnalogInputPattern(reporter: PluginReporter): Unit = {
+    generate(reporter, "Set the analog inputs to a known pattern")
+  }
+
+  override def recordCurrentCounterValues(reporter: PluginReporter): Unit = {
+    ManualSteps.UserAction(
+      reporter,
+      "Record the counter values in the response the DUT just sent (the frozen values, where it reported frozen " +
+        "counters), and keep the counter inputs still unless a step asks you to change them"
+    )
+  }
+
+  override def generateTimeEvent(reporter: PluginReporter): Unit = {
+    ManualSteps.UserAction(
+      reporter,
+      "Trigger an event of a supported timestamped type, recording when it occurs for the timestamp check")
+  }
+
+  override def uninstallBinaryInputs(reporter: PluginReporter): Unit = {
+    ManualSteps.UserAction(reporter, "Uninstall or disable every binary input point on the DUT")
+  }
+
+  override def uninstallDoubleBitBinaryInputs(reporter: PluginReporter): Unit = {
+    ManualSteps.UserAction(
+      reporter,
+      "Uninstall or disable every double-bit binary input point on the DUT")
+  }
+
+  override def uninstallBinaryOutputs(reporter: PluginReporter): Unit = {
+    ManualSteps.UserAction(reporter, "Uninstall or disable every binary output point on the DUT")
+  }
+
+  override def uninstallCounters(reporter: PluginReporter): Unit = {
+    ManualSteps.UserAction(reporter, "Uninstall or disable every counter point on the DUT")
+  }
+
+  override def uninstallAnalogOutputs(reporter: PluginReporter): Unit = {
+    ManualSteps.UserAction(reporter, "Uninstall or disable every analog output point on the DUT")
+  }
+
+  override def reinstallPoints(reporter: PluginReporter): Unit = {
+    ManualSteps.UserAction(
+      reporter,
+      "Reinstall or re-enable the points that were uninstalled or disabled for this test")
+  }
+
+  // Unsolicited responses
+  override def enableUnsolicitedResponse(reporter: PluginReporter, enabled: Boolean): Unit = {
+    ManualSteps.UserAction(reporter, s"${enableDisable(enabled)} unsolicited response support")
+  }
+  override def setUnsolicitedResponseTimeout(reporter: PluginReporter, timeoutMs: Int): Unit = {
+    ManualSteps.UserAction(reporter, s"Configure unsolicited response timeout to $timeoutMs ms")
+  }
+  override def setMaxUnsolicitedRetries(reporter: PluginReporter, numRetries: Option[Int]): Unit = {
+    val strNumRetries = numRetries match {
+      case Some(e) => e.toString
+      case None => "Infinite"
+    }
+
+    ManualSteps.UserAction(reporter, s"Configure the maximum unsolicited response retries to $strNumRetries")
+  }
+  override def setMasterAddress(reporter: PluginReporter, address: Int): Unit = {
+    ManualSteps.UserAction(reporter, s"Configure master address to $address")
+  }
+  override def generateUnsolicitedEvents(reporter: PluginReporter, timing: ActionTiming): ActionResult = {
+    val action = "trigger an unsolicited response with one change of one input (or, if the DUT waits for several " +
+      "events, that many changes at once), then leave the inputs as they are"
+    timing match {
+      case ActionTiming.ArmThenAct(withinMs) =>
+        // the harness reads as soon as ENTER is pressed, so it sees the DUT's response as it happens
+        generate(reporter, s"Press ENTER first, then within ${seconds(withinMs)}: $action", timed = true)
+        ActionResult.Armed(withinMs)
+      case ActionTiming.ActBefore(withinMs) =>
+        generate(reporter, s"Within ${seconds(withinMs)}: ${action.capitalize}, then press ENTER")
+        ActionResult.Performed
+      case ActionTiming.Now =>
+        generate(reporter, action.capitalize)
+        ActionResult.Performed
+    }
+  }
+
+  override def prepare(reporter: PluginReporter, notice: String): Unit = ManualSteps.UserAction(reporter, notice)
+  override def generateNotEnoughUnsolicitedEvents(reporter: PluginReporter): Unit = {
+    generate(
+      reporter,
+      "Create some class 1, 2 or 3 events, too few for the DUT to send an unsolicited response")
+  }
+
+  override def enableRemoteSupervisoryControl(reporter: PluginReporter): Unit = {
+    ManualSteps.UserAction(
+      reporter,
+      "Set the DUT's remote supervisory control to \"Enabled\" or \"Remote\": the global switch, if it has one, " +
+        "and every point")
+  }
+  override def setGlobalRemoteSupervisoryControl(reporter: PluginReporter): Unit = {
+    ManualSteps.UserAction(reporter, "Set the DUT's global remote supervisory switch to \"Disabled\" or \"Local\"")
+  }
+  override def setIndividualRemoteSupervisoryControl(reporter: PluginReporter, index: Int): Unit = {
+    ManualSteps.UserAction(
+      reporter,
+      s"Set the remote supervisory control of point $index to \"Disabled\" or \"Local\"")
+  }
+
+  // ===================
+  // Message validations
+  // ===================
+
+  // Static values
+  override def verifyAllStaticCurrentValues(
+      reporter: CheckReporter,
+      isClass0: Boolean,
+      points: Seq[GenIndexedPoint[MeasurementPoint]]): Option[DeferredCheck] = {
+    ManualSteps.verification(
+      reporter,
+      "Verify that the response reports each input's present state",
+      ManualSteps.points("Points in the response", points))
+  }
+  override def verifyInputCurrentValues[P <: MeasurementPoint](
+      reporter: CheckReporter,
+      kind: InputKind[P],
+      points: Seq[GenIndexedPoint[P]]): Option[DeferredCheck] = {
+    val question = kind match {
+      case InputKind.Counter =>
+        "Verify that each counter equals its recorded value plus the counts generated since that value was recorded"
+      case InputKind.AnalogInput => "Verify that the DUT reports the applied value for each analog input tested"
+      case _ => s"Verify that the response contains the expected values for the ${kind.name}s"
+    }
+    ManualSteps.verification(reporter, question, ManualSteps.points("Points in the response", points))
+  }
+  override def verifyRecordedCounterValues(
+      reporter: CheckReporter,
+      points: Seq[GenIndexedPoint[CounterPoint]]): Option[DeferredCheck] = {
+    ManualSteps.verification(
+      reporter,
+      "Verify that each counter reports the value you recorded earlier",
+      ManualSteps.points("Points in the response", points))
+  }
+
+  // Events
+  override def verifyInputEvents[P <: MeasurementPoint](
+      reporter: CheckReporter,
+      kind: InputKind[P],
+      expectation: EventExpectation,
+      points: Seq[GenIndexedPoint[P]]): Option[DeferredCheck] = {
+    val question = (kind, expectation) match {
+      case (InputKind.Counter, EventExpectation.CurrentValuesWithOptionalEarlier) =>
+        "Verify that the counter events report the current counts; earlier counts may precede them"
+      case (InputKind.AnalogInput, EventExpectation.CurrentValuesWithOptionalEarlier) =>
+        "Verify that the analog events report the newly applied values; earlier values may precede them"
+      case _ => verifyEventsQuestion(s"${kind.name} events", expectation)
+    }
+    ManualSteps.verification(reporter, withTimestamps(question), ManualSteps.points("Points in the response", points))
+  }
+  override def verifyFirstInputEvent[P <: MeasurementPoint](
+      reporter: CheckReporter,
+      kind: InputKind[P],
+      point: GenIndexedPoint[P]): Option[DeferredCheck] = {
+    ManualSteps.verification(
+      reporter,
+      withTimestamps(s"Verify the device responds with the first generated ${kind.name} event"),
+      ManualSteps.points("Point in the response", List(point))
+    )
+  }
+  override def verifyClassEvents(
+      reporter: CheckReporter,
+      eventClass: EventClass,
+      expectation: EventExpectation,
+      points: Seq[GenIndexedPoint[MeasurementPoint]]): Option[DeferredCheck] = {
+    val question = expectation match {
+      case EventExpectation.LatestBatch =>
+        s"Verify that one response carries every $eventClass event that was generated, in the order they occurred " +
+          "(oldest first: within the response for binary inputs, and for each point for analogs and counters)"
+      case _ => verifyEventsQuestion(s"$eventClass events", expectation)
+    }
+    ManualSteps.verification(reporter, withTimestamps(question), ManualSteps.points("Points in the response", points))
+  }
+  override def verifyFirstClassEvent(
+      reporter: CheckReporter,
+      eventClass: EventClass,
+      point: GenIndexedPoint[MeasurementPoint]): Option[DeferredCheck] = {
+    ManualSteps.verification(
+      reporter,
+      withTimestamps(s"Verify that the device responds with the first $eventClass event data generated"),
+      ManualSteps.points("Point in the response", List(point))
+    )
+  }
+  // the timestamps are checked against the times the tester noted when generating the events
+  private def withTimestamps(question: String): String =
+    s"$question. Where the events carry timestamps, check that the gaps between them match the gaps between when you " +
+      "generated the events"
+
+  private def verifyEventsQuestion(events: String, expectation: EventExpectation): String = expectation match {
+    case EventExpectation.LatestBatch => s"Verify that the response holds all the $events generated"
+    case EventExpectation.RemainingLatestBatch =>
+      s"Verify that the response holds the $events generated that weren't reported before"
+    case EventExpectation.AllGeneratedBatches =>
+      s"Verify that the response carries all the $events generated and not yet confirmed: those reported earlier, and " +
+        "any generated since, in the order they occurred"
+    case EventExpectation.CurrentValuesWithOptionalEarlier =>
+      s"Verify that the $events report each point's current value; its earlier values may precede it"
+    case EventExpectation.ReturnedEventsOnly =>
+      s"Verify that each of the $events in the response is valid; there may be none"
+  }
+
+  // Analog Output validations
+  override def checkAnalogOutputTolerance(
+      reporter: CheckReporter,
+      expectedValue: Double,
+      actualValue: Double): Option[DeferredCheck] = {
+    ManualSteps.verification(
+      reporter,
+      s"Verify that the value the DUT reports is the value sent, within the manufacturer's stated tolerance (value sent: $expectedValue, value received: $actualValue)",
+      Nil
+    )
+  }
+
+  // Unsolicited response
+  override def verifyPolledDataDoNotRepeatUnsolicitedData(
+      reporter: CheckReporter,
+      unsolicitedResponsePoints: Seq[GenIndexedPoint[MeasurementPoint]],
+      polledResponsePoints: Seq[GenIndexedPoint[MeasurementPoint]]): Option[DeferredCheck] = {
+    ManualSteps.verification(
+      reporter,
+      "Verify that the polled data do not repeat the unsolicited data",
+      ManualSteps.points("Events in the unsolicited response", unsolicitedResponsePoints) ++
+        ManualSteps.points("Events in the polled response", polledResponsePoints)
+    )
+  }
+
+  override def verifyResponseRetainsEvents(
+      reporter: CheckReporter,
+      previous: Seq[GenIndexedPoint[MeasurementPoint]],
+      current: Seq[GenIndexedPoint[MeasurementPoint]]): Option[DeferredCheck] = {
+    ManualSteps.verification(
+      reporter,
+      "Verify that this response contains every event the earlier response reported; it may also carry newer " +
+        "events, and newer values for the same points",
+      ManualSteps.points("Events in the earlier response", previous) ++
+        ManualSteps.points("Events in this response", current)
+    )
+  }
+
+  // Misc
+  override def verifyDelayMeasurementAccuracy(reporter: CheckReporter, delayMs: Long): Option[DeferredCheck] = {
+    ManualSteps.verification(
+      reporter,
+      "Verify that the delay measurement error does not exceed the Device Profile's tolerance",
+      List(s"Reported delay: $delayMs ms"))
+  }
+  override def verifyTimestamp(
+      reporter: CheckReporter,
+      points: Seq[GenIndexedPoint[MeasurementPoint]]): Option[DeferredCheck] = {
+    ManualSteps.verification(
+      reporter,
+      "Verify that the generated event is in the response and that its timestamp's error from the known event time does not exceed the Device Profile's tolerance",
+      ManualSteps.points("Points in the response", points)
+    )
+  }
+  override def verifyDeviceAttributes(
+      reporter: CheckReporter,
+      attributes: Seq[(Int, AttributeValue)]): Option[DeferredCheck] = {
+    val evidence = attributes.map { case (variation, value) => s"g0v$variation: ${value.description}" }.toList
+    ManualSteps.verification(
+      reporter,
+      "Verify that the device attributes above are the DUT's current settings",
+      evidence)
+  }
+  override def setMaxFragmentSize(reporter: PluginReporter, maxFragmentSize: Int): Unit = {
+    ManualSteps.UserAction(reporter, s"Set the maximum fragment size to $maxFragmentSize")
+  }
+  override def generateMultiFragmentResponse(reporter: PluginReporter): Unit = {
+    generate(reporter, "Create more event data than fits in a single fragment")
+  }
+
+  // a later check may compare a response with the events generated, possibly after the procedure's steps, so the
+  // tester notes what they generate
+  private def generate(reporter: PluginReporter, action: String, timed: Boolean = false): Unit = {
+    val description =
+      s"$action. Note the points you change, their new values and when you change them, for later checks"
+    if (timed) ManualSteps.UserAction.timed(reporter, description)
+    else ManualSteps.UserAction(reporter, description)
+  }
+
+  private def seconds(ms: Int): String = f"${ms / 1000.0}%.1f s"
+
+  private def enableDisable(value: Boolean): String = {
+    if (value) "Enable" else "Disable"
+  }
+}

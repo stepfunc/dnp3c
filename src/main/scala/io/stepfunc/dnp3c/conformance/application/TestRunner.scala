@@ -1,0 +1,243 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright Step Function I/O LLC
+
+package io.stepfunc.dnp3c.conformance.application
+
+import java.io.Closeable
+import java.nio.file.{ Files, Path, Paths }
+
+import io.stepfunc.dnp3c.conformance.application.pcap.PacketCapture
+import io.stepfunc.dnp3c.conformance.api._
+import io.stepfunc.dnp3c.conformance.api.options.{
+  ChannelOptions, LinkOptions, OutstationOptions, TestOptions, UnsolicitedOptions
+}
+import io.stepfunc.dnp3c.conformance.application.report.ReportLogger
+import io.stepfunc.dnp3c.dnp3.{ DefaultTestDriver, IntegrationPlugin, ProcedureReporter, TestDriver }
+import io.stepfunc.dnp3c.protocol.logging.Logger
+import io.stepfunc.dnp3c.protocol.parsing.UInt16LE
+
+import scala.collection.mutable
+import scala.util.control.NonFatal
+import io.stepfunc.dnp3c.dnp3.DeferredCheck
+
+/**
+ * What a procedure needs from outside the harness, which tests replace
+ */
+private[application] trait ProcedureEnvironment {
+  def openCapture(options: OptionSource, path: Path): Option[Closeable]
+  def openDriver(reporter: ProcedureReporter, options: OptionSource): TestDriver
+}
+
+private[application] object ProcedureEnvironment {
+
+  val default: ProcedureEnvironment = new ProcedureEnvironment {
+
+    def openCapture(options: OptionSource, path: Path): Option[Closeable] = {
+      val channel = ChannelOptions(options)
+      channel.captureNIC.map(nic => PacketCapture.create(nic, channel.port).open(path.toString))
+    }
+
+    def openDriver(reporter: ProcedureReporter, options: OptionSource): TestDriver =
+      new DefaultTestDriver(
+        reporter,
+        ChannelOptions(options).factory(),
+        UInt16LE(options.get(LinkOptions.source)),
+        UInt16LE(options.get(LinkOptions.destination)),
+        options.get(LinkOptions.timeout),
+        options.get(OutstationOptions.responseTimeout),
+        options.get(UnsolicitedOptions.unsolicitedConfirmTimeoutMs)
+      )
+  }
+}
+
+object TestRunner {
+
+  /**
+   * Run the procedures in an element, in order, stopping at the first that fails
+   *
+   * @throws HarnessExecutionException if the harness or the plugin fails while running a procedure
+   */
+  private[conformance] def run(
+      element: TestElement,
+      options: OptionSource,
+      integrationPlugin: IntegrationPlugin): RunSummary =
+    run(element, options, integrationPlugin, ProcedureEnvironment.default)
+
+  private[application] def run(
+      element: TestElement,
+      options: OptionSource,
+      integrationPlugin: IntegrationPlugin,
+      environment: ProcedureEnvironment): RunSummary = {
+
+    // the sections and procedures in the order they run: a section's subsections, then its procedures
+    def walk(e: TestElement): List[TestElement] = e match {
+      case s: TestSection => s :: (s.sections.toList ++ s.procedures.toList).flatMap(walk)
+      case p: TestProcedure => List(p)
+    }
+
+    val elements = walk(element)
+    val procedures = elements.collect { case p: TestProcedure => p }
+    val results = mutable.ListBuffer[ProcedureResult]()
+
+    def failed: Boolean = results.exists(_.outcome.isInstanceOf[ProcedureOutcome.Failed])
+    def unreachedAfter(count: Int): List[String] = procedures.drop(count).map(_.id)
+    def aborted(p: TestProcedure, outcome: Option[ProcedureOutcome], error: Throwable): HarnessExecutionException = {
+      val partial = results.toList ++ outcome.map(ProcedureResult(p.id, _))
+      new HarnessExecutionException(p.id, RunSummary(partial, unreachedAfter(results.size + 1)), error)
+    }
+
+    elements.iterator.takeWhile(_ => !failed).foreach {
+      case s: TestSection =>
+        ConsoleLogger.info("Entering test section: " + s.id + " - " + s.description)
+      case p: TestProcedure =>
+        try {
+          results += ProcedureResult(p.id, runProcedure(p, options, integrationPlugin, environment))
+        } catch {
+          case ex: ProcedureAborted => throw aborted(p, ex.outcome, ex.error)
+          case NonFatal(ex) => throw aborted(p, None, ex)
+        }
+    }
+
+    RunSummary(results.toList, unreachedAfter(results.size))
+  }
+
+  // the harness or the plugin failed, after the procedure reached the outcome, if any
+  private class ProcedureAborted(val outcome: Option[ProcedureOutcome], val error: Throwable) extends Exception(error)
+
+  private def runProcedure(
+      procedure: TestProcedure,
+      options: OptionSource,
+      integrationPlugin: IntegrationPlugin,
+      environment: ProcedureEnvironment): ProcedureOutcome = {
+
+    val path = Paths.get(options.get(TestOptions.outputDirectory), procedure.id)
+    val resultsFile = path.resolve("results.properties")
+
+    // run once the procedure ends, however it ends, the last added first
+    var cleanup: List[() => Unit] = Nil
+    var reporter: Option[ProcedureReporter] = None
+    var outcome: Option[ProcedureOutcome] = None
+
+    val failure: Option[Throwable] =
+      try {
+        Files.createDirectories(path)
+        // results from an earlier run must not look like this run's
+        Files.deleteIfExists(resultsFile)
+        Files.deleteIfExists(path.resolve("dump.pcap"))
+
+        val htmlLogger = new ReportLogger(
+          path.resolve("log.html").toFile,
+          s"${procedure.id} ${procedure.description}",
+          options.get(TestOptions.deviceUnderTest))
+        cleanup ::= (() => htmlLogger.write())
+
+        environment.openCapture(options, path.resolve("dump.pcap")).foreach(c => cleanup ::= (() => c.close()))
+
+        val testReporter = new ProcedureReporter(Logger.aggregate(ConsoleLogger, htmlLogger), integrationPlugin)
+        reporter = Some(testReporter)
+        testReporter.info("Running procedure: " + procedure.id)
+
+        val driver = environment.openDriver(testReporter, options)
+        cleanup ::= (() => driver.close())
+
+        integrationPlugin.startProcedure(testReporter.pluginReporter())
+        cleanup ::= (() => integrationPlugin.endProcedure(testReporter.pluginReporter()))
+
+        outcome = Some(runSteps(procedure, options, driver))
+        None
+      } catch {
+        case NonFatal(ex) =>
+          reporter.foreach(_.error(s"The procedure couldn't be run: ${ErrorText.of(ex)}"))
+          Some(ex)
+        case ex: Throwable =>
+          // an interruption, or a fatal error: clean up, then let it propagate
+          throw cleanUp(cleanup, Some(ex)).getOrElse(ex)
+      }
+
+    cleanUp(cleanup, failure).foreach {
+      case NonFatal(ex) => throw new ProcedureAborted(outcome, ex)
+      case ex => throw ex
+    }
+
+    // the procedure, and everything around it, completed, so the outcome is known
+    val result = outcome.get
+    try TestResult.write(TestResult.from(result), resultsFile)
+    catch { case NonFatal(ex) => throw new ProcedureAborted(outcome, ex) }
+    result
+  }
+
+  // runs every cleanup action; the first failure is returned, with the later ones suppressed in it
+  private def cleanUp(actions: List[() => Unit], failure: Option[Throwable]): Option[Throwable] =
+    actions.foldLeft(failure) { (first, action) =>
+      try {
+        action()
+        first
+      } catch {
+        case ex: Throwable =>
+          first match {
+            case Some(f) =>
+              if (f ne ex) f.addSuppressed(ex)
+              first
+            case None => Some(ex)
+          }
+      }
+    }
+
+  // a deferred check and where it came from: e.g. "8.11.2.5.3 steps: 4 to 5 (step 27 of the procedure)"
+  private case class Pending(origin: String, check: DeferredCheck)
+
+  // e.g. "8.11.2.5.3": a label that names a subsection, rather than a step
+  private val subsection = """\d+(\.\d+)+""".r
+
+  private def runSteps(procedure: TestProcedure, options: OptionSource, driver: TestDriver): ProcedureOutcome = {
+
+    // checks returned by completed steps, to run once every step has
+    val pending = mutable.ListBuffer[Pending]()
+    var started = 0
+
+    try {
+
+      val config = procedure.configure(options)
+
+      var heading: Option[String] = None
+      for ((x, ordinal) <- config.steps.iterator.zipWithIndex) {
+        if (subsection.matches(x.label)) heading = Some(x.label)
+        driver.reporter.note(x.label, x.step.description.map(_.toString))
+        val checks = x.step.run(driver)
+        val origin = (heading.toList :+ x.label).mkString(" ") + s" (step ${ordinal + 1} of the procedure)"
+        pending ++= checks.map(Pending(origin, _))
+      }
+
+      for ((p, n) <- pending.zipWithIndex) {
+        driver.reporter.info(s"Deferred check ${n + 1} of ${pending.size}, from ${p.origin}: ${p.check.description}")
+        started = n + 1
+        p.check.check()
+      }
+
+      config.disabledBy match {
+        case Some(condition) =>
+          driver.reporter.info("Skipped procedure: " + procedure.id)
+          ProcedureOutcome.Skipped(s"disabled because ${condition.option.id} != ${condition.requiredValue}")
+        case None =>
+          driver.reporter.info("Passed procedure: " + procedure.id)
+          ProcedureOutcome.Passed
+      }
+
+    } catch {
+      case NonFatal(ex) =>
+        driver.reporter.error(ErrorText.of(ex))
+        // the checks after the one that failed, or all of them if a step failed
+        val unevaluated = pending.size - started
+        if (unevaluated > 0) driver.reporter.warn(s"$unevaluated deferred check(s) weren't evaluated")
+
+        if (!procedure.incomplete) {
+          driver.reporter.error("Failed procedure: " + procedure.id)
+          ProcedureOutcome.Failed(ErrorText.of(ex))
+        } else {
+          ProcedureOutcome.Skipped(s"incomplete procedure: ${ErrorText.of(ex)}")
+        }
+    }
+
+  }
+
+}
