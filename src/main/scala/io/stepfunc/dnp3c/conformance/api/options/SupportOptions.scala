@@ -4,7 +4,7 @@
 package io.stepfunc.dnp3c.conformance.api.options
 
 import io.stepfunc.dnp3c.conformance.api.{
-  BooleanOption, OptionCondition, OptionGroup, OptionSource, OptionTypes, TestOption
+  BooleanOption, OptionCondition, OptionGroup, OptionSource, OptionTypes, Requirement, TestOption
 }
 
 /**
@@ -63,9 +63,8 @@ object SupportOptions extends OptionGroup {
     // the DUT has these points and can uninstall or disable them
     def withDisabling: List[OptionCondition] = List(points, disabling)
 
-    // for a procedure about a DUT without these events (or points): disabled if it has both
-    def disabledUnlessWithoutEvents(options: OptionSource): Option[OptionCondition] =
-      if (options.get(points) && options.get(events)) Some(!events) else None
+    // for a procedure about a DUT without these events (or points): it doesn't run on one that has both
+    def withoutEvents: Requirement = Requirement.not(Requirement.all(OptionCondition(points), OptionCondition(events)))
   }
 
   object Inputs {

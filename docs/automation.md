@@ -39,7 +39,7 @@ object Main {
 
 - `Options.load` parses and checks the whole file, and throws a `ConfigurationException` listing every problem.
 - The revision decides which procedures exist and what their ids mean. `Revisions.list` holds every revision dnp3c has, and `Revisions.find("2.7")` looks one up by id. There's no default.
-- The configuration must set `outstation.subset.level`, the subset level the device is configured for, to a level the revision tests: level 2 for 2.7. `run` and `writeReport` throw a `ConfigurationException` before doing anything if it doesn't.
+- The configuration must set `outstation.subset.level`, the subset level the device is configured for, to a level the revision tests: level 2 for 2.7. `run` and `writeReport` throw a `ConfigurationException` before doing anything if it doesn't. `run` also does if the device lacks something a procedure needs at a level where the revision makes that procedure mandatory, rather than skipping it.
 - `run` takes a procedure or section id of the revision, e.g. `"8.6.5.4"` or `"8.6"`, or `"all"`, and throws an `IllegalArgumentException` for an unknown one before anything runs. It runs the procedures in order and stops at the first that fails. It returns a `RunSummary` with each procedure's outcome (`Passed`, `Failed(message)` or `Skipped(reason)`) and the procedures it didn't reach.
 - Results go in the folder for the revision and subset level in the output directory, e.g. `results/2.7/L2/`, so runs of different revisions or levels never mix.
 - `writeReport` writes `report.html` in that folder from every result there, from this run and earlier ones, and returns its path. `Harness.writeReport(options, revision)` does the same without a plugin.

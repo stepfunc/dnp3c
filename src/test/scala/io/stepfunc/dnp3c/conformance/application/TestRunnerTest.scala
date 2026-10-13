@@ -11,6 +11,7 @@ import io.stepfunc.dnp3c.conformance.api._
 import io.stepfunc.dnp3c.conformance.api.ProcedureOutcome.{ Failed, Passed, Skipped }
 import io.stepfunc.dnp3c.conformance.api.options.{ OutstationOptions, SupportOptions, TestOptions }
 import io.stepfunc.dnp3c.dnp3._
+import io.stepfunc.dnp3c.dnp3.app.Message
 import org.junit.runner.RunWith
 import org.scalatestplus.junit.JUnitRunner
 import org.scalatest.matchers.should.Matchers
@@ -49,8 +50,11 @@ class TestRunnerTest extends AnyFunSuite with Matchers {
       fail("capture open")
       Some(() => fail("capture close"))
     }
-    def openDriver(reporter: ProcedureReporter, options: OptionSource): TestDriver = {
+    // the rules the runner gave the last driver it opened
+    var policies: Option[Policies] = None
+    def openDriver(reporter: ProcedureReporter, options: OptionSource, policies: Policies): TestDriver = {
       fail("driver open")
+      this.policies = Some(policies)
       new Driver(fail, reporter)
     }
   }
@@ -213,6 +217,57 @@ class TestRunnerTest extends AnyFunSuite with Matchers {
       case List(Skipped(reason)) if reason.contains("level(s) 1") =>
     }
     run.events.list should equal(Nil)
+  }
+
+  test("the driver gets the revision's message rules") {
+    val run = new Run()
+    val rule = new MessagePolicy {
+      def id = "rule"
+      def description = "a rule"
+      def violation(message: Message): Option[String] = None
+    }
+    val revision = new Revision("t", "test", "2026-01-01", List(2), List(section(procedure("a", run.fail))), List(rule))
+    val environment = new Environment(run.fail)
+    TestRunner.run(revision, revision.all, run.optionsAt(2), new Plugin(run.fail), environment)
+    environment.policies.map(_.all) should equal(Some(List(rule)))
+  }
+
+  test("a device that lacks what a procedure mandatory at its level needs is an invalid configuration") {
+    val run = new Run()
+    val mandatory = TestProcedure(
+      "a",
+      "a",
+      new ProcedureDefinition {
+        override protected def requiredOptions: List[OptionCondition] = List(SupportOptions.selfAddress)
+        protected def steps(options: OptionSource): Iterable[LabeledStep] = Nil
+      },
+      mandatoryAt = Set(2)
+    )
+    val revision = new Revision("t", "test", "2026-01-01", List(1, 2), List(section(mandatory)))
+    val ex = intercept[ConfigurationException](
+      TestRunner.run(revision, revision.all, run.optionsAt(2), new Plugin(run.fail), new Environment(run.fail)))
+    ex.problems.map(_.key) should equal(List(SupportOptions.selfAddress.id))
+    run.events.list should equal(Nil)
+    revision.unmetMandatory(run.optionsAt(2), 2).map(_._1.id) should equal(List("a"))
+    // at a level where it isn't mandatory, it's skipped as usual
+    TestRunner.run(revision, revision.all, run.optionsAt(1), new Plugin(run.fail), new Environment(run.fail))
+      .results
+      .map(_.outcome) should matchPattern { case List(Skipped(_)) => }
+  }
+
+  test("a mandatory requirement that involves no options is still reported as a configuration problem") {
+    val run = new Run()
+    val never = TestProcedure(
+      "a",
+      "a",
+      new ProcedureDefinition {
+        override protected def requirement: Requirement = Requirement.not(Requirement.none)
+        protected def steps(options: OptionSource): Iterable[LabeledStep] = Nil
+      },
+      mandatoryAt = Set(2)
+    )
+    val revision = new Revision("t", "test", "2026-01-01", List(2), List(section(never)))
+    intercept[ConfigurationException](revision.validate(run.optionsAt(2))).problems.map(_.key) should equal(List("a"))
   }
 
   test("a saved result records its revision, and why the procedure was skipped") {

@@ -79,6 +79,9 @@ trait TestDriver {
 
   def reporter: ProcedureReporter
 
+  // the revision's rules for the messages the procedure receives; none unless the driver enforces them
+  def policies: Policies = Policies.none
+
   def local: UInt16LE
 
   def remote: UInt16LE

@@ -17,9 +17,10 @@ object Procedure8653 extends ProcedureDefinition {
   private val broadcast = UInt16LE(0xFFFF)
 
   // the procedure needs a binary or an analog output
-  override def disabledBy(options: OptionSource): Option[OptionCondition] =
-    if (options.get(SupportOptions.Outputs.binary.commands)) None
-    else Some(OptionCondition(SupportOptions.Outputs.analog.commands)).filterNot(_.satisfied(options))
+  override protected def requirement: Requirement =
+    Requirement.anyOf(
+      OptionCondition(SupportOptions.Outputs.binary.commands),
+      OptionCondition(SupportOptions.Outputs.analog.commands))
 
   override protected def steps(options: OptionSource): Iterable[LabeledStep] = {
 
