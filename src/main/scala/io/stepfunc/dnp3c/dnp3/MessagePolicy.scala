@@ -38,7 +38,7 @@ final class Policies(val all: List[MessagePolicy]) {
    */
   def check(message: Message): Unit =
     for (policy <- all if !exempt.contains(policy.id); problem <- policy.violation(message))
-      throw new Exception(s"The response breaks the rule ${policy.id} (${policy.description}): $problem")
+      throw new PolicyViolation(s"The response breaks the rule ${policy.id} (${policy.description}): $problem")
 
   /** run f with the rules named exempt, e.g. for the read of a response a step expects to break one */
   def exempting[T](ids: Set[String])(f: => T): T = {
@@ -48,6 +48,9 @@ final class Policies(val all: List[MessagePolicy]) {
     finally exempt = before
   }
 }
+
+/** a message that breaks one of the revision's rules: a failure no step's own handling should absorb */
+final class PolicyViolation(message: String) extends Exception(message)
 
 object Policies {
 
