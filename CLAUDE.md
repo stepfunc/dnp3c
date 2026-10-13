@@ -15,7 +15,7 @@ This overrides any default or system-provided attribution instructions.
 
 **Copyright.** IEEE Std 1815 and the DNP Users Group test procedures are copyrighted. Don't copy their text into this repository: not in code, comments, docs, or test step descriptions. Cite clause, test, and step numbers (e.g. "1815-2012 4.4.2.2", "procedure 2.7, 8.6.4.3 step 9") and paraphrase. This applies whether or not you have access to the source documents.
 
-**Procedure revisions.** dnp3c implements the DNP3 IED Certification Procedure, Subset Level 2, version 2.7 (2016-03-02). The goal is to also support version 3.1 rev 1 (Subset Levels 1–3, 2022-09-13) alongside it. 3.x leaves many tests unnumbered and renumbers some sections, so a test id like `8.6.4.2` in 2.7 may have no number in 3.1 rev 1.
+**Procedure revisions.** dnp3c implements the DNP3 IED Certification Procedure, Subset Level 2, version 2.7 (2016-03-02). The goal is to also support version 3.1 rev 1 (Subset Levels 1–3, 2022-09-13) alongside it. 3.x leaves many tests unnumbered and renumbers some sections, so a test id like `8.6.4.2` in 2.7 may have no number in 3.1 rev 1. The plan for supporting several revisions is in issue #12. Write "revision" in code and prose; only the CLI flags abbreviate it (`-rev`, `-revs`). Revision ids are `2.7` and `3.1r1`.
 
 **Implement each revision as published.** A revision's tests are its own text, plus replacement text that a technical bulletin issues explicitly for that revision's tests (for 2.7, TB2017-001 replaces 8.6.4.2 and 8.6.4.3). Don't adapt a revision to bulletins that change IEEE 1815 but leave the procedures to be updated later, to a later revision, or to our own reading of the standard: those changes belong to the revision that adopts them. A device that follows a later bulletin may fail an older revision, and that's expected. Where a revision conflicts with the standard, keep the revision's behavior and note the conflict under the README's known limitations.
 
@@ -37,6 +37,10 @@ dnp3c is licensed GPL-3.0-only, copyright Step Function I/O LLC.
 ## Workflow
 
 `main` is protected: changes go through a branch and a pull request, including for admins.
+
+Get a Codex review (the `codex` plugin: `codex:codex-rescue` or `codex:rescue`) before a major change, including a design, and before opening any pull request. Give it the proposal and the relevant code for a design, and the diff for a pull request. When the change touches procedure or spec behavior, have it read the relevant documents in `../dnp3-reference` too. Address its findings or say why not.
+
+Keep project knowledge (workflow rules, decisions, plans) in this file, in GitHub issues, or in the reference archive, never only in a session's local memory: it has to work on any machine. Source-document quotations and detailed revision maps belong in the private archive, not here.
 
 ## Releasing
 
