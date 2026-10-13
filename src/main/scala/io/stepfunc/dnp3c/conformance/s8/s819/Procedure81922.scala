@@ -25,7 +25,8 @@ object Procedure81922 extends ProcedureDefinition {
       2 --> readAnalogEvents(Sequence.zero),
       (3 to 6) --> expectSingleResponse(
         Sequence.zero,
-        verifyAnalogEvents && PluginValidations.verifyLatestAnalogInputChangeEvents() && verifyFlagsComplyWithNote5 &&
+        verifyAnalogEvents && PluginValidations.verifyLatestAnalogInputChangeEvents() &&
+          verifyFlagsComplyWithFlagNote &&
           verifyConfirmRequested),
       (7 to 8) --> expectNoRetransmission(options.get(OutstationOptions.appConfirmTimeout)),
       9 --> PluginSteps.generateAnalogInputChangeEvents(),
@@ -34,7 +35,7 @@ object Procedure81922 extends ProcedureDefinition {
         Sequence.one,
         AutoConfirm.Yes,
         verifyAnalogEvents && PluginValidations.verifyAnalogInputEventsForCurrentValues() &&
-          verifyFlagsComplyWithNote5 &&
+          verifyFlagsComplyWithFlagNote &&
           verifyConfirmRequested
       ),
       15 --> readAnalogEvents(Sequence.two),

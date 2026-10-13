@@ -21,7 +21,7 @@ object CounterEventSteps {
       (8 to 12) --> expectSingleResponse(
         Sequence.three,
         AutoConfirm.Yes,
-        verifyGroup22AndQualifiers && Validations.verifyConfirmRequested && Validations.verifyFlagsComplyWithNote5 &&
+        verifyGroup22AndQualifiers && Validations.verifyConfirmRequested && Validations.verifyFlagsComplyWithFlagNote &&
           verifyProperEvents
       ),
       13 --> PluginSteps.recordCurrentCounterValues(),
@@ -31,7 +31,8 @@ object CounterEventSteps {
         expectSingleResponse(
           Sequence.four,
           AutoConfirm.Yes,
-          verifyGroup22AndQualifiers && Validations.verifyConfirmRequested && Validations.verifyFlagsComplyWithNote5 &&
+          verifyGroup22AndQualifiers && Validations.verifyConfirmRequested &&
+            Validations.verifyFlagsComplyWithFlagNote &&
             verifyCurrentValueEvents
         )
     )

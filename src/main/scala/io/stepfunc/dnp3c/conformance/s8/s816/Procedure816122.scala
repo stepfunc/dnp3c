@@ -28,7 +28,7 @@ object Procedure816122 extends ProcedureDefinition {
       (6 to 8) --> expectAtLeastOneResponse(
         Sequence.two,
         PluginValidations.verifyAllCountersCurrentValues().acrossFragments && counters &&
-          Validations.verifyFlagsComplyWithNote5
+          Validations.verifyFlagsComplyWithFlagNote
       )
     )
   }

@@ -26,7 +26,7 @@ object FrozenCounterSteps {
       7 --> send(Requests.readAllObjects(Sequence.three, Group21Var0)),
       (8 to 11) --> expectAtLeastOneResponse(
         Sequence.three,
-        frozenCounters && Validations.verifyFlagsComplyWithNote5 &&
+        frozenCounters && Validations.verifyFlagsComplyWithFlagNote &&
           PluginValidations.verifyRecordedCounterValues().acrossFragments
       ),
       12 --> send(getFreezeFunctionCode(ack), Sequence.four, AllObjectsHeader(Group20Var0)),
@@ -46,13 +46,13 @@ object FrozenCounterSteps {
       4 --> send(Requests.readAllObjects(Sequence.two, Group21Var0)),
       (5 to 8) --> expectAtLeastOneResponse(
         Sequence.two,
-        frozenCounters && Validations.verifyFlagsComplyWithNote5 && verifyAllNonZero),
+        frozenCounters && Validations.verifyFlagsComplyWithFlagNote && verifyAllNonZero),
       9 --> send(getFreezeAndClearFunctionCode(ack), Sequence.three, AllObjectsHeader(Group20Var0)),
       10 --> expectedFreezeResponse(ack, Sequence.three),
       11 --> send(Requests.readAllObjects(Sequence.four, Group21Var0)),
       (12 to 13) --> expectAtLeastOneResponse(
         Sequence.four,
-        frozenCounters && Validations.verifyFlagsComplyWithNote5 && verifyAllZero)
+        frozenCounters && Validations.verifyFlagsComplyWithFlagNote && verifyAllZero)
     )
   }
 

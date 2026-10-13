@@ -27,7 +27,7 @@ Commercial DNP3 test tools save their results in proprietary formats. dnp3c writ
 
 dnp3c implements the DNP Users Group's *DNP3 IED Certification Procedure, Subset Level 2*, version 2.7 (2 March 2016). The section, procedure and step numbers in the tool, its logs and the report are those of 2.7. Where a technical bulletin replaces a 2.7 test outright, dnp3c runs the replacement: TB2017-001's 8.6.4.2 and 8.6.4.3, whose steps are numbered 1.a, 1.b, and so on.
 
-Later editions, 3.0 (December 2020) and 3.1 rev 1 (September 2022), cover Subset Levels 1 to 3. They renumber some tests, leave many tests without a number, and change what some tests send or accept, often to apply technical bulletins published after 2.7. A result from dnp3c can therefore differ from what those editions would give. Support for 3.1 rev 1 alongside 2.7 is planned.
+Later editions, 3.0 (December 2020) and 3.1 rev 1 (September 2022), cover Subset Levels 1 to 3. They renumber some tests, leave many tests without a number, and change what some tests send or accept, often to apply technical bulletins published after 2.7. A result from dnp3c can therefore differ from what those editions would give. Support for 3.1 rev 1 alongside 2.7 is in progress: `-rev 3.1r1` has its whole tree of tests, by its own numbers. The ones whose steps match a 2.7 test already run; the rest show as not implemented, and are skipped.
 
 ## Requirements
 

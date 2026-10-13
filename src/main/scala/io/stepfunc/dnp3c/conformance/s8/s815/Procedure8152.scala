@@ -87,7 +87,8 @@ object Procedure8152 extends ProcedureDefinition {
   // g2v3 events after a CTO, unsynchronized (g51v2) before the time is set and synchronized (g51v1) after, in a
   // response that asks for confirmation, with flags as Note 5 requires
   private def ctoResponse(timeSync: Boolean): MessageValidation =
-    eventsWithCtos(List(Group2Var3), Set(if (timeSync) Group51Var1 else Group51Var2)) && verifyFlagsComplyWithNote5 &&
+    eventsWithCtos(List(Group2Var3), Set(if (timeSync) Group51Var1 else Group51Var2)) &&
+      verifyFlagsComplyWithFlagNote &&
       verifyConfirmRequested
 
 }

@@ -50,7 +50,7 @@ dnp3c can hold more than one revision of the certification procedure, and every 
 dnp3c -revs
 ```
 
-Today there's one, `2.7`: the DNP3 IED Certification Procedure, Subset Level 2, version 2.7.
+There are two: `2.7`, the DNP3 IED Certification Procedure, Subset Level 2, version 2.7; and `3.1r1`, Subset Levels 1, 2 and 3, version 3.1 rev 1. 3.1r1 is in progress: its tests that aren't implemented yet are skipped. Where 3.1r1 doesn't number a test, its id is its section's number and its place among that section's unnumbered tests, e.g. `8.6.5-2`.
 
 ## See what will run
 

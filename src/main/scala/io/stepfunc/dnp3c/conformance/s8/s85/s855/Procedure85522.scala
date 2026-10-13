@@ -24,7 +24,7 @@ object Procedure85522 extends ProcedureDefinition {
           PluginValidations.verifyAllStaticValues(isClass0 = true).acrossFragments &&
           verifyEventDataPrecedesStaticData &&
           verifyOnlyTable83OrTable84Contents(options.get(SupportOptions.Inputs.doubleBit.points)) &&
-          verifyFlagsComplyWithNote5 && verifyConfirmRequestedIfRequired
+          verifyFlagsComplyWithFlagNote && verifyConfirmRequestedIfRequired
       )
     )
   }

@@ -109,7 +109,7 @@ object Validations {
   // a response carrying events: the events, as the plugin checks them; the objects they're reported in; and, as for
   // every event response, a request for confirmation and flags as Note 5 requires
   def eventResponse(events: MessageValidation, objects: MessageValidation): MessageValidation =
-    events && verifyConfirmRequested && objects && verifyFlagsComplyWithNote5
+    events && verifyConfirmRequested && objects && verifyFlagsComplyWithFlagNote
 
   def verifyConfirmRequestedIfNotNull: MessageValidation = MessageValidation.check(
     "If the response carries data, verify that it asks for an application layer confirmation.") { message =>
@@ -118,28 +118,30 @@ object Validations {
     }
   }
 
-  def verifyFlagsComplyWithNote5: MessageValidation =
-    MessageValidation.check("Verify that the flags behave as Note 5 of Section 2 requires.") { message =>
-      val allowedBinaryFlags = Set(0x01.toByte, 0x81.toByte)
-      val allowedDoubleBitFlags = Set(0x01.toByte, 0x41.toByte, 0x81.toByte, 0xC1.toByte)
-      val allowedOtherFlags = Set(0x01.toByte)
+  def verifyFlagsComplyWithFlagNote: MessageValidation =
+    MessageValidation.check(
+      "Verify that the flags behave as the note on flags in Section 2 requires (Note 5 in 2.7, Note 6 in 3.1r1).") {
+      message =>
+        val allowedBinaryFlags = Set(0x01.toByte, 0x81.toByte)
+        val allowedDoubleBitFlags = Set(0x01.toByte, 0x41.toByte, 0x81.toByte, 0xC1.toByte)
+        val allowedOtherFlags = Set(0x01.toByte)
 
-      def getAllowedFlagsForGroup(group: Group): Set[Byte] = group match {
-        case Group1 | Group2 | Group10 | Group11 => allowedBinaryFlags // bit 7 is the state
-        case Group3 => allowedDoubleBitFlags
-        case Group4 => allowedDoubleBitFlags
-        case _ => allowedOtherFlags
-      }
+        def getAllowedFlagsForGroup(group: Group): Set[Byte] = group match {
+          case Group1 | Group2 | Group10 | Group11 => allowedBinaryFlags // bit 7 is the state
+          case Group3 => allowedDoubleBitFlags
+          case Group4 => allowedDoubleBitFlags
+          case _ => allowedOtherFlags
+        }
 
-      forEachField(message) {
-        case (group, flags: Field.Types.Flags) =>
-          val allowed = getAllowedFlagsForGroup(group)
-          if (!allowed.contains(flags.value)) {
-            throw new Exception("unexpected flags: " + flags.toString + " Allowed values for this group are: " +
-              allowed.map(Field.Types.Flags.apply))
-          }
-        case _ =>
-      }
+        forEachField(message) {
+          case (group, flags: Field.Types.Flags) =>
+            val allowed = getAllowedFlagsForGroup(group)
+            if (!allowed.contains(flags.value)) {
+              throw new Exception("unexpected flags: " + flags.toString + " Allowed values for this group are: " +
+                allowed.map(Field.Types.Flags.apply))
+            }
+          case _ =>
+        }
     }
 
   // every field of every object in the message, with the object's group (bit-packed objects have no fields)

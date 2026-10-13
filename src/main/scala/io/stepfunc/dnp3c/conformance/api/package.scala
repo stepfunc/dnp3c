@@ -59,7 +59,7 @@ package object api {
     override def procedures: List[TestProcedure] = procedureSeq.toList
   }
 
-  def unimplemented(identifier: String, title: String): TestProcedure =
+  def unimplemented(identifier: String, title: String, levels: Option[Set[Int]] = None): TestProcedure =
     TestProcedure(
       identifier,
       title,
@@ -67,7 +67,8 @@ package object api {
         override def incomplete: Boolean = true
         override def steps(options: OptionSource): Iterable[LabeledStep] =
           throw new Exception(s"$identifier - Not implemented!")
-      }
+      },
+      levels
     )
 
 }

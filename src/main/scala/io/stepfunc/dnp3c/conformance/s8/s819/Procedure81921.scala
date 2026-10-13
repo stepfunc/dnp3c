@@ -36,7 +36,8 @@ object Procedure81921 extends ProcedureDefinition {
         (6 to 9) --> expectSingleResponse(
           Sequence.one,
           AutoConfirm.Yes,
-          verifyAnalogEvents && PluginValidations.verifyLatestAnalogInputChangeEvents() && verifyFlagsComplyWithNote5 &&
+          verifyAnalogEvents && PluginValidations.verifyLatestAnalogInputChangeEvents() &&
+            verifyFlagsComplyWithFlagNote &&
             verifyConfirmRequested
         ),
         10 --> readAnalogEvents(Sequence.two),
