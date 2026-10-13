@@ -6,6 +6,7 @@ package io.stepfunc.dnp3c.conformance.v31r1
 import io.stepfunc.dnp3c.conformance.api.{ TestElement, TestProcedure, TestSection, unimplemented }
 import io.stepfunc.dnp3c.conformance.{ s6, s7, s8 }
 import io.stepfunc.dnp3c.conformance.api.ProcedureDefinition
+import io.stepfunc.dnp3c.conformance.s8.s86.s864.SupervisoryControl.Numbering
 
 /**
  * The sections and tests of the DNP3 IED Certification Procedure, Subset Levels 1, 2 and 3, revision 3.1r1, with
@@ -17,7 +18,8 @@ import io.stepfunc.dnp3c.conformance.api.ProcedureDefinition
  * tests are named after those, e.g. 8.22-8.14.2-3.
  *
  * A test whose steps are the same as a 2.7 test's, or differ only in wording, places that test's definition; 3.1r1's
- * rules for every test apply to it as to any other. The rest aren't implemented yet.
+ * rules for every test apply to it as to any other. Where only the step numbers differ, the definition takes 3.1r1's
+ * numbering (8.6.4). The rest aren't implemented yet.
  */
 object Tree {
 
@@ -40,6 +42,10 @@ object Tree {
 
   private def notYet(id: String, title: String, levels: Option[Set[Int]] = None): TestProcedure =
     unimplemented(id, title, levels)
+
+  // the tests TB2017-001 gave 2.7, with 3.1r1's step numbers
+  private val global8641 = new s8.s86.s864.GlobalRemoteSupervisoryControl(Numbering.dotted)
+  private val individual8642 = new s8.s86.s864.IndividualRemoteSupervisoryControl(Numbering.afterCondition)
 
   val sections: List[TestSection] = List(
     section("6", "Link Layer")(
@@ -231,8 +237,8 @@ object Tree {
           test("8.6.3-1", "Test Procedure", s8.s86.s863.Procedure8632)
         ),
         section("8.6.4", "Local")(
-          notYet("8.6.4-1", "Test Procedure for Devices with Global Remote Supervisory Control"),
-          notYet("8.6.4-2", "Test Procedure for Devices with Individual Remote Supervisory Control")
+          test("8.6.4-1", "Test Procedure for Devices with Global Remote Supervisory Control", global8641),
+          test("8.6.4-2", "Test Procedure for Devices with Individual Remote Supervisory Control", individual8642)
         ),
         section("8.6.5", "Broadcast Address and All Stations Indication")(
           notYet("8.6.5-1", "Test Procedure"),

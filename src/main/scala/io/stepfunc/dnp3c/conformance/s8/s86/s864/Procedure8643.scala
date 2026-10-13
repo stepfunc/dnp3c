@@ -11,7 +11,7 @@ import io.stepfunc.dnp3c.dnp3.app.objects.CommandStatus
 
 // individual remote supervisory control, as TB2017-001 replaces the test: one binary output goes to local mode, which
 // clears its ONLINE and refuses controls, while another stays in remote mode and operates; then both are remote again
-object Procedure8643 extends ProcedureDefinition {
+class IndividualRemoteSupervisoryControl(n: Numbering) extends ProcedureDefinition {
 
   override protected def requiredOptions: List[OptionCondition] = List(
     SupportOptions.individualRemoteSupervisoryControl,
@@ -28,35 +28,38 @@ object Procedure8643 extends ProcedureDefinition {
 
     val first = new Snapshot
     List(
-      step('a') --> PluginSteps.enableRemoteSupervisoryControl(),
-      step('b') --> describe(
+      n.step(1) --> PluginSteps.enableRemoteSupervisoryControl(),
+      n.step(2) --> describe(
         s"Binary outputs ${local.value} and ${remote.value} must be online, have no exception flags, and be able to " +
           "go to local mode separately"),
-      step('c') --> read(Sequence.zero),
-      stepRange('d', 'e') --> response(
+      n.step(3) --> read(Sequence.zero),
+      n.steps(4, 5) --> response(
         Sequence.zero,
         localControl = false,
         record(first) && onlineWithoutExceptions(List(local.value, remote.value))),
-      step('f') --> PluginSteps.setIndividualRemoteSupervisoryControl(local.value),
-      step('g') --> read(Sequence.one),
-      stepRange('h', 'i') --> response(
+      n.step(6) --> PluginSteps.setIndividualRemoteSupervisoryControl(local.value),
+      n.step(7) --> read(Sequence.one),
+      n.steps(8, 9) --> response(
         Sequence.one,
         localControl = true,
         localAndRemote(first, _ == local.value, List(remote.value), s"binary output ${local.value}")),
-      step('j') --> operate(options, local, Sequence.two),
-      step('k') --> echo(options, local, Sequence.two, CommandStatus.LOCAL, localControl = true),
-      step('l') --> doesNotOperate,
-      step('m') --> operate(options, remote, Sequence.three),
+      n.step(10) --> operate(options, local, Sequence.two),
+      n.step(11) --> echo(options, local, Sequence.two, CommandStatus.LOCAL, localControl = true),
+      n.step(12) --> doesNotOperate,
+      n.step(13) --> operate(options, remote, Sequence.three),
       // an output is still in local mode, so IIN1.5 stays set
-      step('n') --> echo(options, remote, Sequence.three, CommandStatus.SUCCESS, localControl = true),
-      step('o') --> operates(remote),
-      step('p') --> PluginSteps.enableRemoteSupervisoryControl(),
-      step('q') --> read(Sequence.four),
+      n.step(14) --> echo(options, remote, Sequence.three, CommandStatus.SUCCESS, localControl = true),
+      n.step(15) --> operates(remote),
+      n.step(16) --> PluginSteps.enableRemoteSupervisoryControl(),
+      n.step(17) --> read(Sequence.four),
       // the output that operated may have changed state
-      stepRange('r', 's') --> response(Sequence.four, localControl = false, asBefore(first, Set(remote.value))),
-      step('t') --> operate(options, local, Sequence.five),
-      step('u') --> echo(options, local, Sequence.five, CommandStatus.SUCCESS, localControl = false),
-      step('v') --> operates(local)
+      n.steps(18, 19) --> response(Sequence.four, localControl = false, asBefore(first, Set(remote.value))),
+      n.step(20) --> operate(options, local, Sequence.five),
+      n.step(21) --> echo(options, local, Sequence.five, CommandStatus.SUCCESS, localControl = false),
+      n.step(22) --> operates(local)
     )
   }
 }
+
+// as 2.7 runs it, TB2017-001's test, with its steps numbered 1.a, 1.b, ...
+object Procedure8643 extends IndividualRemoteSupervisoryControl(Numbering.lettered)

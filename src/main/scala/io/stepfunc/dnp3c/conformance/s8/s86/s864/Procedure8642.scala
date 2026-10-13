@@ -11,7 +11,7 @@ import io.stepfunc.dnp3c.dnp3.app.objects.CommandStatus
 
 // global remote supervisory control, as TB2017-001 replaces the test: every binary output goes to local mode, which
 // clears ONLINE and refuses controls, and back
-object Procedure8642 extends ProcedureDefinition {
+class GlobalRemoteSupervisoryControl(n: Numbering) extends ProcedureDefinition {
 
   override protected def requiredOptions: List[OptionCondition] = List(
     SupportOptions.globalRemoteSupervisoryControl,
@@ -22,25 +22,28 @@ object Procedure8642 extends ProcedureDefinition {
     val index = options.get(ControlOptions.primary.index)
     val first = new Snapshot
     List(
-      step('a') --> PluginSteps.enableRemoteSupervisoryControl(),
-      step('b') --> describe(
+      n.step(1) --> PluginSteps.enableRemoteSupervisoryControl(),
+      n.step(2) --> describe(
         s"Binary output ${index.value}, the one the controls go to, must be online and have no exception flags"),
-      step('c') --> read(Sequence.zero),
-      stepRange('d', 'e') -->
+      n.step(3) --> read(Sequence.zero),
+      n.steps(4, 5) -->
         response(Sequence.zero, localControl = false, record(first) && onlineWithoutExceptions(List(index.value))),
-      step('f') --> PluginSteps.setGlobalRemoteSupervisoryControl(),
-      step('g') --> read(Sequence.one),
-      stepRange('h', 'i') -->
+      n.step(6) --> PluginSteps.setGlobalRemoteSupervisoryControl(),
+      n.step(7) --> read(Sequence.one),
+      n.steps(8, 9) -->
         response(Sequence.one, localControl = true, localAndRemote(first, _ => true, Nil, "each binary output")),
-      step('j') --> operate(options, index, Sequence.two),
-      step('k') --> echo(options, index, Sequence.two, CommandStatus.LOCAL, localControl = true),
-      step('l') --> doesNotOperate,
-      step('m') --> PluginSteps.enableRemoteSupervisoryControl(),
-      step('n') --> read(Sequence.three),
-      step('o') --> response(Sequence.three, localControl = false, asBefore(first, Set.empty)),
-      step('p') --> operate(options, index, Sequence.four),
-      step('q') --> echo(options, index, Sequence.four, CommandStatus.SUCCESS, localControl = false),
-      step('r') --> operates(index)
+      n.step(10) --> operate(options, index, Sequence.two),
+      n.step(11) --> echo(options, index, Sequence.two, CommandStatus.LOCAL, localControl = true),
+      n.step(12) --> doesNotOperate,
+      n.step(13) --> PluginSteps.enableRemoteSupervisoryControl(),
+      n.step(14) --> read(Sequence.three),
+      n.step(15) --> response(Sequence.three, localControl = false, asBefore(first, Set.empty)),
+      n.step(16) --> operate(options, index, Sequence.four),
+      n.step(17) --> echo(options, index, Sequence.four, CommandStatus.SUCCESS, localControl = false),
+      n.step(18) --> operates(index)
     )
   }
 }
+
+// as 2.7 runs it, TB2017-001's test, with its steps numbered 1.a, 1.b, ...
+object Procedure8642 extends GlobalRemoteSupervisoryControl(Numbering.lettered)

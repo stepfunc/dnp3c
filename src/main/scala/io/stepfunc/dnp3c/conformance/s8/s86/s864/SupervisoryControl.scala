@@ -21,16 +21,34 @@ import io.stepfunc.dnp3c.protocol.Hex
  * In local mode a point clears ONLINE, and keeps its state and every other flag (IEEE 1815-2012 Table 11-5);
  * LOCAL_FORCED has nothing to do with local mode.
  */
-private[s864] object SupervisoryControl {
+private[conformance] object SupervisoryControl {
 
   val online: Int = 0x01
   val state: Int = 0x80
   // every flag but ONLINE and the state: RESTART, COMM_LOST, REMOTE_FORCED, LOCAL_FORCED and the reserved bits
   val exceptions: Int = 0xFF & ~(online | state)
 
-  // the labels of the steps, which TB2017-001 numbers 1.a, 1.b, ...
-  def step(letter: Char): Label = Label(s"step: 1.$letter")
-  def stepRange(first: Char, last: Char): Label = Label(s"steps: 1.$first to 1.$last")
+  /**
+   * How a revision numbers the steps, given each step's place in TB2017-001's order: 1 for its step 1.a, 2 for 1.b, and
+   * so on. The tests are the same in every revision that has them; only the step numbers differ.
+   */
+  trait Numbering {
+    def number(place: Int): String
+    final def step(place: Int): Label = Label(s"step: ${number(place)}")
+    final def steps(first: Int, last: Int): Label = Label(s"steps: ${number(first)} to ${number(last)}")
+  }
+
+  object Numbering {
+
+    /** TB2017-001's, which runs in 2.7: 1.a, 1.b, ... */
+    val lettered: Numbering = place => s"1.${('a' + place - 1).toChar}"
+
+    /** 3.1r1's for the global test: 1.1, 1.2, ... */
+    val dotted: Numbering = place => s"1.$place"
+
+    /** 3.1r1's for the individual test, whose step 1 is the condition: 2, 3, ... */
+    val afterCondition: Numbering = place => s"${place + 1}"
+  }
 
   /** each binary output's flags in a response, by index, as one read saw them */
   final class Snapshot {
