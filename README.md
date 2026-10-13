@@ -25,7 +25,7 @@ Commercial DNP3 test tools save their results in proprietary formats. dnp3c writ
 
 ## Test procedures
 
-dnp3c implements the DNP Users Group's *DNP3 IED Certification Procedure, Subset Level 2*, version 2.7 (2 March 2016). The section, procedure and step numbers in the tool, its logs and the report are those of 2.7.
+dnp3c implements the DNP Users Group's *DNP3 IED Certification Procedure, Subset Level 2*, version 2.7 (2 March 2016). The section, procedure and step numbers in the tool, its logs and the report are those of 2.7. Where a technical bulletin replaces a 2.7 test outright, dnp3c runs the replacement: TB2017-001's 8.6.4.2 and 8.6.4.3, whose steps are numbered 1.a, 1.b, and so on.
 
 Later editions, 3.0 (December 2020) and 3.1 rev 1 (September 2022), cover Subset Levels 1 to 3. They renumber some tests, leave many tests without a number, and change what some tests send or accept, often to apply technical bulletins published after 2.7. A result from dnp3c can therefore differ from what those editions would give. Support for 3.1 rev 1 alongside 2.7 is planned.
 
@@ -57,6 +57,7 @@ The library jar, `io.stepfunc:dnp3c`, is published to Maven Central. See [Automa
 - **Report by exception** isn't verified: where a procedure requires a device whose class 0 response spans several link frames to also report by exception, the log notes it but the tool doesn't check it.
 - **8.11.2.5.8** covers a device that holds unsolicited responses until it has a minimum number of events, not one that holds them for a time.
 - **8.11.2.1 step 24:** the procedure expects a READ to be answered while the device's startup unsolicited response is still unconfirmed, while IEEE 1815's outstation state table would let the device defer it. The tool follows the procedure.
+- **8.6.4:** 2.7's description of the desired behavior still has a binary output in local mode set LOCAL_FORCED. TB2017-001 replaced the tests, which the tool runs, but not that description: in local mode an output clears ONLINE and keeps its other flags.
 - **Packet capture** doesn't work on macOS.
 
 ## Building
