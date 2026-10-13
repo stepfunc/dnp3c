@@ -28,8 +28,7 @@ object InputEventProcedures {
 
   // a DUT without the input's events must answer a read for them with a Null Response
   abstract class NoEvents(input: InputType) extends InputEventProcedure(input) {
-    override def disabledBy(options: OptionSource): Option[OptionCondition] =
-      input.support.disabledUnlessWithoutEvents(options)
+    override protected def requirement: Requirement = input.support.withoutEvents
 
     override protected def steps(options: OptionSource): Iterable[LabeledStep] = List(
       1 --> send(Requests.readAllObjects(Sequence.one, input.anyVariation)),

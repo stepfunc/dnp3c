@@ -13,7 +13,7 @@ import io.stepfunc.dnp3c.conformance.api.options.{
   ChannelOptions, LinkOptions, OutstationOptions, TestOptions, UnsolicitedOptions
 }
 import io.stepfunc.dnp3c.conformance.application.report.ReportLogger
-import io.stepfunc.dnp3c.dnp3.{ DefaultTestDriver, IntegrationPlugin, ProcedureReporter, TestDriver }
+import io.stepfunc.dnp3c.dnp3.{ DefaultTestDriver, IntegrationPlugin, Policies, ProcedureReporter, TestDriver }
 import io.stepfunc.dnp3c.protocol.logging.Logger
 import io.stepfunc.dnp3c.protocol.parsing.UInt16LE
 
@@ -26,7 +26,7 @@ import io.stepfunc.dnp3c.dnp3.DeferredCheck
  */
 private[application] trait ProcedureEnvironment {
   def openCapture(options: OptionSource, path: Path): Option[Closeable]
-  def openDriver(reporter: ProcedureReporter, options: OptionSource): TestDriver
+  def openDriver(reporter: ProcedureReporter, options: OptionSource, policies: Policies): TestDriver
 }
 
 private[application] object ProcedureEnvironment {
@@ -38,7 +38,7 @@ private[application] object ProcedureEnvironment {
       channel.captureNIC.map(nic => PacketCapture.create(nic, channel.port).open(path.toString))
     }
 
-    def openDriver(reporter: ProcedureReporter, options: OptionSource): TestDriver =
+    def openDriver(reporter: ProcedureReporter, options: OptionSource, policies: Policies): TestDriver =
       new DefaultTestDriver(
         reporter,
         ChannelOptions(options).factory(),
@@ -46,7 +46,8 @@ private[application] object ProcedureEnvironment {
         UInt16LE(options.get(LinkOptions.destination)),
         options.get(LinkOptions.timeout),
         options.get(OutstationOptions.responseTimeout),
-        options.get(UnsolicitedOptions.unsolicitedConfirmTimeoutMs)
+        options.get(UnsolicitedOptions.unsolicitedConfirmTimeoutMs),
+        policies = policies
       )
   }
 }
@@ -72,8 +73,8 @@ object TestRunner {
       integrationPlugin: IntegrationPlugin,
       environment: ProcedureEnvironment): RunSummary = {
 
-    // the configuration must give a subset level this revision tests, before anything runs
-    val level = revision.subsetLevel(options)
+    // the configuration must be one the revision can test, before anything runs
+    val level = revision.validate(options)
 
     // the sections and procedures in the order they run: a section's subsections, then its procedures
     def walk(e: TestElement): List[TestElement] = e match {
@@ -128,8 +129,7 @@ object TestRunner {
           s"not applicable: it applies to subset level(s) ${levels.toList.sorted.mkString(", ")}, and the device is " +
             s"configured for level $level")
       else
-        procedure.disabledBy(options).map(c =>
-          s"disabled because ${c.option.id} != ${c.requiredValue}: ${c.option.description}")
+        procedure.disabledBy(options).map(unmet => s"disabled because ${unmet.message}")
     }
 
   private def runProcedure(
@@ -178,7 +178,8 @@ object TestRunner {
         reporter = Some(testReporter)
         testReporter.info("Running procedure: " + procedure.id)
 
-        val driver = environment.openDriver(testReporter, options)
+        // the revision's rules for the messages the procedure receives
+        val driver = environment.openDriver(testReporter, options, new Policies(revision.policies))
         cleanup ::= (() => driver.close())
 
         integrationPlugin.startProcedure(testReporter.pluginReporter())
@@ -279,9 +280,9 @@ object TestRunner {
       }
 
       config.disabledBy match {
-        case Some(condition) =>
+        case Some(unmet) =>
           driver.reporter.info("Skipped procedure: " + procedure.id)
-          ProcedureOutcome.Skipped(s"disabled because ${condition.option.id} != ${condition.requiredValue}")
+          ProcedureOutcome.Skipped(s"disabled because ${unmet.message}")
         case None =>
           driver.reporter.info("Passed procedure: " + procedure.id)
           ProcedureOutcome.Passed

@@ -125,7 +125,8 @@ object Main {
           return -1
       }
 
-    // and the subset level the device is configured for, which the revision must test
+    // and a subset level the revision tests; a run checks the rest of the configuration too, before it starts, while
+    // the commands that only describe or report show what's wrong with it instead
     val level =
       try revision.subsetLevel(options)
       catch {
@@ -266,12 +267,21 @@ object Main {
       Colors.text.printLine(s"    Not applicable at subset level $level")
     }
 
-    val pairs: Iterable[(TestProcedure, BooleanOption)] =
-      revision.flatMapProcedures(p => p.disabledBy(options).map(x => (p, x.option)))
+    // a mandatory procedure isn't optional: a run refuses this configuration
+    val mandatory = revision.unmetMandatory(options, level).map(_._1.id).toSet
+    revision.unmetMandatory(options, level).foreach { (p, unmet) =>
+      Colors.error.printLine("Procedure: " + p.id)
+      Colors.error.printLine(
+        s"    Mandatory at subset level $level, so a run refuses this configuration: it needs ${unmet.requirement.describe}")
+    }
 
-    pairs.foreach { pair =>
-      Colors.text.printLine("Procedure: " + pair._1.id)
-      Colors.text.printLine("    Option: " + pair._2.id + " == " + options.get(pair._2))
+    val disabled: Iterable[(TestProcedure, Unmet)] =
+      revision.flatMapProcedures(p =>
+        Option.unless(mandatory(p.id))(p).flatMap(p => p.disabledBy(options).map(u => (p, u))))
+
+    disabled.foreach { (p, unmet) =>
+      Colors.text.printLine("Procedure: " + p.id)
+      unmet.values.foreach((option, value) => Colors.text.printLine("    Option: " + option.id + " == " + value))
     }
   }
 

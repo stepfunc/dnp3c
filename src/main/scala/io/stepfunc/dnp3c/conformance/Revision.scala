@@ -11,9 +11,11 @@ import io.stepfunc.dnp3c.conformance.api.{
   OptionSource,
   TestElement,
   TestProcedure,
-  TestSection
+  TestSection,
+  Unmet
 }
 import io.stepfunc.dnp3c.conformance.api.options.{ OutstationOptions, TestOptions }
+import io.stepfunc.dnp3c.dnp3.MessagePolicy
 
 /**
  * A revision of the DNP3 IED Certification Procedure: its tree of sections and procedures, with the numbers and titles
@@ -24,13 +26,15 @@ import io.stepfunc.dnp3c.conformance.api.options.{ OutstationOptions, TestOption
  * @param title the document's title
  * @param date its publication date, as yyyy-mm-dd
  * @param subsetLevels the DNP3 subset levels it tests, and that its elements apply to unless they say otherwise
+ * @param policies rules every message a procedure receives must follow, unless a step exempts one
  */
 final class Revision private[conformance] (
     val id: String,
     val title: String,
     val date: String,
     val subsetLevels: List[Int],
-    val sections: List[TestSection]) {
+    val sections: List[TestSection],
+    val policies: List[MessagePolicy] = Nil) {
 
   /** every procedure, for running or describing everything with "all" */
   val all: TestSection = new TestSection {
@@ -72,6 +76,35 @@ final class Revision private[conformance] (
       case Some(level) => level
     }
   }
+
+  /**
+   * Check that the configuration is one this revision can test: it gives a subset level the revision tests, and the
+   * device meets the requirement of every procedure that's mandatory at that level.
+   *
+   * @return the subset level
+   * @throws ConfigurationException listing every problem
+   */
+  def validate(options: OptionSource): Int = {
+    val level = subsetLevel(options)
+    val problems = unmetMandatory(options, level).map { (p, unmet) =>
+      // the options involved, with what the configuration gives them; a requirement may involve none
+      val values = unmet.values.map((o, v) => s"${o.id} == $v").mkString(", ")
+      ConfigProblem(
+        unmet.values.headOption.fold(p.id)(_._1.id),
+        values,
+        s"${p.id} is mandatory at subset level $level, so the device must meet: ${unmet.requirement.describe}"
+      )
+    }
+    if (problems.nonEmpty) throw new ConfigurationException("configuration", problems)
+    level
+  }
+
+  /** the procedures mandatory at the level whose requirement the configuration doesn't meet, and why */
+  def unmetMandatory(options: OptionSource, level: Int): List[(TestProcedure, Unmet)] =
+    flatMapProcedures { p =>
+      if (!p.mandatoryAt.contains(level) || !levelsOf(p).contains(level)) None
+      else p.disabledBy(options).map(p -> _)
+    }.toList
 
   private def levelList: String =
     subsetLevels.map(l => s"level $l").mkString(", ")

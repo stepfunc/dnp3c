@@ -12,8 +12,7 @@ import io.stepfunc.dnp3c.dnp3.app.objects.Group22Var0
 
 object Procedure81721 extends ProcedureDefinition {
 
-  override def disabledBy(options: OptionSource): Option[OptionCondition] =
-    Inputs.counter.disabledUnlessWithoutEvents(options)
+  override protected def requirement: Requirement = Inputs.counter.withoutEvents
 
   override protected def steps(options: OptionSource): Iterable[LabeledStep] = {
     List(

@@ -41,8 +41,9 @@ final class Harness(options: Options, plugin: IntegrationPlugin, revision: Revis
    *
    * @param id a procedure or section of the revision, e.g. "8.6.5.4" or "8.6", or "all"
    * @throws IllegalArgumentException if the revision has no procedure or section with the id, before anything runs
-   * @throws api.ConfigurationException if the configuration has no subset level, or one the revision doesn't test,
-   *                                    before anything runs
+   * @throws api.ConfigurationException if the configuration has no subset level, or one the revision doesn't test, or
+   *                                    the device lacks what a procedure mandatory at that level needs, before
+   *                                    anything runs
    * @throws HarnessExecutionException if the harness or the plugin fails around a procedure, e.g. when
    *                                   `startProcedure` throws or the capture can't be opened; it holds the
    *                                   results so far. An interruption propagates as it is.

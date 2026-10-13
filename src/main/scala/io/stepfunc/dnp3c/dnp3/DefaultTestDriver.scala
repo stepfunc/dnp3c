@@ -21,7 +21,8 @@ class DefaultTestDriver(
     defaultLinkTimeoutMs: Int,
     appTimeoutMs: Int,
     unsolTimeoutMs: Int,
-    val clock: Clock = Clock.system) extends TestDriver {
+    val clock: Clock = Clock.system,
+    override val policies: Policies = Policies.none) extends TestDriver {
 
   private case class Connection(
       channel: ReadableWritableChannel,
@@ -98,6 +99,7 @@ class DefaultTestDriver(
     val timeout = timeoutMs.getOrElse((if (unsolicited.value) unsolTimeoutMs else appTimeoutMs) + readToleranceMs)
     val message = c.messageReader.read(timeout, validator, linkOverride).map(Message.parse)
     message.foreach(reporter.receive)
+    message.foreach(policies.check)
     message
   }
 
