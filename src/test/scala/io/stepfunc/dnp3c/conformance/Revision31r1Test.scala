@@ -23,11 +23,12 @@ class Revision31r1Test extends AnyFunSuite with Matchers {
       revision.subsetLevel(Options.from(Map(OutstationOptions.subsetLevel.id -> level.toString))) should equal(level)
   }
 
-  test("the tests it implements so far are 2.7's, or 2.7's with 3.1r1's step numbers") {
+  test("the tests it implements so far are 2.7's, or 2.7's with 3.1r1's step numbers or rules") {
     val twoSeven = procedures(Revisions.v2_7).map(_.definition).toSet
     val implemented = procedures(revision).filterNot(_.incomplete)
     implemented should not be empty
-    implemented.filterNot(p => twoSeven.contains(p.definition)).map(_.id) should equal(List("8.6.4-1", "8.6.4-2"))
+    implemented.filterNot(p => twoSeven.contains(p.definition)).map(_.id).sorted should equal(
+      List("8.1.2", "8.3.2", "8.6.4-1", "8.6.4-2"))
   }
 
   test("8.6.4 runs TB2017-001's tests with 3.1r1's step numbers") {

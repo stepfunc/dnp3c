@@ -86,7 +86,7 @@ object Tree {
     ),
     section("8", "Application Layer")(
       section("8.1", "Binary Output Status")(
-        notYet("8.1.2", "Test Procedure")
+        test("8.1.2", "Test Procedure", Definitions.binaryOutputStatus)
       ),
       section("8.2", "Binary Outputs")(
         section("8.2.1", "Select Before Operate")(
@@ -149,7 +149,7 @@ object Tree {
         )
       ),
       section("8.3", "Analog Output Status")(
-        notYet("8.3.2", "Test Procedure")
+        test("8.3.2", "Test Procedure", Definitions.analogOutputStatus)
       ),
       section("8.4", "Analog Outputs")(
         section("8.4.1", "Select Before Operate")(

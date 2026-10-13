@@ -43,6 +43,17 @@ object Validations {
   // Null Response: no objects and no error IIN bits (IIN2-0, IIN2-1, IIN2-2)
   def isNull: MessageValidation = isEmpty && without(IIN.errors)
 
+  // the error bits other than those allowed
+  private def errorsExcept(allowed: IIN): IIN =
+    IIN((IIN.errors.lsb & ~allowed.lsb).toByte, (IIN.errors.msb & ~allowed.msb).toByte)
+
+  // 3.1r1's Null Error Response: no objects, and at least one of the error bits allowed, but no other error bit
+  def isNullErrorResponse(allowed: IIN): MessageValidation =
+    isEmpty && containingAnyOf(allowed) && without(errorsExcept(allowed))
+
+  // a Null Response, or 3.1r1's Null Error Response: no objects, and no error bit but those allowed
+  def isNullOrNullErrorResponse(allowed: IIN): MessageValidation = isEmpty && without(errorsExcept(allowed))
+
   // Null Response, or an Error Response whose error bits are all in `allowed` (an Error Response may contain data)
   def isNullOrErrorResponse(allowed: IIN): MessageValidation = new MessageValidation {
     override def description: List[Comment] =
