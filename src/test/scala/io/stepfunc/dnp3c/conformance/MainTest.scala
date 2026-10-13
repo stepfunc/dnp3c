@@ -20,8 +20,11 @@ class MainTest extends AnyFunSuite with Matchers {
       describe: Option[String],
       writeConfigFile: Option[File],
       config: Option[File],
-      report: Boolean = false) =
+      report: Boolean = false,
+      revision: Option[String] = Some("2.7")) =
     Console.Configuration(
+      revision = revision,
+      listRevisions = false,
       run = None,
       help = false,
       describe = describe,
@@ -30,7 +33,8 @@ class MainTest extends AnyFunSuite with Matchers {
       options = false,
       adapters = false,
       writeConfigFile = writeConfigFile,
-      config = config)
+      config = config
+    )
 
   private def describe(id: String): Int = {
     val config = Files.createTempFile("dnp3c", ".properties").toFile
@@ -44,6 +48,25 @@ class MainTest extends AnyFunSuite with Matchers {
 
   test("an unknown id is an error, not an exception") {
     describe("9.9") should not equal 0
+  }
+
+  test("a command that uses procedures needs a known revision") {
+    val config = Files.createTempFile("dnp3c", ".properties").toFile
+    try {
+      Main.execute(command(Some("8.1.2"), None, Some(config), revision = None), new DefaultIntegrationPlugin()) should
+        not equal 0
+      Main.execute(
+        command(Some("8.1.2"), None, Some(config), revision = Some("9.9")),
+        new DefaultIntegrationPlugin()) should
+        not equal 0
+    } finally config.delete()
+  }
+
+  test("lists the revisions, and a revision's sections, without a configuration file") {
+    Main.execute(Array("-revs"), new DefaultIntegrationPlugin()) should equal(0)
+    Main.execute(Array("-help"), new DefaultIntegrationPlugin()) should equal(0)
+    Main.execute(Array("-rev", "2.7", "-help"), new DefaultIntegrationPlugin()) should equal(0)
+    Main.execute(Array("-rev", "9.9", "-help"), new DefaultIntegrationPlugin()) should not equal 0
   }
 
   test("a procedure whose options don't configure it is an error, not an exception") {

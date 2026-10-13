@@ -41,14 +41,24 @@ dnp3c checks the whole file before doing anything else, and lists every option i
 
 `dnp3c -options` prints every option and its default without writing a file.
 
-## See what will run
+## Choose the revision
 
-The procedures are organized in sections: 6 (link layer), 7 (transport layer) and 8 (application layer), each with subsections. `dnp3c -help` lists the top-level sections.
+dnp3c can hold more than one revision of the certification procedure, and every command that uses procedures needs the one to use, given with `-rev`. Revisions number their procedures differently, so `-rev` decides what an id like 8.6.5.4 means. `dnp3c -revs` lists the revisions:
 
 ```
-dnp3c -config device.ini -describe 8.6       # the procedures in a section
-dnp3c -config device.ini -describe 8.6.5.4   # the steps of one procedure
-dnp3c -config device.ini -disabled           # optional procedures your configuration turns off
+dnp3c -revs
+```
+
+Today there's one, `2.7`: the DNP3 IED Certification Procedure, Subset Level 2, version 2.7.
+
+## See what will run
+
+The procedures are organized in sections: 6 (link layer), 7 (transport layer) and 8 (application layer), each with subsections. `dnp3c -rev 2.7 -help` lists the top-level sections.
+
+```
+dnp3c -rev 2.7 -config device.ini -describe 8.6       # the procedures in a section
+dnp3c -rev 2.7 -config device.ini -describe 8.6.5.4   # the steps of one procedure
+dnp3c -rev 2.7 -config device.ini -disabled           # optional procedures your configuration turns off
 ```
 
 Procedures for features the DUT doesn't support are optional. If a `supports.*` option turns one off, it's recorded as skipped instead of run.
@@ -58,9 +68,9 @@ Procedures for features the DUT doesn't support are optional. If a `supports.*` 
 `-run` takes the id of any procedure or section, or `all`:
 
 ```
-dnp3c -config device.ini -run 8.6.5.4   # one procedure
-dnp3c -config device.ini -run 8.6       # a section
-dnp3c -config device.ini -run all       # everything
+dnp3c -rev 2.7 -config device.ini -run 8.6.5.4   # one procedure
+dnp3c -rev 2.7 -config device.ini -run 8.6       # a section
+dnp3c -rev 2.7 -config device.ini -run all       # everything
 ```
 
 When a step needs you, dnp3c prints what to do:
@@ -76,19 +86,22 @@ A run stops at the first procedure that fails, and the procedures after it don't
 
 ## Results
 
-Each procedure writes to its own folder in the output directory:
+Each revision has its own folder in the output directory, and each procedure its own folder in that:
 
 ```
 results/
-  report.html          the report, linking to each procedure's log and capture
-  report.css
-  8.6.5.4/
-    log.html           every step, frame and check, with the outcome
-    results.properties the result: pass, fail or skip
-    dump.pcap          the packet capture, if capture is on
+  2.7/
+    report.html          the report, linking to each procedure's log and capture
+    report.css
+    8.6.5.4/
+      log.html           every step, frame and check, with the outcome
+      results.properties the result (pass, fail or skip), the revision, and why it failed or was skipped
+      dump.pcap          the packet capture, if capture is on
 ```
 
-The report is rebuilt after every run, including runs that fail. It shows every procedure: the ones you've run with their result, and the rest as not run. To rebuild it without running anything, use `dnp3c -config device.ini -report`.
+The report is rebuilt after every run, including runs that fail. It names the revision, and shows every procedure: the ones you've run with their result (and, for one that was skipped, why), and the rest as not run. To rebuild it without running anything, use `dnp3c -rev 2.7 -config device.ini -report`.
+
+The report counts only results saved under its revision. It lists anything else it finds at the top and leaves it out: a result saved under another revision, a procedure whose last run didn't finish (it has a log but no result), or procedure folders straight in the output directory from dnp3c 0.1.0, which didn't keep results by revision.
 
 ## Working incrementally
 
@@ -115,10 +128,10 @@ Set `tcp.capture.adapter` to the address of the adapter that reaches the DUT, ex
 
 ## Commands
 
-`dnp3c -help` lists the commands and the test sections:
+`dnp3c -rev 2.7 -help` lists the commands and the revision's test sections:
 
 ```
-$ dnp3c -help
+$ dnp3c -rev 2.7 -help
        __           _____
   ____/ /___  ____ |__  /_____
  / __  / __ \/ __ \ /_ </ ___/
@@ -132,7 +145,8 @@ Copyright Step Function I/O LLC
 https://stepfunc.io
 
  usage:  dnp3c [-adapters] [-config <arg>] [-describe <arg>] [-disabled]
-    [-help] [-options] [-report] [-run <arg>] [-write <arg>]
+    [-help] [-options] [-report] [-rev <arg>] [-revs] [-run <arg>] [-write
+    <arg>]
 
      Options                              Description
  -adapters           List all of the available network adapters and their
@@ -145,11 +159,14 @@ https://stepfunc.io
  -help               Print this help information
  -options            List all of the available configuration file options
  -report             Generate an HTML report containing all the results
+ -rev <arg>          The revision of the test procedures to use, e.g. 2.7
+                      (see -revs)
+ -revs               List the revisions of the test procedures
  -run <arg>          Run the specified test section/procedure
  -write <arg>        Write a default configuration file to the specified
                       path
 
-sections:
+sections of revision 2.7:
 
 6                             Link Layer
 7                             Transport Layer

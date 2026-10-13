@@ -34,7 +34,7 @@ object Main {
         case ex: ParseException =>
           Colors.error.printLine(ErrorText.of(ex))
           Colors.text.printLine("")
-          printHelp(Sections.list, 0)
+          printHelp(None)
           return -1
       }
     execute(config, integrationPlugin)
@@ -45,7 +45,21 @@ object Main {
     // the commands that don't need a configuration file
 
     if (config.help) {
-      printHelp(Sections.list, 0)
+      config.revision match {
+        case None => printHelp(None)
+        case Some(id) =>
+          Revisions.find(id) match {
+            case Some(revision) => printHelp(Some(revision))
+            case None =>
+              Colors.error.printLine(unknownRevision(id))
+              return -1
+          }
+      }
+      return 0
+    }
+
+    if (config.listRevisions) {
+      printRevisions()
       return 0
     }
 
@@ -80,8 +94,23 @@ object Main {
     if (!config.listDisabled && config.describe.isEmpty && !config.report && config.run.isEmpty) {
       Colors.text.printLine("You must specify a command")
       Colors.text.printLine("")
-      printHelp(Sections.list, 0)
+      printHelp(None)
       return -2
+    }
+
+    // every command from here on uses a revision's procedures
+    val revision: Revision = config.revision match {
+      case None =>
+        Colors.error.printLine(
+          s"Choose the revision of the test procedures with -rev, e.g. -rev ${Revisions.list.last.id} (see -revs)")
+        return -1
+      case Some(id) =>
+        Revisions.find(id) match {
+          case Some(r) => r
+          case None =>
+            Colors.error.printLine(unknownRevision(id))
+            return -1
+        }
     }
 
     val options: Options =
@@ -97,13 +126,13 @@ object Main {
       }
 
     if (config.listDisabled) {
-      listDisabled(options)
+      listDisabled(options, revision)
       return 0
     }
 
     config.describe match {
       case Some(id) =>
-        Sections.map.get(id) match {
+        revision.elements.get(id) match {
           case Some(section: TestSection) => print(section, Int.MaxValue, 0)
           case Some(procedure: TestProcedure) =>
             // building the steps checks the options the procedure uses, e.g. 8.23's device attributes
@@ -114,7 +143,7 @@ object Main {
                 return -1
             }
           case None =>
-            Colors.error.printLine("Unknown id: " + id)
+            Colors.error.printLine(s"Unknown id in revision ${revision.id}: $id")
             return -1
         }
         return 0
@@ -122,17 +151,17 @@ object Main {
     }
 
     if (config.report) {
-      return if (writeReport(Harness.writeReport(options))) 0 else -1
+      return if (writeReport(Harness.writeReport(options, revision))) 0 else -1
     }
 
     config.run match {
       case Some(id) =>
-        if (!Sections.map.contains(id)) {
-          Colors.error.printLine("Unknown id: " + id)
+        if (!revision.elements.contains(id)) {
+          Colors.error.printLine(s"Unknown id in revision ${revision.id}: $id")
           return -1
         }
 
-        val harness = new Harness(options, integrationPlugin)
+        val harness = new Harness(options, integrationPlugin, revision)
 
         var ran = false
         var reported = false
@@ -185,21 +214,41 @@ object Main {
       Options.load(file.toPath)
   }
 
-  def printHelp(elements: List[TestElement], depth: Int): Unit = {
+  // with a revision, its top-level sections; without one, how to find them
+  def printHelp(revision: Option[Revision]): Unit = {
     Console.printHelp()
     Colors.text.printLine("")
-    Colors.text.printLine("sections: ")
-    Colors.text.printLine("")
-    elements.foreach(p => print(p, depth, 0))
+    revision match {
+      case Some(r) =>
+        Colors.text.printLine(s"sections of revision ${r.id}: ")
+        Colors.text.printLine("")
+        r.sections.foreach(p => print(p, 0, 0))
+      case None =>
+        Colors.text.printLine(
+          "-revs lists the revisions of the test procedures; -rev <id> -help lists a revision's sections")
+    }
     Colors.text.printLine("")
   }
 
-  def listDisabled(options: OptionSource): Unit = {
+  def printRevisions(): Unit = {
+    Colors.text.printLine("revisions: ")
+    Colors.text.printLine("")
+    Revisions.list.foreach { r =>
+      val levels = r.subsetLevels.mkString(", ")
+      Colors.text.printLine(s"${r.id.padTo(10, ' ')}${r.date}  ${r.title} (subset levels: $levels)")
+    }
+    Colors.text.printLine("")
+  }
+
+  private def unknownRevision(id: String): String =
+    s"Unknown revision: $id. The revisions are: ${Revisions.list.map(_.id).mkString(", ")}"
+
+  def listDisabled(options: OptionSource, revision: Revision): Unit = {
     Colors.text.printLine("Listing optional test procedures disabled by configuration: ")
     Colors.text.printLine("")
 
     val pairs: Iterable[(TestProcedure, BooleanOption)] =
-      Sections.flatMapProcedures(p => p.disabledBy(options).map(x => (p, x.option)))
+      revision.flatMapProcedures(p => p.disabledBy(options).map(x => (p, x.option)))
 
     pairs.foreach { pair =>
       Colors.text.printLine("Procedure: " + pair._1.id)

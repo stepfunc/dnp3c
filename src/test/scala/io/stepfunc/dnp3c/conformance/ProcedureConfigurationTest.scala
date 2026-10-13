@@ -14,7 +14,7 @@ import org.scalatest.funsuite.AnyFunSuite
 @RunWith(classOf[JUnitRunner])
 class ProcedureConfigurationTest extends AnyFunSuite with Matchers {
 
-  private val procedures = Sections.flatMapProcedures(p => Some(p)).toList
+  private val procedures = Revisions.v2_7.flatMapProcedures(p => Some(p)).toList
   private val (incomplete, implemented) = procedures.partition(_.incomplete)
 
   // the Device Profile values that have no default
@@ -75,6 +75,6 @@ class ProcedureConfigurationTest extends AnyFunSuite with Matchers {
       child.id should startWith(parent.id + ".")
       check(child)
     }
-    Sections.list.foreach(check)
+    Revisions.v2_7.sections.foreach(check)
   }
 }

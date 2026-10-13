@@ -4,8 +4,9 @@
 package io.stepfunc.dnp3c.conformance.application
 
 import java.io.Closeable
-import java.nio.file.{ Files, Path, Paths }
+import java.nio.file.{ Files, Path }
 
+import io.stepfunc.dnp3c.conformance.Revision
 import io.stepfunc.dnp3c.conformance.application.pcap.PacketCapture
 import io.stepfunc.dnp3c.conformance.api._
 import io.stepfunc.dnp3c.conformance.api.options.{
@@ -58,12 +59,14 @@ object TestRunner {
    * @throws HarnessExecutionException if the harness or the plugin fails while running a procedure
    */
   private[conformance] def run(
+      revision: Revision,
       element: TestElement,
       options: OptionSource,
       integrationPlugin: IntegrationPlugin): RunSummary =
-    run(element, options, integrationPlugin, ProcedureEnvironment.default)
+    run(revision, element, options, integrationPlugin, ProcedureEnvironment.default)
 
   private[application] def run(
+      revision: Revision,
       element: TestElement,
       options: OptionSource,
       integrationPlugin: IntegrationPlugin,
@@ -91,7 +94,7 @@ object TestRunner {
         ConsoleLogger.info("Entering test section: " + s.id + " - " + s.description)
       case p: TestProcedure =>
         try {
-          results += ProcedureResult(p.id, runProcedure(p, options, integrationPlugin, environment))
+          results += ProcedureResult(p.id, runProcedure(revision, p, options, integrationPlugin, environment))
         } catch {
           case ex: ProcedureAborted => throw aborted(p, ex.outcome, ex.error)
           case NonFatal(ex) => throw aborted(p, None, ex)
@@ -105,12 +108,13 @@ object TestRunner {
   private class ProcedureAborted(val outcome: Option[ProcedureOutcome], val error: Throwable) extends Exception(error)
 
   private def runProcedure(
+      revision: Revision,
       procedure: TestProcedure,
       options: OptionSource,
       integrationPlugin: IntegrationPlugin,
       environment: ProcedureEnvironment): ProcedureOutcome = {
 
-    val path = Paths.get(options.get(TestOptions.outputDirectory), procedure.id)
+    val path = revision.resultsDirectory(options).resolve(procedure.id)
     val resultsFile = path.resolve("results.properties")
 
     // run once the procedure ends, however it ends, the last added first
@@ -127,7 +131,7 @@ object TestRunner {
 
         val htmlLogger = new ReportLogger(
           path.resolve("log.html").toFile,
-          s"${procedure.id} ${procedure.description}",
+          s"${procedure.id} ${procedure.description} (revision ${revision.id})",
           options.get(TestOptions.deviceUnderTest))
         cleanup ::= (() => htmlLogger.write())
 
@@ -161,7 +165,9 @@ object TestRunner {
 
     // the procedure, and everything around it, completed, so the outcome is known
     val result = outcome.get
-    try TestResult.write(TestResult.from(result), resultsFile)
+    try TestResult.write(
+        TestResult.Saved(TestResult.from(result), Some(revision.id), TestResult.reason(result)),
+        resultsFile)
     catch { case NonFatal(ex) => throw new ProcedureAborted(outcome, ex) }
     result
   }
