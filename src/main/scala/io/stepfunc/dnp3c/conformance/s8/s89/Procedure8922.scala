@@ -3,6 +3,7 @@
 
 package io.stepfunc.dnp3c.conformance.s8.s89
 
+import io.stepfunc.dnp3c.conformance.v31r1.Rules
 import io.stepfunc.dnp3c.conformance.api._
 import io.stepfunc.dnp3c.conformance.api.options.{ OutstationOptions, SupportOptions }
 import io.stepfunc.dnp3c.conformance.s8.helpers.GenericSteps._
@@ -57,7 +58,9 @@ object Procedure8922 extends ProcedureDefinition {
     )
 
     override def run(driver: TestDriver): List[DeferredCheck] = {
-      val second = readFragment(driver, Sequence.two)
+      // whether the last fragment asks for confirmation is up to the outstation here (IEEE 1815-2012 4.2.2.4.3), and
+      // 3.1r1's steps allow either, so its rule against unrequired confirmations doesn't apply to this read
+      val second = driver.policies.exempting(Set(Rules.confirmOnlyWhenRequired.id))(readFragment(driver, Sequence.two))
       if (second.ctrl.fir.value) throw new Exception("Expected FIR bit not set")
       val fragment = if (second.ctrl.fin.value) {
         driver.writeMessage(Requests.confirm(Sequence.two, Unsolicited.No))
