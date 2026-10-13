@@ -3,7 +3,8 @@
 
 package io.stepfunc.dnp3c.conformance
 
-import io.stepfunc.dnp3c.conformance.api.{ Options, TestProcedure }
+import io.stepfunc.dnp3c.conformance.Placements.id
+import io.stepfunc.dnp3c.conformance.api.{ Options, ProcedureDefinition }
 import io.stepfunc.dnp3c.conformance.api.options.ControlOptions
 import io.stepfunc.dnp3c.dnp3._
 import io.stepfunc.dnp3c.dnp3.app._
@@ -55,7 +56,7 @@ class FollowDocumentTest extends AnyFunSuite with Matchers {
 
   // runs every step, carrying on past failures, to see everything the procedure sends; a manual question gets no
   // answer (end of input), so it fails rather than waits
-  private def runEachStep(procedure: TestProcedure, settings: Map[String, String] = Map()): Dut = {
+  private def runEachStep(procedure: ProcedureDefinition, settings: Map[String, String] = Map()): Dut = {
     val dut = new Dut
     Console.withIn(new StringReader(""))(
       procedure.configure(Options.from(settings)).steps.foreach(s => Try(s.step.run(dut))))

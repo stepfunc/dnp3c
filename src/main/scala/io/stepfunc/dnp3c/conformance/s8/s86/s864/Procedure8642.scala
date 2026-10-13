@@ -4,18 +4,14 @@
 package io.stepfunc.dnp3c.conformance.s8.s86.s864
 
 import io.stepfunc.dnp3c.conformance.api.options.SupportOptions
-import io.stepfunc.dnp3c.conformance.api.{ LabeledStep, OptionSource, TestProcedure, _ }
+import io.stepfunc.dnp3c.conformance.api._
 import io.stepfunc.dnp3c.conformance.s8.helpers.GenericSteps._
 import io.stepfunc.dnp3c.conformance.s8.helpers.Validations._
 import io.stepfunc.dnp3c.dnp3.Requests
 import io.stepfunc.dnp3c.dnp3.app.objects.Group10Var0
 import io.stepfunc.dnp3c.dnp3.app.{ IIN, Sequence }
 
-object Procedure8642 extends TestProcedure {
-
-  override def id: String = "8.6.4.2"
-
-  override def description: String = "Test Procedure for Devices with Global Remote Supervisory Control"
+object Procedure8642 extends ProcedureDefinition {
 
   override protected def requiredOptions = List(SupportOptions.globalRemoteSupervisoryControl)
 

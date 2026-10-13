@@ -3,7 +3,8 @@
 
 package io.stepfunc.dnp3c.conformance.s8.helpers
 
-import io.stepfunc.dnp3c.conformance.api.{ Options, TestProcedure }
+import io.stepfunc.dnp3c.conformance.Placements.id
+import io.stepfunc.dnp3c.conformance.api.{ Options, ProcedureDefinition }
 import io.stepfunc.dnp3c.conformance.api.options.BinaryInputOptions
 import io.stepfunc.dnp3c.dnp3.link.FrameValidator
 import io.stepfunc.dnp3c.conformance.s8.s86.s866.Procedure86621
@@ -72,7 +73,10 @@ class EventFamiliesTest extends AnyFunSuite with Matchers {
     2 -> s"E2 81 00 08 $event",
     3 -> s"E3 81 00 00 $event")
 
-  private def run(procedure: TestProcedure, answers: Map[Int, String], settings: Map[String, String] = Map()): Dut = {
+  private def run(
+      procedure: ProcedureDefinition,
+      answers: Map[Int, String],
+      settings: Map[String, String] = Map()): Dut = {
     val dut = new Dut(answers)
     procedure.configure(Options.from(settings)).steps.foreach(_.step.run(dut))
     dut

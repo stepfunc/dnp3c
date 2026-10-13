@@ -79,8 +79,8 @@ object UnsolicitedResponseSteps {
     }
   }
 
-  // 8.11.2.2 to 8.11.2.4: unsolicited responses for one event class; a procedure object gives its id and description
-  abstract class UnsolicitedClass(data: EventClassData) extends TestProcedure {
+  // 8.11.2.2 to 8.11.2.4: unsolicited responses for one event class; a procedure object extends it, and its section gives it a number and title
+  abstract class UnsolicitedClass(data: EventClassData) extends ProcedureDefinition {
     override def requiredOptions: List[OptionCondition] = List(SupportOptions.unsolicitedResponse)
 
     override protected def steps(options: OptionSource): Iterable[LabeledStep] = classSteps(

@@ -12,9 +12,5 @@ import io.stepfunc.dnp3c.dnp3.app.objects.Group1Var0
 object Procedure81323
     extends ConfigurableInputProcedure("binary inputs", PluginSteps.uninstallBinaryInputs, Group1Var0, Sequence.one) {
 
-  override def id: String = "8.13.2.3"
-
-  override def description: String = "Device supports Binary Inputs, Configurable Device"
-
   override protected def requiredOptions: List[OptionCondition] = Inputs.binary.withDisabling
 }

@@ -10,11 +10,7 @@ import io.stepfunc.dnp3c.conformance.s8.helpers.GenericSteps._
 import io.stepfunc.dnp3c.dnp3.LinkOverride
 import io.stepfunc.dnp3c.dnp3.app.{ MutableSequence, Sequence }
 
-object Procedure612 extends TestProcedure {
-
-  override def id = "6.1.2"
-
-  override def description = "Test Procedure"
+object Procedure612 extends ProcedureDefinition {
 
   private def ackThenResponse(seq: Sequence): TestStep = {
     expectFrame(withControl(0x00.toByte)) + expectAtLeastOneResponse(seq)

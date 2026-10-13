@@ -12,11 +12,7 @@ import io.stepfunc.dnp3c.dnp3.app.objects.{ Group1Var0, Group1Var1, Group1Var2 }
 import io.stepfunc.dnp3c.dnp3.app.Sequence
 import io.stepfunc.dnp3c.dnp3._
 
-object Procedure81322 extends TestProcedure {
-
-  override def id: String = "8.13.2.2"
-
-  override def description: String = "Device has Binary Inputs"
+object Procedure81322 extends ProcedureDefinition {
 
   override def requiredOptions = List(Inputs.binary.points)
 

@@ -9,11 +9,7 @@ import io.stepfunc.dnp3c.conformance.api.options.{ BinaryInputOptions, EventBuff
 import io.stepfunc.dnp3c.conformance.s8.helpers.{ EventBufferSteps, EventClassData, Validations }
 import io.stepfunc.dnp3c.dnp3.app.objects.{ Group2Var1, Group2Var2, Group2Var3 }
 
-object Procedure86621 extends TestProcedure {
-
-  override def id: String = "8.6.6.2.1"
-
-  override def description: String = "Buffer Overflow, Binary Input Change Event Buffers"
+object Procedure86621 extends ProcedureDefinition {
 
   override protected def requiredOptions = Inputs.binary.withEvents
 

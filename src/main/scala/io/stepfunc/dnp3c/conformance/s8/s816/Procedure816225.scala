@@ -7,11 +7,7 @@ import io.stepfunc.dnp3c.conformance.api._
 import io.stepfunc.dnp3c.conformance.api.options.SupportOptions._
 import io.stepfunc.dnp3c.conformance.s8.helpers.FrozenCounterSteps
 
-object Procedure816225 extends TestProcedure {
-
-  override def id: String = "8.16.2.2.5"
-
-  override def description: String = "Binary Counter, Freeze And Clear, No Acknowledge"
+object Procedure816225 extends ProcedureDefinition {
 
   override def requiredOptions: List[OptionCondition] = List(Inputs.frozenCounter.points)
 

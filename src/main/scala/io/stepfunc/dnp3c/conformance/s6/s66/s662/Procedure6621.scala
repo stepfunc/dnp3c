@@ -13,10 +13,7 @@ import io.stepfunc.dnp3c.dnp3.{ Comment, Requests, TestDriver }
 import io.stepfunc.dnp3c.protocol.Hex
 import io.stepfunc.dnp3c.dnp3.DeferredCheck
 
-object Procedure6621 extends TestProcedure {
-
-  override def id: String = "6.6.2.1"
-  override def description: String = "Invalid Start Octets"
+object Procedure6621 extends ProcedureDefinition {
 
   def readClass0CustomStartOctets(first: Byte, second: Byte): TestStep = new TestStep {
 

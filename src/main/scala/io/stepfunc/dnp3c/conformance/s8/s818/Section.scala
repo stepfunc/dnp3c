@@ -15,8 +15,9 @@ object Section extends TestSection {
     section(
       "8.18.2",
       "Test Procedure",
-      Procedure81821,
-      Procedure81822)
+      TestProcedure("8.18.2.1", "Device does not have Analog Inputs", Procedure81821),
+      TestProcedure("8.18.2.2", "Device has Analog Inputs", Procedure81822)
+    )
   )
 
 }

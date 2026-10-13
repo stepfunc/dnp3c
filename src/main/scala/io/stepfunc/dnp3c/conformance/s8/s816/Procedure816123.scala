@@ -12,9 +12,5 @@ import io.stepfunc.dnp3c.dnp3.app.objects.Group20Var0
 object Procedure816123
     extends ConfigurableInputProcedure("counters", PluginSteps.uninstallCounterInputs, Group20Var0, Sequence.one) {
 
-  override def id: String = "8.16.1.2.3"
-
-  override def description: String = "Device supports Binary Counters, Configurable Device"
-
   override protected def requiredOptions: List[OptionCondition] = Inputs.counter.withDisabling
 }

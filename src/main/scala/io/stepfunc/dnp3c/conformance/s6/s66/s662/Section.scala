@@ -16,11 +16,12 @@ object Section extends TestSection {
   override def id = "6.6.2"
   override def description = "Primary Frames"
   override def procedures: List[TestProcedure] = List(
-    Procedure6621,
-    Procedure6622,
-    Procedure6623,
-    Procedure6624,
-    Procedure6625)
+    TestProcedure("6.6.2.1", "Invalid Start Octets", Procedure6621),
+    TestProcedure("6.6.2.2", "Invalid Primary Function Code", Procedure6622),
+    TestProcedure("6.6.2.3", "Invalid Destination Address", Procedure6623),
+    TestProcedure("6.6.2.4", "Invalid CRC", Procedure6624),
+    TestProcedure("6.6.2.5", "Invalid FCV", Procedure6625)
+  )
 
   // "Wait several seconds" before verifying that the DUT did not respond
   val severalSecondsMs = 3000

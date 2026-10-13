@@ -3,7 +3,8 @@
 
 package io.stepfunc.dnp3c.conformance.s8.helpers
 
-import io.stepfunc.dnp3c.conformance.api.{ Options, TestProcedure }
+import io.stepfunc.dnp3c.conformance.Placements.id
+import io.stepfunc.dnp3c.conformance.api.{ Options, ProcedureDefinition }
 import io.stepfunc.dnp3c.conformance.api.options.ClassOptions
 import io.stepfunc.dnp3c.conformance.s8.s85.{ s852, s853, s854 }
 import io.stepfunc.dnp3c.dnp3._
@@ -20,7 +21,11 @@ import scala.collection.mutable
 @RunWith(classOf[JUnitRunner])
 class ClassEventProceduresTest extends AnyFunSuite with Matchers {
 
-  private case class Family(support: String, variation: Variation, allQualifier: TestProcedure, count: TestProcedure)
+  private case class Family(
+      support: String,
+      variation: Variation,
+      allQualifier: ProcedureDefinition,
+      count: ProcedureDefinition)
 
   private val families = List(
     Family(ClassOptions.supportClass1.id, Group60Var2, s852.Procedure85221, s852.Procedure85222),
@@ -28,7 +33,7 @@ class ClassEventProceduresTest extends AnyFunSuite with Matchers {
     Family(ClassOptions.supportClass3.id, Group60Var4, s854.Procedure85421, s854.Procedure85422)
   )
 
-  private def runs(procedure: TestProcedure, settings: (String, String)*): Boolean =
+  private def runs(procedure: ProcedureDefinition, settings: (String, String)*): Boolean =
     procedure.disabledBy(Options.from(settings.toMap)).isEmpty
 
   test("each class's procedures need only that class, except 0x06, which runs without it") {

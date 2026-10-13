@@ -15,8 +15,8 @@ object Section extends TestSection {
     section(
       "8.21.2",
       "Test Procedure",
-      Procedure82121,
-      Procedure82122
+      TestProcedure("8.21.2.1", "Device has Double-bit Inputs", Procedure82121),
+      TestProcedure("8.21.2.2", "Device supports Double-bit Inputs, Configurable Device", Procedure82122)
     )
   )
 

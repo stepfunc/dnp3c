@@ -14,11 +14,7 @@ import io.stepfunc.dnp3c.dnp3.{ Comment, LinkOverride, TestDriver }
 import io.stepfunc.dnp3c.protocol.parsing.UInt8
 import io.stepfunc.dnp3c.dnp3.DeferredCheck
 
-object Procedure6633 extends TestProcedure {
-
-  override def id: String = "6.6.3.3"
-
-  override def description: String = "Invalid Destination Address"
+object Procedure6633 extends ProcedureDefinition {
 
   override protected def requiredOptions = List(SupportOptions.dataLinkConfirmRequests, SupportOptions.dataLinkRetries)
 

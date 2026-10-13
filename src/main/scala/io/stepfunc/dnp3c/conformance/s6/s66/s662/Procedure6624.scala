@@ -13,11 +13,7 @@ import io.stepfunc.dnp3c.dnp3.{ Requests, TestDriver }
 import io.stepfunc.dnp3c.protocol.parsing.convert
 import io.stepfunc.dnp3c.dnp3.DeferredCheck
 
-object Procedure6624 extends TestProcedure {
-
-  def id = "6.6.2.4"
-
-  def description = "Invalid CRC"
+object Procedure6624 extends ProcedureDefinition {
 
   private def sendClass0InvalidHeaderCRC(offset: Short) = new TestStep {
 

@@ -3,7 +3,8 @@
 
 package io.stepfunc.dnp3c.conformance.s8.helpers
 
-import io.stepfunc.dnp3c.conformance.api.{ Options, TestProcedure }
+import io.stepfunc.dnp3c.conformance.Placements.id
+import io.stepfunc.dnp3c.conformance.api.{ Options, ProcedureDefinition }
 import io.stepfunc.dnp3c.conformance.api.options.{ ClassOptions, SupportOptions }
 import io.stepfunc.dnp3c.conformance.s8.s83.Procedure832
 import io.stepfunc.dnp3c.conformance.s8.s85.s852.Procedure85224
@@ -55,7 +56,7 @@ class ConfirmAndCapabilityTest extends AnyFunSuite with Matchers {
   private def bySequence(answers: Map[Int, String])(request: Message): Option[Message] =
     answers.get(request.ctrl.seq.value.toInt).map(a => Message.parse(Hex.from(a)))
 
-  private def run(procedure: TestProcedure, dut: Dut, settings: Map[String, String] = Map()): Unit =
+  private def run(procedure: ProcedureDefinition, dut: Dut, settings: Map[String, String] = Map()): Unit =
     procedure.configure(Options.from(settings)).steps.foreach(_.step.run(dut))
 
   test("class data without confirm confirms the second response once, at step 18") {

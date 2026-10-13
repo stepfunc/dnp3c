@@ -15,9 +15,10 @@ object Section extends TestSection {
     section(
       "8.17.2",
       "Test Procedure",
-      Procedure81721,
-      Procedure81722,
-      Procedure81723,
-      Procedure81724,
-      Procedure81725))
+      TestProcedure("8.17.2.1", "Device does not support Binary Counter Events", Procedure81721),
+      TestProcedure("8.17.2.2", "Binary Counters, Event, 0x06", Procedure81722),
+      TestProcedure("8.17.2.3", "Binary Counters, Event, 0x07", Procedure81723),
+      TestProcedure("8.17.2.4", "Binary Counters, Event, 0x08", Procedure81724),
+      TestProcedure("8.17.2.5", "Binary Counters, Event Without Confirm", Procedure81725)
+    ))
 }

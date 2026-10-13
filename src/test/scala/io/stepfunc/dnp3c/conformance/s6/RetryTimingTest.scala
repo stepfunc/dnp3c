@@ -3,11 +3,12 @@
 
 package io.stepfunc.dnp3c.conformance.s6
 
+import io.stepfunc.dnp3c.conformance.Placements.id
 import io.stepfunc.dnp3c.conformance.api.Options
 import io.stepfunc.dnp3c.conformance.api.options.{ BehaviorOptions, LinkOptions, OutstationOptions, SupportOptions }
 import io.stepfunc.dnp3c.conformance.s6.s61.s612.Procedure612
 import io.stepfunc.dnp3c.conformance.s6.s64.Procedure642
-import io.stepfunc.dnp3c.conformance.api.TestProcedure
+import io.stepfunc.dnp3c.conformance.api.ProcedureDefinition
 import io.stepfunc.dnp3c.conformance.s6.s66.s663.{ Procedure6631, Procedure6632, Procedure6633, Procedure6634 }
 import io.stepfunc.dnp3c.dnp3.link.{ Control, FrameValidator, LinkFrame, LinkFunction, LinkHeader }
 import io.stepfunc.dnp3c.dnp3.{ DefaultIntegrationPlugin, LinkOverride, PluginReporter, ProcedureReporter, StubDriver }
@@ -205,7 +206,7 @@ class RetryTimingTest extends AnyFunSuite with Matchers {
   }
 
   test("6.6.3 expects a retransmission of the frame, unchanged") {
-    def passes(procedure: TestProcedure, retry: LinkFrame) = {
+    def passes(procedure: ProcedureDefinition, retry: LinkFrame) = {
       val dut = new Dut663(retry)
       scala.util.Try(procedure.configure(Options.from(Map())).steps.foreach(_.step.run(dut))).isSuccess
     }

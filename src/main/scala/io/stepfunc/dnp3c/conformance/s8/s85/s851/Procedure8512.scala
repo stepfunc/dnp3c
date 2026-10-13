@@ -10,11 +10,7 @@ import io.stepfunc.dnp3c.conformance.s8.helpers.Validations._
 import io.stepfunc.dnp3c.dnp3.app._
 import io.stepfunc.dnp3c.dnp3.app.objects.Group60Var1
 
-object Procedure8512 extends TestProcedure {
-
-  override def id = "8.5.1.2"
-
-  override def description = "Test Procedure"
+object Procedure8512 extends ProcedureDefinition {
 
   override def steps(options: OptionSource): List[LabeledStep] = {
     List(

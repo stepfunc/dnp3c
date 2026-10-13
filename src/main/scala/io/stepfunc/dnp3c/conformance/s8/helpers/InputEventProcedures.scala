@@ -11,11 +11,11 @@ import io.stepfunc.dnp3c.dnp3.app.Sequence
 
 /**
  * The procedures that 8.14 (binary input events) and 8.22 (double-bit input events) both have, each written once for
- * either input. A procedure object extends one of these with its own id and description.
+ * either input. A procedure object extends one of these, and the section that lists it gives it a number and title.
  */
 object InputEventProcedures {
 
-  sealed abstract class InputEventProcedure(val input: InputType) extends TestProcedure {
+  sealed abstract class InputEventProcedure(val input: InputType) extends ProcedureDefinition {
     protected def events: InputEventSteps = new InputEventSteps(input)
   }
 

@@ -14,11 +14,7 @@ import io.stepfunc.dnp3c.dnp3.app.objects.{ AttributeValue, Group0, ReceivedAttr
 import io.stepfunc.dnp3c.protocol.parsing.Field
 import io.stepfunc.dnp3c.dnp3.DeferredCheck
 
-object Procedure82324 extends TestProcedure {
-
-  override def id: String = "8.23.2.4"
-
-  override def description: String = "Variation nnn – specific attributes write request"
+object Procedure82324 extends ProcedureDefinition {
 
   override protected def requiredOptions: List[OptionCondition] = List(SupportOptions.deviceAttributes)
 

@@ -12,10 +12,10 @@ object Section extends TestSection {
   def description = "Buffer Overflow"
 
   override def procedures: Iterable[TestProcedure] = List(
-    Procedure86621,
-    Procedure86622,
-    Procedure86623,
-    Procedure86624
+    TestProcedure("8.6.6.2.1", "Buffer Overflow, Binary Input Change Event Buffers", Procedure86621),
+    TestProcedure("8.6.6.2.2", "Buffer Overflow, Analog Input Change Event Buffers", Procedure86622),
+    TestProcedure("8.6.6.2.3", "Buffer Overflow, Binary Counter Change Event Buffers", Procedure86623),
+    TestProcedure("8.6.6.2.4", "Double-bit Input Change Event Buffers", Procedure86624)
   )
 
 }

@@ -12,11 +12,7 @@ import io.stepfunc.dnp3c.dnp3.{ MessageRecorder, Requests }
 import io.stepfunc.dnp3c.dnp3.app.{ IIN, Message, MutableSequence }
 import io.stepfunc.dnp3c.dnp3.app.objects.Group0
 
-object Procedure82322 extends TestProcedure {
-
-  override def id: String = "8.23.2.2"
-
-  override def description: String = "Variation 254 – non-specific all attributes request"
+object Procedure82322 extends ProcedureDefinition {
 
   override protected def requiredOptions: List[OptionCondition] = List(SupportOptions.deviceAttributes)
 

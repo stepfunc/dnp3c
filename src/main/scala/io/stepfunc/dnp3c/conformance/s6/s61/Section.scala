@@ -9,6 +9,6 @@ object Section extends TestSection {
 
   def id = "6.1"
   def description = "Reset link and passive confirm support"
-  override def procedures: Iterable[TestProcedure] = List(s612.Procedure612)
+  override def procedures: Iterable[TestProcedure] = List(TestProcedure("6.1.2", "Test Procedure", s612.Procedure612))
 
 }

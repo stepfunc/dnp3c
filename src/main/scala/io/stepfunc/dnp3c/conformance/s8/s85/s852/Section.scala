@@ -11,8 +11,9 @@ object Section extends TestSection {
   def description = "Class 1"
 
   override def procedures: Iterable[TestProcedure] = List(
-    Procedure85221,
-    Procedure85222,
-    Procedure85223,
-    Procedure85224)
+    TestProcedure("8.5.2.2.1", "Class 1 Data, 0x06", Procedure85221),
+    TestProcedure("8.5.2.2.2", "Class 1 Data, 0x07", Procedure85222),
+    TestProcedure("8.5.2.2.3", "Class 1 Data, 0x08", Procedure85223),
+    TestProcedure("8.5.2.2.4", "Class 1 Data Without Confirm", Procedure85224)
+  )
 }

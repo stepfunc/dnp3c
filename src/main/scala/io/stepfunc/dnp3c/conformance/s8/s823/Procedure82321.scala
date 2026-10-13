@@ -12,11 +12,7 @@ import io.stepfunc.dnp3c.dnp3.Requests
 import io.stepfunc.dnp3c.dnp3.app.{ IIN, Sequence }
 import io.stepfunc.dnp3c.dnp3.app.objects.Group0
 
-object Procedure82321 extends TestProcedure {
-
-  override def id: String = "8.23.2.1"
-
-  override def description: String = "Variation 255 – list of attribute variations"
+object Procedure82321 extends ProcedureDefinition {
 
   override protected def requiredOptions: List[OptionCondition] = List(SupportOptions.deviceAttributes)
 

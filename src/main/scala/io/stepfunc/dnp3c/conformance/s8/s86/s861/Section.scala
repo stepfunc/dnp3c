@@ -10,6 +10,6 @@ object Section extends TestSection {
   override def description: String = "Restart"
 
   override def procedures: Iterable[TestProcedure] = List(
-    Procedure8612
+    TestProcedure("8.6.1.2", "Test Procedure", Procedure8612)
   )
 }

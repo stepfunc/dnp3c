@@ -3,7 +3,8 @@
 
 package io.stepfunc.dnp3c.conformance
 
-import io.stepfunc.dnp3c.conformance.api.{ Options, TestProcedure }
+import io.stepfunc.dnp3c.conformance.Placements.id
+import io.stepfunc.dnp3c.conformance.api.{ Options, ProcedureDefinition }
 import io.stepfunc.dnp3c.conformance.api.options.SupportOptions
 import io.stepfunc.dnp3c.conformance.api.options.SupportOptions.Inputs
 import io.stepfunc.dnp3c.conformance.s8.{ s813, s814, s816, s817, s819, s821, s822 }
@@ -18,7 +19,7 @@ import org.scalatest.funsuite.AnyFunSuite
 class PointGatingTest extends AnyFunSuite with Matchers {
 
   private def runs(
-      procedure: TestProcedure,
+      procedure: ProcedureDefinition,
       input: SupportOptions.InputOptions,
       points: Boolean,
       feature: (SupportOptions.InputOptions => api.BooleanOption, Boolean)): Boolean =

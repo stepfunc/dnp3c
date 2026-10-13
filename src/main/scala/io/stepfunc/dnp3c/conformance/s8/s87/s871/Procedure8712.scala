@@ -9,11 +9,7 @@ import io.stepfunc.dnp3c.conformance.s8.helpers.GenericSteps._
 import io.stepfunc.dnp3c.conformance.s8.helpers.Validations
 import io.stepfunc.dnp3c.dnp3.app.{ AppFunction, Sequence }
 
-object Procedure8712 extends TestProcedure {
-
-  override def id: String = "8.7.1.2"
-
-  override def description: String = "Test Procedure"
+object Procedure8712 extends ProcedureDefinition {
 
   // a device that never sets IIN1-4 need not support section 8.7
   override def requiredOptions = List(TimeSyncOptions.supportSynchronizingTimeFromMaster)

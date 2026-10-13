@@ -10,11 +10,7 @@ import io.stepfunc.dnp3c.dnp3.Requests
 import io.stepfunc.dnp3c.dnp3.app.Sequence
 import io.stepfunc.dnp3c.dnp3.app.objects.Group21Var0
 
-object Procedure816221 extends TestProcedure {
-
-  override def id: String = "8.16.2.2.1"
-
-  override def description: String = "Device does not have Frozen Counters"
+object Procedure816221 extends ProcedureDefinition {
 
   override def requiredOptions: List[OptionCondition] = List(!Inputs.frozenCounter.points)
 

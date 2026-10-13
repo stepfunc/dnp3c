@@ -4,15 +4,11 @@
 package io.stepfunc.dnp3c.conformance.s8.s84.s841
 
 import io.stepfunc.dnp3c.conformance.api.options.{ AnalogOutputOptions, SupportOptions }
-import io.stepfunc.dnp3c.conformance.api.{ LabeledStep, OptionSource, TestProcedure }
+import io.stepfunc.dnp3c.conformance.api.{ LabeledStep, OptionSource, ProcedureDefinition }
 import io.stepfunc.dnp3c.conformance.s8.helpers.{ OperationSteps, OperationType }
 import io.stepfunc.dnp3c.dnp3.app.objects.CommandStatus
 
-object Procedure84125 extends TestProcedure {
-
-  override def id: String = "8.4.1.2.5"
-
-  override def description: String = "Analog Output, SBO, Execute Value does not match Select Value"
+object Procedure84125 extends ProcedureDefinition {
 
   override def requiredOptions = List(SupportOptions.Outputs.analog.commands)
 

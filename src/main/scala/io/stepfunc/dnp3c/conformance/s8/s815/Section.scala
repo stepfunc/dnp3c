@@ -11,5 +11,5 @@ object Section extends TestSection {
 
   def description = "Common Time of Occurrence"
 
-  override def procedures: Iterable[TestProcedure] = List(Procedure8152)
+  override def procedures: Iterable[TestProcedure] = List(TestProcedure("8.15.2", "Test Procedure", Procedure8152))
 }

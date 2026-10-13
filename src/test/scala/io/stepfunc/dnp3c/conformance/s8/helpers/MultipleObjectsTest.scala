@@ -3,7 +3,8 @@
 
 package io.stepfunc.dnp3c.conformance.s8.helpers
 
-import io.stepfunc.dnp3c.conformance.api.{ Options, TestProcedure }
+import io.stepfunc.dnp3c.conformance.Placements.id
+import io.stepfunc.dnp3c.conformance.api.{ Options, ProcedureDefinition }
 import io.stepfunc.dnp3c.conformance.api.options.{ AnalogOutputOptions, ControlOptions }
 import io.stepfunc.dnp3c.conformance.s8.s82.s824.Procedure8242
 import io.stepfunc.dnp3c.conformance.s8.s84.s844.Procedure8442
@@ -72,7 +73,7 @@ class MultipleObjectsTest extends AnyFunSuite with Matchers {
   }
 
   private case class Family(
-      procedure: TestProcedure,
+      procedure: ProcedureDefinition,
       output: OperationType,
       installedKey: String,
       maxKey: String,

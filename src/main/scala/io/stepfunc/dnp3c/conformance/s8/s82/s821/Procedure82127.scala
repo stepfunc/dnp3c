@@ -9,10 +9,6 @@ import io.stepfunc.dnp3c.protocol.parsing.UInt32LE
 
 object Procedure82127 extends SBOWithManipulatedControl {
 
-  def id = "8.2.1.2.7"
-
-  def description = "Binary Output, SBO, Execute Off Time does not match Select Off Time"
-
   override def modify(control: Group12Var1): Group12Var1 = control.copy(offTime = UInt32LE(control.offTime.value + 1))
 
 }

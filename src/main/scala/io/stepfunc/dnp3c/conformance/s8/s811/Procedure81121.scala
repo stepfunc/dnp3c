@@ -14,11 +14,7 @@ import io.stepfunc.dnp3c.dnp3.app._
 import io.stepfunc.dnp3c.dnp3.{ AutoConfirm, LinkOverride, Requests }
 import io.stepfunc.dnp3c.protocol.parsing.UInt16LE
 
-object Procedure81121 extends TestProcedure {
-
-  override def id: String = "8.11.2.1"
-
-  override def description: String = "Unsolicited Response Configuration/Startup"
+object Procedure81121 extends ProcedureDefinition {
 
   override def requiredOptions: List[OptionCondition] = List(SupportOptions.unsolicitedResponse)
 

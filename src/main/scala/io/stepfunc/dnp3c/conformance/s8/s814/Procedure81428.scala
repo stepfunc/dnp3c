@@ -6,9 +6,4 @@ package io.stepfunc.dnp3c.conformance.s8.s814
 import io.stepfunc.dnp3c.conformance.s8.helpers.InputEventProcedures.CountQualifierWithoutTime
 import io.stepfunc.dnp3c.conformance.s8.helpers.InputType
 
-object Procedure81428 extends CountQualifierWithoutTime(InputType.BinaryInput, twoByteCount = true) {
-
-  override def id: String = "8.14.2.8"
-
-  override def description: String = "Binary Input Change Without Time, 0x08"
-}
+object Procedure81428 extends CountQualifierWithoutTime(InputType.BinaryInput, twoByteCount = true)

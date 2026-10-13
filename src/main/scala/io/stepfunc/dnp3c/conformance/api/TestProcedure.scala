@@ -32,7 +32,11 @@ object OptionCondition {
   def apply(option: BooleanOption): OptionCondition = new OptionCondition(option, true)
 }
 
-trait TestProcedure extends TestElement {
+/**
+ * What a procedure does: its steps, and the options it needs to run. It has no number or title: those depend on where
+ * a revision's tree places it, see [[TestProcedure]]. A definition placed in several trees is shared by them.
+ */
+trait ProcedureDefinition {
 
   case class Configuration(disabledBy: Option[OptionCondition], steps: Iterable[LabeledStep])
 
@@ -60,6 +64,17 @@ trait TestProcedure extends TestElement {
 
 }
 
+/** A procedure as a revision's tree places it: its number and title there, and its definition. */
+final class TestProcedure(val id: String, val description: String, val definition: ProcedureDefinition)
+    extends TestElement {
+
+  def incomplete: Boolean = definition.incomplete
+
+  def disabledBy(options: OptionSource): Option[OptionCondition] = definition.disabledBy(options)
+
+  def configure(options: OptionSource): definition.Configuration = definition.configure(options)
+}
+
 trait TestSection extends TestElement {
 
   def sections: Iterable[TestSection] = Nil
@@ -71,7 +86,10 @@ trait TestSection extends TestElement {
 
 object TestProcedure {
 
-  private def enabledBy(options: List[OptionCondition]): Iterable[LabeledStep] = {
+  def apply(id: String, description: String, definition: ProcedureDefinition): TestProcedure =
+    new TestProcedure(id, description, definition)
+
+  private[api] def enabledBy(options: List[OptionCondition]): Iterable[LabeledStep] = {
 
     def step: LabeledStep = {
       LabeledStep(
@@ -85,7 +103,7 @@ object TestProcedure {
     if (options.isEmpty) Nil else List(step)
   }
 
-  private def disabledBy(cond: OptionCondition): Iterable[LabeledStep] = {
+  private[api] def disabledBy(cond: OptionCondition): Iterable[LabeledStep] = {
     List(
       LabeledStep(
         "describe disabled options",

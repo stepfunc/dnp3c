@@ -11,11 +11,7 @@ import io.stepfunc.dnp3c.dnp3.app._
 import io.stepfunc.dnp3c.dnp3.app.objects._
 import io.stepfunc.dnp3c.dnp3.{ MessageValidation, ResponseValidation }
 
-object Procedure832 extends TestProcedure {
-
-  def id = "8.3.2"
-
-  def description = "Test Procedure"
+object Procedure832 extends ProcedureDefinition {
 
   def steps(options: OptionSource): List[LabeledStep] = {
 

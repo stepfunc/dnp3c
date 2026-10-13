@@ -12,11 +12,7 @@ import io.stepfunc.dnp3c.dnp3.app.{ AppFunction, IIN, ObjectHeader, Sequence }
 import io.stepfunc.dnp3c.dnp3.{ AutoConfirm, LinkOverride, Requests }
 import io.stepfunc.dnp3c.protocol.parsing.UInt16LE
 
-object Procedure8653 extends TestProcedure {
-
-  override def id: String = "8.6.5.3"
-
-  override def description: String = "Test Procedure"
+object Procedure8653 extends ProcedureDefinition {
 
   private val broadcast = UInt16LE(0xFFFF)
 

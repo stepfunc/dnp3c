@@ -11,11 +11,7 @@ import io.stepfunc.dnp3c.dnp3.app.Sequence
 import io.stepfunc.dnp3c.dnp3.app.objects.{ Group3Var0, Group3Var1, Group3Var2 }
 import io.stepfunc.dnp3c.dnp3.Requests
 
-object Procedure82121 extends TestProcedure {
-
-  override def id: String = "8.21.2.1"
-
-  override def description: String = "Device has Double-bit Inputs"
+object Procedure82121 extends ProcedureDefinition {
 
   override protected def requiredOptions: List[OptionCondition] = List(Inputs.doubleBit.points)
 

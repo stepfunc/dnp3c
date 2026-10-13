@@ -6,9 +6,4 @@ package io.stepfunc.dnp3c.conformance.s8.s85.s853
 import io.stepfunc.dnp3c.conformance.s8.helpers.ClassEventProcedures.AllQualifier
 import io.stepfunc.dnp3c.conformance.s8.helpers.EventClassData.class2
 
-object Procedure85321 extends AllQualifier(class2) {
-
-  override def id: String = "8.5.3.2.1"
-
-  override def description: String = "Class 2 Data, 0x06"
-}
+object Procedure85321 extends AllQualifier(class2)

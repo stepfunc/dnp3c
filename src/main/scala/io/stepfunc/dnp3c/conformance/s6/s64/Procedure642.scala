@@ -10,11 +10,7 @@ import io.stepfunc.dnp3c.conformance.s8.helpers.GenericSteps._
 import io.stepfunc.dnp3c.dnp3.LinkOverride
 import io.stepfunc.dnp3c.dnp3.app.Sequence
 
-object Procedure642 extends TestProcedure {
-
-  override def id = "6.4.2"
-
-  override def description = "Test Procedure"
+object Procedure642 extends ProcedureDefinition {
 
   override def requiredOptions = List(SupportOptions.dataLinkConfirmRequests, SupportOptions.dataLinkRetries)
 

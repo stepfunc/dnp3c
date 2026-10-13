@@ -10,11 +10,7 @@ import io.stepfunc.dnp3c.dnp3.app._
 import io.stepfunc.dnp3c.dnp3.app.objects.{ Group52Var1, Group52Var2 }
 import io.stepfunc.dnp3c.dnp3._
 
-object Procedure882 extends TestProcedure {
-
-  override def id: String = "8.8.2"
-
-  override def description: String = "Test Procedure"
+object Procedure882 extends ProcedureDefinition {
 
   override protected def steps(options: OptionSource): Iterable[LabeledStep] = {
 

@@ -7,11 +7,7 @@ import io.stepfunc.dnp3c.conformance.api._
 import io.stepfunc.dnp3c.conformance.api.options.{ SupportOptions, UnsolicitedOptions }
 import io.stepfunc.dnp3c.conformance.s8.helpers.UnsolicitedResponseSteps
 
-object Procedure81126 extends TestProcedure {
-
-  override def id: String = "8.11.2.6"
-
-  override def description: String = "Unsolicited Responses Off"
+object Procedure81126 extends ProcedureDefinition {
 
   override def requiredOptions: List[OptionCondition] = List(SupportOptions.unsolicitedResponse)
 
