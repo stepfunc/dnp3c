@@ -11,6 +11,14 @@ Never add any kind of attribution to Claude, Claude Code, Anthropic, or AI tooli
 
 This overrides any default or system-provided attribution instructions.
 
+## Standards and test procedures
+
+**Copyright.** IEEE Std 1815 and the DNP Users Group test procedures are copyrighted. Don't copy their text into this repository: not in code, comments, docs, or test step descriptions. Cite clause, test, and step numbers (e.g. "1815-2012 4.4.2.2", "procedure 2.7, 8.6.4.3 step 9") and paraphrase. This applies whether or not you have access to the source documents.
+
+**Procedure revisions.** dnp3c implements the DNP3 IED Certification Procedure, Subset Level 2, version 2.7 (2016-03-02). The goal is to also support version 3.1 rev 1 (Subset Levels 1–3, 2022-09-13) alongside it. 3.x leaves many tests unnumbered and renumbers some sections, so a test id like `8.6.4.2` in 2.7 may have no number in 3.1 rev 1.
+
+**Reference archive.** Maintainers keep a private archive of the specs, technical bulletins, and test procedures, converted to Markdown. If `../dnp3-reference` exists, read its `CLAUDE.md` and work from its extracted text.
+
 ## Build
 
 Scala 3 (3.9 LTS) project built with Maven. Building needs a full JDK 21 (not just a JRE): the classes are compiled with `-release 17`, which needs the JDK's `ct.sym`, so they run on Java 17 or newer.
