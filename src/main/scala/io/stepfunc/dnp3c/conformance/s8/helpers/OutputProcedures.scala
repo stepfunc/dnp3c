@@ -12,11 +12,11 @@ import io.stepfunc.dnp3c.dnp3.app.objects.CommandStatus
 
 /**
  * The procedures that 8.2 (binary outputs) and 8.4 (analog outputs) both have, each written once for either output.
- * A procedure object extends one of these with its own id and description.
+ * A procedure object extends one of these, and the section that lists it gives it a number and title.
  */
 object OutputProcedures {
 
-  sealed abstract class OutputProcedure(val output: OperationType) extends TestProcedure {
+  sealed abstract class OutputProcedure(val output: OperationType) extends ProcedureDefinition {
     protected def operations: OperationSteps = new OperationSteps(output)
   }
 

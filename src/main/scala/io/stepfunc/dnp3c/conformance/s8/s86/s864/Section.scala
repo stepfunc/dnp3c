@@ -10,7 +10,7 @@ object Section extends TestSection {
   override def description: String = "Local"
 
   override def procedures: Iterable[TestProcedure] = List(
-    Procedure8642,
-    Procedure8643
+    TestProcedure("8.6.4.2", "Test Procedure for Devices with Global Remote Supervisory Control", Procedure8642),
+    TestProcedure("8.6.4.3", "Test Procedure for Devices with Individual Remote Supervisory Control", Procedure8643)
   )
 }

@@ -10,11 +10,7 @@ import io.stepfunc.dnp3c.dnp3.Requests
 import io.stepfunc.dnp3c.dnp3.app.Sequence
 import io.stepfunc.dnp3c.dnp3.app.objects.Group1Var0
 
-object Procedure81321 extends TestProcedure {
-
-  override def id: String = "8.13.2.1"
-
-  override def description: String = "Device does not have Binary Inputs"
+object Procedure81321 extends ProcedureDefinition {
 
   override def requiredOptions: List[OptionCondition] = List(!Inputs.binary.points)
 

@@ -6,9 +6,4 @@ package io.stepfunc.dnp3c.conformance.s8.s814
 import io.stepfunc.dnp3c.conformance.s8.helpers.InputEventProcedures.CountQualifier
 import io.stepfunc.dnp3c.conformance.s8.helpers.InputType
 
-object Procedure81424 extends CountQualifier(InputType.BinaryInput, twoByteCount = true) {
-
-  override def id: String = "8.14.2.4"
-
-  override def description: String = "Binary Input Change, 0x08"
-}
+object Procedure81424 extends CountQualifier(InputType.BinaryInput, twoByteCount = true)

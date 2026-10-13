@@ -3,7 +3,8 @@
 
 package io.stepfunc.dnp3c.conformance.s8
 
-import io.stepfunc.dnp3c.conformance.api.{ Options, TestProcedure }
+import io.stepfunc.dnp3c.conformance.Placements.id
+import io.stepfunc.dnp3c.conformance.api.{ Options, ProcedureDefinition }
 import io.stepfunc.dnp3c.dnp3._
 import io.stepfunc.dnp3c.dnp3.app._
 import io.stepfunc.dnp3c.dnp3.link.FrameValidator
@@ -72,7 +73,7 @@ class EventExpectationsTest extends AnyFunSuite with Matchers {
     override def close(): Unit = ()
   }
 
-  private def expectations(procedure: TestProcedure): List[(String, EventExpectation)] = {
+  private def expectations(procedure: ProcedureDefinition): List[(String, EventExpectation)] = {
     val dut = new Dut
     Console.withIn(new StringReader(""))(
       procedure.configure(Options.from(Map())).steps.foreach(s => Try(s.step.run(dut))))

@@ -11,11 +11,7 @@ import io.stepfunc.dnp3c.dnp3.app.objects._
 import io.stepfunc.dnp3c.dnp3.app._
 import io.stepfunc.dnp3c.dnp3._
 
-object Procedure81822 extends TestProcedure {
-
-  override def id: String = "8.18.2.2"
-
-  override def description: String = "Device has Analog Inputs"
+object Procedure81822 extends ProcedureDefinition {
 
   override protected def requiredOptions: List[OptionCondition] = List(Inputs.analog.points)
 

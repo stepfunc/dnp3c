@@ -11,7 +11,7 @@ object Section extends TestSection {
   def description = "Control Code Support"
 
   override def procedures: Iterable[TestProcedure] = List(
-    Procedure82521,
-    Procedure82522
+    TestProcedure("8.2.5.2.1", "Binary Output, Complementary Function Support", Procedure82521),
+    TestProcedure("8.2.5.2.2", "Binary Output, Single Function Support", Procedure82522)
   )
 }

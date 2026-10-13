@@ -15,10 +15,10 @@ object Section extends TestSection {
     section(
       "8.23.2",
       "Test Procedure",
-      Procedure82321,
-      Procedure82322,
-      Procedure82323,
-      Procedure82324
+      TestProcedure("8.23.2.1", "Variation 255 – list of attribute variations", Procedure82321),
+      TestProcedure("8.23.2.2", "Variation 254 – non-specific all attributes request", Procedure82322),
+      TestProcedure("8.23.2.3", "Variation nnn – specific attributes read request", Procedure82323),
+      TestProcedure("8.23.2.4", "Variation nnn – specific attributes write request", Procedure82324)
     )
   )
 

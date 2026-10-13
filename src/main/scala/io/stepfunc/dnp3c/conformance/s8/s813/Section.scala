@@ -12,8 +12,9 @@ object Section extends TestSection {
   def description = "Binary Inputs"
 
   override def procedures: Iterable[TestProcedure] = List(
-    Procedure81321,
-    Procedure81322,
-    Procedure81323)
+    TestProcedure("8.13.2.1", "Device does not have Binary Inputs", Procedure81321),
+    TestProcedure("8.13.2.2", "Device has Binary Inputs", Procedure81322),
+    TestProcedure("8.13.2.3", "Device supports Binary Inputs, Configurable Device", Procedure81323)
+  )
 
 }

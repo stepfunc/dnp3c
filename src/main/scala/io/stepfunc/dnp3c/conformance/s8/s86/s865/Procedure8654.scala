@@ -12,11 +12,7 @@ import io.stepfunc.dnp3c.dnp3.link.Control
 import io.stepfunc.dnp3c.dnp3.{ AutoConfirm, LinkOverride, Requests }
 import io.stepfunc.dnp3c.protocol.parsing.UInt16LE
 
-object Procedure8654 extends TestProcedure {
-
-  override def id: String = "8.6.5.4"
-
-  override def description: String = "Test Procedure, Confirmed Response Options"
+object Procedure8654 extends ProcedureDefinition {
 
   private val control = Control.confirmedUserData(true)
   private val broadcast = UInt16LE(0xFFFE)

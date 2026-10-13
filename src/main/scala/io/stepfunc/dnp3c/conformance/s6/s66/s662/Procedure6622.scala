@@ -14,11 +14,7 @@ import io.stepfunc.dnp3c.dnp3.{ Requests, TestDriver }
 import io.stepfunc.dnp3c.protocol.Hex
 import io.stepfunc.dnp3c.dnp3.DeferredCheck
 
-object Procedure6622 extends TestProcedure {
-
-  def id = "6.6.2.2"
-
-  def description = "Invalid Primary Function Code"
+object Procedure6622 extends ProcedureDefinition {
 
   def readClass0WithInvalidCode(function: Byte): TestStep = new TestStep {
     def description = List(

@@ -9,11 +9,7 @@ import io.stepfunc.dnp3c.conformance.api.options.{ CounterOptions, EventBufferOp
 import io.stepfunc.dnp3c.conformance.s8.helpers.{ EventBufferSteps, EventClassData, Validations }
 import io.stepfunc.dnp3c.dnp3.app.objects.{ Group22Var1, Group22Var2 }
 
-object Procedure86623 extends TestProcedure {
-
-  override def id: String = "8.6.6.2.3"
-
-  override def description: String = "Buffer Overflow, Binary Counter Change Event Buffers"
+object Procedure86623 extends ProcedureDefinition {
 
   override protected def requiredOptions = Inputs.counter.withEvents :+
     OptionCondition(SupportOptions.counterEventsQueuedPerPoint)

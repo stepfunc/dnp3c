@@ -11,11 +11,7 @@ import io.stepfunc.dnp3c.conformance.s8.helpers.Validations._
 import io.stepfunc.dnp3c.dnp3.app._
 import io.stepfunc.dnp3c.dnp3.{ AutoConfirm, MessageValidation, Requests }
 
-object Procedure8562 extends TestProcedure {
-
-  override def id: String = "8.5.6.2"
-
-  override def description: String = "Test Procedure"
+object Procedure8562 extends ProcedureDefinition {
 
   private def verifyContainsOnly(clazz: EventClass): MessageValidation = {
     PluginValidations.verifyLatestClassEvents(clazz)

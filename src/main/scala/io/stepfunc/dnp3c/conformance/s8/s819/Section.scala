@@ -3,7 +3,7 @@
 
 package io.stepfunc.dnp3c.conformance.s8.s819
 
-import io.stepfunc.dnp3c.conformance.api.{ TestSection, section }
+import io.stepfunc.dnp3c.conformance.api.{ TestProcedure, TestSection, section }
 
 object Section extends TestSection {
 
@@ -12,6 +12,11 @@ object Section extends TestSection {
   def description = "Analog Change Event"
 
   override def sections: Iterable[TestSection] = List(
-    section("8.19.2", "Test Procedure", Procedure81921, Procedure81922)
+    section(
+      "8.19.2",
+      "Test Procedure",
+      TestProcedure("8.19.2.1", "Analog Input Change", Procedure81921),
+      TestProcedure("8.19.2.2", "Analog Input Change, Without Confirm", Procedure81922)
+    )
   )
 }

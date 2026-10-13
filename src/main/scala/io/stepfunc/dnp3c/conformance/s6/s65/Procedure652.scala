@@ -10,11 +10,7 @@ import io.stepfunc.dnp3c.conformance.s8.helpers.GenericSteps._
 import io.stepfunc.dnp3c.dnp3.LinkOverride
 import io.stepfunc.dnp3c.dnp3.app.Sequence
 
-object Procedure652 extends TestProcedure {
-
-  override def id = "6.5.2"
-
-  override def description = "Test Procedure"
+object Procedure652 extends ProcedureDefinition {
 
   override def steps(options: OptionSource): Iterable[LabeledStep] = {
 

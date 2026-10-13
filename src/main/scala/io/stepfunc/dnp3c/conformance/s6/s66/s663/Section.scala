@@ -16,10 +16,10 @@ object Section extends TestSection {
   override def description = "Secondary Frames"
 
   override def procedures: List[TestProcedure] = List(
-    Procedure6631,
-    Procedure6632,
-    Procedure6633,
-    Procedure6634
+    TestProcedure("6.6.3.1", "Invalid Start Octets", Procedure6631),
+    TestProcedure("6.6.3.2", "Invalid Secondary Function Code", Procedure6632),
+    TestProcedure("6.6.3.3", "Invalid Destination Address", Procedure6633),
+    TestProcedure("6.6.3.4", "Invalid CRC", Procedure6634)
   )
 
   def prologue(options: OptionSource): Iterable[LabeledStep] = {

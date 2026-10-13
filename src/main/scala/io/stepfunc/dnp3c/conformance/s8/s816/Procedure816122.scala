@@ -11,11 +11,7 @@ import io.stepfunc.dnp3c.dnp3.app.Sequence
 import io.stepfunc.dnp3c.dnp3.app.objects.Group20Var0
 import io.stepfunc.dnp3c.dnp3.Requests
 
-object Procedure816122 extends TestProcedure {
-
-  override def id: String = "8.16.1.2.2"
-
-  override def description: String = "Device responds with Binary Counters"
+object Procedure816122 extends ProcedureDefinition {
 
   override def requiredOptions = List(Inputs.counter.points)
 

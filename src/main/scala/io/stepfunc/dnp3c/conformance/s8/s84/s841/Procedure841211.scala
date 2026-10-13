@@ -6,9 +6,4 @@ package io.stepfunc.dnp3c.conformance.s8.s84.s841
 import io.stepfunc.dnp3c.conformance.s8.helpers.OperationType
 import io.stepfunc.dnp3c.conformance.s8.helpers.OutputProcedures.OperateRetryIncrementedSequence
 
-object Procedure841211 extends OperateRetryIncrementedSequence(OperationType.AnalogOutput) {
-
-  override def id: String = "8.4.1.2.11"
-
-  override def description: String = "Analog Output, SBO, Incrementing Sequence Number Operate Retries"
-}
+object Procedure841211 extends OperateRetryIncrementedSequence(OperationType.AnalogOutput)

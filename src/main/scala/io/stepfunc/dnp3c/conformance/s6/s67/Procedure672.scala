@@ -11,10 +11,7 @@ import io.stepfunc.dnp3c.dnp3.app.Sequence
 import io.stepfunc.dnp3c.dnp3.{ LinkOverride, Requests }
 import io.stepfunc.dnp3c.protocol.parsing.UInt16LE
 
-object Procedure672 extends TestProcedure {
-
-  override def id: String = "6.7.2"
-  override def description: String = "Test Procedure"
+object Procedure672 extends ProcedureDefinition {
 
   override protected def requiredOptions = List(SupportOptions.selfAddress)
 

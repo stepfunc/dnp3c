@@ -15,11 +15,11 @@ object Section extends TestSection {
     section(
       "8.9.1",
       "Use of FIR, FIN and SEQUENCE in Fragmentation",
-      Procedure8912),
+      TestProcedure("8.9.1.2", "Test Procedure", Procedure8912)),
     section(
       "8.9.2",
       "Use of Confirmation in Fragmentation",
-      Procedure8922)
+      TestProcedure("8.9.2.2", "Test Procedure", Procedure8922))
   )
 
 }

@@ -12,7 +12,7 @@ object Section extends TestSection {
   def description = "Multiple Object Request"
 
   override def procedures: Iterable[TestProcedure] = List(
-    Procedure85521,
-    Procedure85522
+    TestProcedure("8.5.5.2.1", "Multiple Object Request, Class 1, 2, and 3", Procedure85521),
+    TestProcedure("8.5.5.2.2", "Multiple Object Request, Class 1, 2, 3, and 0", Procedure85522)
   )
 }

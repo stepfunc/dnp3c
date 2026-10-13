@@ -8,11 +8,7 @@ import io.stepfunc.dnp3c.conformance.api.options.CounterOptions
 import io.stepfunc.dnp3c.conformance.api.options.SupportOptions._
 import io.stepfunc.dnp3c.conformance.s8.helpers.CounterEventSteps
 
-object Procedure81723 extends TestProcedure {
-
-  override def id: String = "8.17.2.3"
-
-  override def description: String = "Binary Counters, Event, 0x07"
+object Procedure81723 extends ProcedureDefinition {
 
   override def requiredOptions: List[OptionCondition] = Inputs.counter.withEvents
 

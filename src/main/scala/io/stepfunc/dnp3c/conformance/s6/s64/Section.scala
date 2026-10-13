@@ -8,5 +8,5 @@ import io.stepfunc.dnp3c.conformance.api._
 object Section extends TestSection {
   override def id = "6.4"
   override def description = "Test Retries"
-  override def procedures: Iterable[TestProcedure] = List(Procedure642)
+  override def procedures: Iterable[TestProcedure] = List(TestProcedure("6.4.2", "Test Procedure", Procedure642))
 }

@@ -12,11 +12,7 @@ import io.stepfunc.dnp3c.dnp3._
 import io.stepfunc.dnp3c.dnp3.app._
 import io.stepfunc.dnp3c.dnp3.app.objects._
 
-object Procedure8152 extends TestProcedure {
-
-  override def id: String = "8.15.2"
-
-  override def description: String = "Test Procedure"
+object Procedure8152 extends ProcedureDefinition {
 
   override def requiredOptions: List[OptionCondition] =
     SupportOptions.Inputs.binary.withEvents :+ OptionCondition(TimeSyncOptions.binaryInputChangeWithRelativeTime)

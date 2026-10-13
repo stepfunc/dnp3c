@@ -12,11 +12,7 @@ import io.stepfunc.dnp3c.dnp3.link.{ Control, LinkFunction }
 import io.stepfunc.dnp3c.dnp3.{ LinkOverride, Requests }
 import io.stepfunc.dnp3c.protocol.Hex
 
-object Procedure6625 extends TestProcedure {
-
-  def id = "6.6.2.5"
-
-  def description = "Invalid FCV"
+object Procedure6625 extends ProcedureDefinition {
 
   def steps(options: OptionSource): Iterable[LabeledStep] = {
 

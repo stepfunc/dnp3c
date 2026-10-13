@@ -11,6 +11,6 @@ object Section extends TestSection {
 
   def description = "Multiple Read Requests"
 
-  override def procedures: List[TestProcedure] = List(Procedure8202)
+  override def procedures: List[TestProcedure] = List(TestProcedure("8.20.2", "Test Procedure", Procedure8202))
 
 }

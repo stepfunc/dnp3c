@@ -7,9 +7,4 @@ import io.stepfunc.dnp3c.conformance.s8.helpers.OperationType
 import io.stepfunc.dnp3c.dnp3.app.AppFunction
 import io.stepfunc.dnp3c.conformance.s8.helpers.OutputProcedures.ToUninstalledPoint
 
-object Procedure82123 extends ToUninstalledPoint(OperationType.BinaryOutput, AppFunction.select) {
-
-  override def id: String = "8.2.1.2.3"
-
-  override def description: String = "Binary Output, SBO, To Uninstalled Point"
-}
+object Procedure82123 extends ToUninstalledPoint(OperationType.BinaryOutput, AppFunction.select)

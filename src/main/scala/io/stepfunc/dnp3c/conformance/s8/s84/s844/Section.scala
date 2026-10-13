@@ -10,5 +10,5 @@ object Section extends TestSection {
 
   def description = "Analog Output Controls, Multiple Objects"
 
-  override def procedures: Iterable[TestProcedure] = List(Procedure8442)
+  override def procedures: Iterable[TestProcedure] = List(TestProcedure("8.4.4.2", "Test Procedure", Procedure8442))
 }

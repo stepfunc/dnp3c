@@ -9,11 +9,7 @@ import io.stepfunc.dnp3c.conformance.s8.helpers.Validations._
 import io.stepfunc.dnp3c.dnp3.Requests
 import io.stepfunc.dnp3c.dnp3.app.{ IIN, Sequence, Variation }
 
-object Procedure8632 extends TestProcedure {
-
-  override def id: String = "8.6.3.2"
-
-  override def description: String = "Test Procedure"
+object Procedure8632 extends ProcedureDefinition {
 
   override protected def steps(options: OptionSource): Iterable[LabeledStep] = {
     List(

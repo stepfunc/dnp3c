@@ -9,10 +9,6 @@ import io.stepfunc.dnp3c.protocol.parsing.UInt32LE
 
 object Procedure82126 extends SBOWithManipulatedControl {
 
-  def id = "8.2.1.2.6"
-
-  def description = "Binary Output, SBO, Execute On Time does not match Select On Time"
-
   override def modify(control: Group12Var1): Group12Var1 = control.copy(onTime = UInt32LE(control.onTime.value + 1))
 
 }

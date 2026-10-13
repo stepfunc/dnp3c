@@ -11,11 +11,7 @@ import io.stepfunc.dnp3c.dnp3.app.Sequence
 import io.stepfunc.dnp3c.dnp3.app.objects.Group32Var0
 import io.stepfunc.dnp3c.dnp3.{ AutoConfirm, Requests }
 
-object Procedure81921 extends TestProcedure {
-
-  override def id: String = "8.19.2.1"
-
-  override def description: String = "Analog Input Change"
+object Procedure81921 extends ProcedureDefinition {
 
   override protected def steps(options: OptionSource): Iterable[LabeledStep] = {
 

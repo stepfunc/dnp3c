@@ -10,11 +10,7 @@ import io.stepfunc.dnp3c.conformance.s8.helpers.Validations._
 import io.stepfunc.dnp3c.dnp3.Requests
 import io.stepfunc.dnp3c.dnp3.app.{ EventClass, Sequence }
 
-object Procedure85522 extends TestProcedure {
-
-  override def id = "8.5.5.2.2"
-
-  override def description = "Multiple Object Request, Class 1, 2, 3, and 0"
+object Procedure85522 extends ProcedureDefinition {
 
   override def steps(options: OptionSource): List[LabeledStep] = {
     List(

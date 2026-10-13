@@ -6,10 +6,7 @@ package io.stepfunc.dnp3c.conformance.s6.s63
 import io.stepfunc.dnp3c.conformance.api._
 import io.stepfunc.dnp3c.conformance.s6._
 
-object Procedure632 extends TestProcedure {
-
-  override def id: String = "6.3.2"
-  override def description: String = "Test Procedure"
+object Procedure632 extends ProcedureDefinition {
 
   def steps(options: OptionSource): List[LabeledStep] = {
     List(

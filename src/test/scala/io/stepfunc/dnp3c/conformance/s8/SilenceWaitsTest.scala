@@ -3,7 +3,8 @@
 
 package io.stepfunc.dnp3c.conformance.s8
 
-import io.stepfunc.dnp3c.conformance.api.{ Options, TestProcedure }
+import io.stepfunc.dnp3c.conformance.Placements.id
+import io.stepfunc.dnp3c.conformance.api.{ Options, ProcedureDefinition }
 import io.stepfunc.dnp3c.conformance.s6
 import io.stepfunc.dnp3c.conformance.api.options.{
   BehaviorOptions,
@@ -55,7 +56,7 @@ class SilenceWaitsTest extends AnyFunSuite with Matchers {
   // runs every step, carrying on past failures; a manual question gets no answer (end of input), so it fails rather
   // than waits
   private def runEachStep(
-      procedure: TestProcedure,
+      procedure: ProcedureDefinition,
       settings: Map[String, String],
       driver: Silent = new Silent): Silent = {
     Console.withIn(new StringReader(""))(
@@ -127,7 +128,8 @@ class SilenceWaitsTest extends AnyFunSuite with Matchers {
   test("after new events, no unsolicited response is expected for as long as the DUT could take to send one") {
     val settings =
       Map(UnsolicitedOptions.holdOffMs.id -> "500", UnsolicitedOptions.unsolicitedConfirmTimeoutMs.id -> "2000")
-    def eventWaits(procedure: TestProcedure) = runEachStep(procedure, settings).unsolicitedWaits.count(_.contains(2700))
+    def eventWaits(procedure: ProcedureDefinition) =
+      runEachStep(procedure, settings).unsolicitedWaits.count(_.contains(2700))
     // 8.11.2.6: after the events, and after the request to enable unsolicited responses
     eventWaits(s811.Procedure81126) should equal(2)
     // 8.11.2.2: before unsolicited responses are enabled, when they are, and for the other classes' events

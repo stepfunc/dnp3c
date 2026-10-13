@@ -3,7 +3,8 @@
 
 package io.stepfunc.dnp3c.conformance.s8.helpers
 
-import io.stepfunc.dnp3c.conformance.api.{ BooleanOption, Options, TestProcedure }
+import io.stepfunc.dnp3c.conformance.Placements.id
+import io.stepfunc.dnp3c.conformance.api.{ BooleanOption, Options, ProcedureDefinition }
 import io.stepfunc.dnp3c.conformance.s8.{ s814, s822 }
 import io.stepfunc.dnp3c.dnp3._
 import io.stepfunc.dnp3c.dnp3.app._
@@ -17,7 +18,7 @@ import org.scalatest.funsuite.AnyFunSuite
 @RunWith(classOf[JUnitRunner])
 class InputEventProceduresTest extends AnyFunSuite with Matchers {
 
-  private case class Family(input: InputType, procedures: Int => TestProcedure)
+  private case class Family(input: InputType, procedures: Int => ProcedureDefinition)
 
   private val binary = Family(
     InputType.BinaryInput,
@@ -41,7 +42,7 @@ class InputEventProceduresTest extends AnyFunSuite with Matchers {
       15 -> s822.Procedure822215)
   )
 
-  private def runs(procedure: TestProcedure, settings: (BooleanOption, Boolean)*): Boolean =
+  private def runs(procedure: ProcedureDefinition, settings: (BooleanOption, Boolean)*): Boolean =
     procedure.disabledBy(Options.from(settings.map((o, v) => o.id -> v.toString).toMap)).isEmpty
 
   test("a DUT without the input's events runs only the procedure for that") {

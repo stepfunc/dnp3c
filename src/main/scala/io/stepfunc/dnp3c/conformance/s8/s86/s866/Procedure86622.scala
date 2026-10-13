@@ -9,11 +9,7 @@ import io.stepfunc.dnp3c.conformance.api.options.{ AnalogInputOptions, EventBuff
 import io.stepfunc.dnp3c.conformance.s8.helpers.{ EventBufferSteps, EventClassData, Validations }
 import io.stepfunc.dnp3c.dnp3.app.objects.{ Group32Var1, Group32Var2, Group32Var3, Group32Var4 }
 
-object Procedure86622 extends TestProcedure {
-
-  override def id: String = "8.6.6.2.2"
-
-  override def description: String = "Buffer Overflow, Analog Input Change Event Buffers"
+object Procedure86622 extends ProcedureDefinition {
 
   override protected def requiredOptions = Inputs.analog.withEvents :+
     OptionCondition(SupportOptions.analogEventsQueuedPerPoint)

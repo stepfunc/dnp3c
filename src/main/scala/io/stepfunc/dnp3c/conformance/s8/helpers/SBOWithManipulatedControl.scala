@@ -3,10 +3,10 @@
 
 package io.stepfunc.dnp3c.conformance.s8.helpers
 
-import io.stepfunc.dnp3c.conformance.api.{ LabeledStep, OptionSource, TestProcedure }
+import io.stepfunc.dnp3c.conformance.api.{ LabeledStep, OptionSource, ProcedureDefinition }
 import io.stepfunc.dnp3c.dnp3.app.objects.{ CommandStatus, Group12Var1 }
 
-trait SBOWithManipulatedControl extends TestProcedure {
+trait SBOWithManipulatedControl extends ProcedureDefinition {
 
   def modify(control: Group12Var1): Group12Var1
 

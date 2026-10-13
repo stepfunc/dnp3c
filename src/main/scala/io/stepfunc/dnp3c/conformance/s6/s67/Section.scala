@@ -11,6 +11,6 @@ object Section extends TestSection {
 
   def description = "Self-Address Support"
 
-  override def procedures: Iterable[TestProcedure] = List(Procedure672)
+  override def procedures: Iterable[TestProcedure] = List(TestProcedure("6.7.2", "Test Procedure", Procedure672))
 
 }

@@ -11,8 +11,12 @@ object Section extends TestSection {
   def description = "Analog Output Controls, Direct Operate No Acknowledgment"
 
   override def procedures: Iterable[TestProcedure] = List(
-    Procedure84321,
-    Procedure84322,
-    Procedure84323)
+    TestProcedure("8.4.3.2.1", "Analog Output, Direct Operate, No Acknowledge", Procedure84321),
+    TestProcedure(
+      "8.4.3.2.2",
+      "Analog Output, Direct Operate, No Acknowledge, to an Uninstalled Point",
+      Procedure84322),
+    TestProcedure("8.4.3.2.3", "Analog Output, Direct Operate, No Acknowledge, Configurable Device", Procedure84323)
+  )
 
 }

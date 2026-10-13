@@ -3,7 +3,8 @@
 
 package io.stepfunc.dnp3c.conformance.s8
 
-import io.stepfunc.dnp3c.conformance.api.{ Options, TestProcedure }
+import io.stepfunc.dnp3c.conformance.Placements.id
+import io.stepfunc.dnp3c.conformance.api.{ Options, ProcedureDefinition }
 import io.stepfunc.dnp3c.conformance.api.options.TimeSyncOptions
 import io.stepfunc.dnp3c.dnp3._
 import io.stepfunc.dnp3c.dnp3.app._
@@ -59,7 +60,7 @@ class CtoChecksTest extends AnyFunSuite with Matchers {
 
   // runs every step, carrying on past failures; a manual question gets no answer (end of input), so it fails rather
   // than waits. Returns how many steps failed.
-  private def failedSteps(procedure: TestProcedure, dut: Dut, settings: Map[String, String] = Map()): Int =
+  private def failedSteps(procedure: ProcedureDefinition, dut: Dut, settings: Map[String, String] = Map()): Int =
     Console.withIn(new StringReader(""))(
       procedure.configure(Options.from(settings)).steps.count { s =>
         val t = Try(s.step.run(dut)); t.failed.foreach(e => System.err.println("DBG " + s.label + ": " + e.getMessage));

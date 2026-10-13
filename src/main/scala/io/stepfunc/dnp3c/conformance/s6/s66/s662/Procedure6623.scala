@@ -11,11 +11,7 @@ import io.stepfunc.dnp3c.dnp3.{ LinkOverride, Requests, TestDriver }
 import io.stepfunc.dnp3c.protocol.parsing.UInt16LE
 import io.stepfunc.dnp3c.dnp3.DeferredCheck
 
-object Procedure6623 extends TestProcedure {
-
-  def id = "6.6.2.3"
-
-  def description = "Invalid Destination Address"
+object Procedure6623 extends ProcedureDefinition {
 
   def readWrongAddress(offset: Int): TestStep = new TestStep {
 

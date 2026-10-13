@@ -12,11 +12,7 @@ import io.stepfunc.dnp3c.dnp3.app.Sequence
 import io.stepfunc.dnp3c.dnp3.app.objects.Group32Var0
 import io.stepfunc.dnp3c.dnp3.{ AutoConfirm, Requests }
 
-object Procedure81922 extends TestProcedure {
-
-  override def id: String = "8.19.2.2"
-
-  override def description: String = "Analog Input Change, Without Confirm"
+object Procedure81922 extends ProcedureDefinition {
 
   override protected def requiredOptions: List[OptionCondition] = Inputs.analog.withEvents
 

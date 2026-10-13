@@ -12,11 +12,7 @@ import io.stepfunc.dnp3c.dnp3.app._
 import io.stepfunc.dnp3c.dnp3.{ Comment, Requests, TestDriver }
 import io.stepfunc.dnp3c.dnp3.DeferredCheck
 
-object Procedure8922 extends TestProcedure {
-
-  override def id: String = "8.9.2.2"
-
-  override def description: String = "Test Procedure"
+object Procedure8922 extends ProcedureDefinition {
 
   // 8.9.1.2 step 7: a device that cannot produce multiple fragments needs no further fragmentation testing
   override def requiredOptions = List(SupportOptions.multiFragmentResponses)

@@ -6,9 +6,4 @@ package io.stepfunc.dnp3c.conformance.s8.s822
 import io.stepfunc.dnp3c.conformance.s8.helpers.InputEventProcedures.AllQualifierWithoutTime
 import io.stepfunc.dnp3c.conformance.s8.helpers.InputType
 
-object Procedure82226 extends AllQualifierWithoutTime(InputType.DoubleBitBinaryInput) {
-
-  override def id: String = "8.22.2.6"
-
-  override def description: String = "Double-bit Input Change Without Time, 0x06"
-}
+object Procedure82226 extends AllQualifierWithoutTime(InputType.DoubleBitBinaryInput)

@@ -10,5 +10,5 @@ object Section extends TestSection {
 
   def description = "Cold Restart"
 
-  override def procedures: Iterable[TestProcedure] = List(Procedure882)
+  override def procedures: Iterable[TestProcedure] = List(TestProcedure("8.8.2", "Test Procedure", Procedure882))
 }

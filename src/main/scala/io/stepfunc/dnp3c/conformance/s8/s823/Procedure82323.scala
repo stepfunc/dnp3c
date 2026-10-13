@@ -11,11 +11,7 @@ import io.stepfunc.dnp3c.conformance.s8.helpers.Validations._
 import io.stepfunc.dnp3c.dnp3.Requests
 import io.stepfunc.dnp3c.dnp3.app.{ IIN, Sequence }
 
-object Procedure82323 extends TestProcedure {
-
-  override def id: String = "8.23.2.3"
-
-  override def description: String = "Variation nnn – specific attributes read request"
+object Procedure82323 extends ProcedureDefinition {
 
   override protected def requiredOptions: List[OptionCondition] = List(SupportOptions.deviceAttributes)
 

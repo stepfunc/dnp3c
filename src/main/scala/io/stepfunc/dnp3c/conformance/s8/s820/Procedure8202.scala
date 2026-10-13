@@ -11,11 +11,7 @@ import io.stepfunc.dnp3c.dnp3.app.objects._
 import io.stepfunc.dnp3c.dnp3.app._
 import io.stepfunc.dnp3c.dnp3.{ MessageValidation, Requests }
 
-object Procedure8202 extends TestProcedure {
-
-  override def id: String = "8.20.2"
-
-  override def description: String = "Test Procedure"
+object Procedure8202 extends ProcedureDefinition {
 
   override protected def steps(options: OptionSource): Iterable[LabeledStep] = {
 

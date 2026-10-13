@@ -4,7 +4,7 @@
 package io.stepfunc.dnp3c.conformance.s8.s86.s864
 
 import io.stepfunc.dnp3c.conformance.api.options.{ FlagTestOptions, SupportOptions }
-import io.stepfunc.dnp3c.conformance.api.{ LabeledStep, OptionSource, TestProcedure, _ }
+import io.stepfunc.dnp3c.conformance.api._
 import io.stepfunc.dnp3c.conformance.s8.helpers.GenericSteps._
 import io.stepfunc.dnp3c.conformance.s8.helpers.Validations._
 import io.stepfunc.dnp3c.dnp3.app._
@@ -12,11 +12,7 @@ import io.stepfunc.dnp3c.dnp3.app.objects.{ Group10Var0, Group10Var2 }
 import io.stepfunc.dnp3c.dnp3.{ MessageValidation, Requests }
 import io.stepfunc.dnp3c.protocol.Hex
 
-object Procedure8643 extends TestProcedure {
-
-  override def id: String = "8.6.4.3"
-
-  override def description: String = "Test Procedure for Devices with Individual Remote Supervisory Control"
+object Procedure8643 extends ProcedureDefinition {
 
   override protected def requiredOptions = List(SupportOptions.individualRemoteSupervisoryControl)
 

@@ -60,38 +60,43 @@ class TestRunnerTest extends AnyFunSuite with Matchers {
   }
 
   private def procedure(name: String, fail: Failures, required: List[OptionCondition] = Nil): TestProcedure =
-    new TestProcedure {
-      def id: String = name
-      def description: String = name
-      override protected def requiredOptions: List[OptionCondition] = required
-      protected def steps(options: OptionSource): Iterable[LabeledStep] = List(LabeledStep(
-        "step",
-        new TestStep {
-          def description: List[Comment] = Nil
-          def run(driver: TestDriver): List[DeferredCheck] = {
-            fail(s"step $name")
-            Nil
-          }
-        }))
-    }
+    TestProcedure(
+      name,
+      name,
+      new ProcedureDefinition {
+        override protected def requiredOptions: List[OptionCondition] = required
+        protected def steps(options: OptionSource): Iterable[LabeledStep] = List(LabeledStep(
+          "step",
+          new TestStep {
+            def description: List[Comment] = Nil
+            def run(driver: TestDriver): List[DeferredCheck] = {
+              fail(s"step $name")
+              Nil
+            }
+          }))
+      }
+    )
 
   // a procedure whose steps each record themselves and return a deferred check that records itself
-  private def deferring(name: String, fail: Failures, stepNames: String*): TestProcedure = new TestProcedure {
-    def id: String = name
-    def description: String = name
-    protected def steps(options: OptionSource): Iterable[LabeledStep] = stepNames.map { s =>
-      LabeledStep(
-        "step",
-        new TestStep {
-          def description: List[Comment] = Nil
-          def run(driver: TestDriver): List[DeferredCheck] = {
-            fail(s"step $s")
-            List(DeferredCheck(s, Nil, () => fail(s"check $s")))
-          }
+  private def deferring(name: String, fail: Failures, stepNames: String*): TestProcedure =
+    TestProcedure(
+      name,
+      name,
+      new ProcedureDefinition {
+        protected def steps(options: OptionSource): Iterable[LabeledStep] = stepNames.map { s =>
+          LabeledStep(
+            "step",
+            new TestStep {
+              def description: List[Comment] = Nil
+              def run(driver: TestDriver): List[DeferredCheck] = {
+                fail(s"step $s")
+                List(DeferredCheck(s, Nil, () => fail(s"check $s")))
+              }
+            }
+          )
         }
-      )
-    }
-  }
+      }
+    )
 
   private def section(elements: TestProcedure*): TestSection = new TestSection {
     def id: String = "section"

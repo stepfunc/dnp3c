@@ -3,7 +3,7 @@
 
 package io.stepfunc.dnp3c.conformance
 
-import io.stepfunc.dnp3c.conformance.api.{ BooleanOption, OptionGroups, Options, TestElement, TestProcedure }
+import io.stepfunc.dnp3c.conformance.api.{ BooleanOption, OptionGroups, Options, TestElement, ProcedureDefinition }
 import io.stepfunc.dnp3c.conformance.api.options.{ AttributeOptions, SupportOptions }
 import org.junit.runner.RunWith
 import org.scalatestplus.junit.JUnitRunner
@@ -22,10 +22,10 @@ class ProcedureConfigurationTest extends AnyFunSuite with Matchers {
 
   private val booleans = OptionGroups.list.flatMap(_.options).collect { case o: BooleanOption => o.id }
 
-  private def build(procedure: TestProcedure, options: Options): Unit = procedure.configure(options).steps.toList
+  private def build(procedure: ProcedureDefinition, options: Options): Unit = procedure.configure(options).steps.toList
 
   private def configuresEveryProcedure(options: Options): Unit = implemented.foreach { p =>
-    withClue(s"${p.id}: ")(noException should be thrownBy build(p, options))
+    withClue(s"${p.id}: ")(noException should be thrownBy build(p.definition, options))
   }
 
   test("every implemented procedure configures with the defaults") {
@@ -44,11 +44,12 @@ class ProcedureConfigurationTest extends AnyFunSuite with Matchers {
 
   test("an incomplete procedure fails to configure") {
     incomplete should not be empty
-    incomplete.foreach(p => withClue(s"${p.id}: ")(an[Exception] should be thrownBy build(p, Options.from(profile))))
+    incomplete.foreach(p =>
+      withClue(s"${p.id}: ")(an[Exception] should be thrownBy build(p.definition, Options.from(profile))))
   }
 
   test("a procedure whose feature the DUT lacks is skipped") {
-    def skipped(procedure: TestProcedure, settings: (BooleanOption, Boolean)*): Boolean =
+    def skipped(procedure: ProcedureDefinition, settings: (BooleanOption, Boolean)*): Boolean =
       procedure.disabledBy(Options.from(profile ++ settings.map((o, v) => o.id -> v.toString))).isDefined
 
     val (binary, analog) = (SupportOptions.Outputs.binary.commands, SupportOptions.Outputs.analog.commands)

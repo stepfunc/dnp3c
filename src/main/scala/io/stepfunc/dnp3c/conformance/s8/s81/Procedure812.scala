@@ -11,11 +11,7 @@ import io.stepfunc.dnp3c.dnp3.app.objects.{ Group10Var0, Group10Var2 }
 import io.stepfunc.dnp3c.dnp3.app._
 import io.stepfunc.dnp3c.dnp3.Requests
 
-object Procedure812 extends TestProcedure {
-
-  def id = "8.1.2"
-
-  def description = "Test Procedure"
+object Procedure812 extends ProcedureDefinition {
 
   def steps(options: OptionSource): List[LabeledStep] = {
 

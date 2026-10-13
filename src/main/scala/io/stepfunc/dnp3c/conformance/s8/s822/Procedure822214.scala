@@ -6,9 +6,4 @@ package io.stepfunc.dnp3c.conformance.s8.s822
 import io.stepfunc.dnp3c.conformance.s8.helpers.InputEventProcedures.CountQualifierWithRelativeTime
 import io.stepfunc.dnp3c.conformance.s8.helpers.InputType
 
-object Procedure822214 extends CountQualifierWithRelativeTime(InputType.DoubleBitBinaryInput, twoByteCount = true) {
-
-  override def id: String = "8.22.2.14"
-
-  override def description: String = "Double-bit Input Change With Relative Time, 0x08"
-}
+object Procedure822214 extends CountQualifierWithRelativeTime(InputType.DoubleBitBinaryInput, twoByteCount = true)

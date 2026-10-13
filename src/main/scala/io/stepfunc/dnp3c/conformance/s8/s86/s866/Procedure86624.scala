@@ -9,11 +9,7 @@ import io.stepfunc.dnp3c.conformance.api.options.{ DoubleBitInputOptions, EventB
 import io.stepfunc.dnp3c.conformance.s8.helpers.{ EventBufferSteps, EventClassData, Validations }
 import io.stepfunc.dnp3c.dnp3.app.objects.{ Group4Var1, Group4Var2, Group4Var3 }
 
-object Procedure86624 extends TestProcedure {
-
-  override def id: String = "8.6.6.2.4"
-
-  override def description: String = "Double-bit Input Change Event Buffers"
+object Procedure86624 extends ProcedureDefinition {
 
   override protected def requiredOptions = Inputs.doubleBit.withEvents
 

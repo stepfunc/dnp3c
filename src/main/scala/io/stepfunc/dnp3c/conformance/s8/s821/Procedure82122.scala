@@ -15,9 +15,5 @@ object Procedure82122 extends ConfigurableInputProcedure(
       Group3Var0,
       Sequence.zero) {
 
-  override def id: String = "8.21.2.2"
-
-  override def description: String = "Device supports Double-bit Inputs, Configurable Device"
-
   override protected def requiredOptions: List[OptionCondition] = Inputs.doubleBit.withDisabling
 }

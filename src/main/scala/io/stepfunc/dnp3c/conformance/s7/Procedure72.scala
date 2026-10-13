@@ -10,10 +10,7 @@ import io.stepfunc.dnp3c.dnp3.app.Sequence
 import io.stepfunc.dnp3c.dnp3.link.{ FrameValidator, LinkFrame }
 import io.stepfunc.dnp3c.dnp3.transport.Transport
 
-object Procedure72 extends TestProcedure {
-  def id = "7.2"
-
-  def description = "Segmentation of application layer class 0 poll"
+object Procedure72 extends ProcedureDefinition {
 
   def steps(options: OptionSource): Iterable[LabeledStep] = {
 

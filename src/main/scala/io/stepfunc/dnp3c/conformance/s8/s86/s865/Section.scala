@@ -12,9 +12,9 @@ object Section extends TestSection {
   def description = "Broadcast Address and All Stations Indication"
 
   override def procedures: Iterable[TestProcedure] = List(
-    Procedure8652,
-    Procedure8653,
-    Procedure8654
+    TestProcedure("8.6.5.2", "Test Procedure", Procedure8652),
+    TestProcedure("8.6.5.3", "Test Procedure", Procedure8653),
+    TestProcedure("8.6.5.4", "Test Procedure, Confirmed Response Options", Procedure8654)
   )
 
 }

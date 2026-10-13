@@ -15,11 +15,7 @@ import io.stepfunc.dnp3c.protocol.Hex
 import io.stepfunc.dnp3c.protocol.parsing.UInt8
 import io.stepfunc.dnp3c.dnp3.DeferredCheck
 
-object Procedure6632 extends TestProcedure {
-
-  override def id: String = "6.6.3.2"
-
-  override def description: String = "Invalid Secondary Function Code"
+object Procedure6632 extends ProcedureDefinition {
 
   override protected def requiredOptions = List(SupportOptions.dataLinkConfirmRequests, SupportOptions.dataLinkRetries)
 

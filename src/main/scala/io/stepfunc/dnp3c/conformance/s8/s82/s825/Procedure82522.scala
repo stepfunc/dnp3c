@@ -10,11 +10,7 @@ import io.stepfunc.dnp3c.conformance.s8.helpers.{ OperationSteps, OperationType 
 import io.stepfunc.dnp3c.dnp3.app.objects.ControlCode
 import io.stepfunc.dnp3c.dnp3.app.MutableSequence
 
-object Procedure82522 extends TestProcedure {
-
-  override def id = "8.2.5.2.2"
-
-  override def description = "Binary Output, Single Function Support"
+object Procedure82522 extends ProcedureDefinition {
 
   override protected def requiredOptions = List(SupportOptions.Outputs.binary.commands)
 

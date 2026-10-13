@@ -9,5 +9,5 @@ object Section extends TestSection {
 
   override def id = "6.3"
   override def description = "Request Link Status"
-  override def procedures: Iterable[TestProcedure] = List(Procedure632)
+  override def procedures: Iterable[TestProcedure] = List(TestProcedure("6.3.2", "Test Procedure", Procedure632))
 }
