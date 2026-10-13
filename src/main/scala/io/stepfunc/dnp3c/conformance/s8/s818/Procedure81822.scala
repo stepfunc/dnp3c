@@ -22,7 +22,7 @@ object Procedure81822 extends ProcedureDefinition {
       (3 to 4) --> expectAtLeastOneResponse(
         Sequence.zero,
         Validations.verifyStaticResponse(Set(Group30Var1, Group30Var2, Group30Var3, Group30Var4)) &&
-          Validations.verifyFlagsComplyWithNote5 &&
+          Validations.verifyFlagsComplyWithFlagNote &&
           PluginValidations.verifyAllAnalogInputsCurrentValues().acrossFragments
       )
     )

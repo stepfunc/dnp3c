@@ -110,7 +110,7 @@ class ValidationsTestSuite extends AnyFunSuite with Matchers {
 
   test("Note 5 flags allow the state bit for binary output status") {
     def check(hex: String): Boolean =
-      passes(Validations.verifyFlagsComplyWithNote5, response(IIN.empty, Message.parseObjectHeaders(Hex.from(hex))))
+      passes(Validations.verifyFlagsComplyWithFlagNote, response(IIN.empty, Message.parseObjectHeaders(Hex.from(hex))))
 
     check("0A 02 00 00 00 81") should be(true) // g10v2 index 0: online, state on
     check("0A 02 00 00 00 03") should be(false) // g10v2 index 0: online, restart

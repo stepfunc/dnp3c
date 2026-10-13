@@ -18,7 +18,8 @@ object Procedure8512 extends ProcedureDefinition {
       (2 to 3) --> expectAtLeastOneResponse(
         Sequence.zero,
         PluginValidations.verifyAllStaticValues(isClass0 = true).acrossFragments &&
-          verifyOnlyTable83Contents(options.get(SupportOptions.Inputs.doubleBit.points)) && verifyFlagsComplyWithNote5
+          verifyOnlyTable83Contents(options.get(SupportOptions.Inputs.doubleBit.points)) &&
+          verifyFlagsComplyWithFlagNote
       )
     )
   }

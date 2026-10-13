@@ -21,7 +21,7 @@ object Procedure812 extends ProcedureDefinition {
       describe("Device supports binary output status (g10)") +
         expectAtLeastOneResponse(
           Sequence.zero,
-          isNotEmpty && verifyStaticResponse(Set(Group10Var2)) && verifyFlagsComplyWithNote5)
+          isNotEmpty && verifyStaticResponse(Set(Group10Var2)) && verifyFlagsComplyWithFlagNote)
     }
 
     def unsupported: LabeledStep = 4 --> {

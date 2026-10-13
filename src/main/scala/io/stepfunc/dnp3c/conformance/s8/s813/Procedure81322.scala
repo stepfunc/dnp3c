@@ -30,7 +30,7 @@ object Procedure81322 extends ProcedureDefinition {
         Sequence.two,
         verifyStaticResponse(Set(Group1Var1, Group1Var2)) &&
           PluginValidations.verifyAllBinaryInputCurrentValues().acrossFragments &&
-          Validations.verifyFlagsComplyWithNote5
+          Validations.verifyFlagsComplyWithFlagNote
       )
     )
   }

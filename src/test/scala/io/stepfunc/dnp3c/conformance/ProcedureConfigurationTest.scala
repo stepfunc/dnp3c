@@ -14,7 +14,8 @@ import org.scalatest.funsuite.AnyFunSuite
 @RunWith(classOf[JUnitRunner])
 class ProcedureConfigurationTest extends AnyFunSuite with Matchers {
 
-  private val procedures = Revisions.v2_7.flatMapProcedures(p => Some(p)).toList
+  // every revision's procedures; a definition that two revisions share is configured once for each
+  private val procedures = Revisions.list.flatMap(_.flatMapProcedures(p => Some(p)))
   private val (incomplete, implemented) = procedures.partition(_.incomplete)
 
   // the Device Profile values that have no default
@@ -72,9 +73,10 @@ class ProcedureConfigurationTest extends AnyFunSuite with Matchers {
 
   test("every element's id extends its parent's") {
     def check(parent: TestElement): Unit = parent.subElements.foreach { child =>
-      child.id should startWith(parent.id + ".")
+      // a numbered child extends its parent's number with "."; one that 3.1r1 doesn't number, with "-"
+      List(parent.id + ".", parent.id + "-").exists(child.id.startsWith) should equal(true)
       check(child)
     }
-    Revisions.v2_7.sections.foreach(check)
+    Revisions.list.foreach(_.sections.foreach(check))
   }
 }

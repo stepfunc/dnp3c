@@ -27,7 +27,7 @@ object Procedure82121 extends ProcedureDefinition {
       7 --> send(Requests.readAllObjects(Sequence.one, Group3Var0)),
       (8 to 9) --> expectAtLeastOneResponse(
         Sequence.one,
-        verifyStaticResponse(Set(Group3Var1, Group3Var2)) && verifyFlagsComplyWithNote5 &&
+        verifyStaticResponse(Set(Group3Var1, Group3Var2)) && verifyFlagsComplyWithFlagNote &&
           PluginValidations.verifyAllDoubleBitBinaryInputCurrentValues().acrossFragments
       )
     )

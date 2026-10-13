@@ -71,6 +71,7 @@ class MainTest extends AnyFunSuite with Matchers {
     Main.execute(Array("-revs"), new DefaultIntegrationPlugin()) should equal(0)
     Main.execute(Array("-help"), new DefaultIntegrationPlugin()) should equal(0)
     Main.execute(Array("-rev", "2.7", "-help"), new DefaultIntegrationPlugin()) should equal(0)
+    Main.execute(Array("-rev", "3.1r1", "-help"), new DefaultIntegrationPlugin()) should equal(0)
     Main.execute(Array("-rev", "9.9", "-help"), new DefaultIntegrationPlugin()) should not equal 0
   }
 

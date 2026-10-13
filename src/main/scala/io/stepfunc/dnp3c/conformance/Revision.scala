@@ -147,8 +147,16 @@ object Revisions {
     List(2),
     List(s6.Section, s7.Section, s8.Section))
 
+  /** DNP3 IED Certification Procedure, Subset Levels 1, 2 and 3, version 3.1 rev 1 */
+  val v3_1r1: Revision = new Revision(
+    "3.1r1",
+    "DNP3 IED Certification Procedure, Subset Levels 1, 2 and 3",
+    "2022-09-13",
+    List(1, 2, 3),
+    v31r1.Tree.sections)
+
   /** every revision, oldest first */
-  val list: List[Revision] = List(v2_7)
+  val list: List[Revision] = List(v2_7, v3_1r1)
 
   def find(id: String): Option[Revision] = list.find(_.id == id)
 }
