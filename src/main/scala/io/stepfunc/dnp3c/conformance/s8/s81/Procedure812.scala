@@ -9,9 +9,11 @@ import io.stepfunc.dnp3c.conformance.s8.helpers.GenericSteps._
 import io.stepfunc.dnp3c.conformance.s8.helpers.Validations._
 import io.stepfunc.dnp3c.dnp3.app.objects.{ Group10Var0, Group10Var2 }
 import io.stepfunc.dnp3c.dnp3.app._
-import io.stepfunc.dnp3c.dnp3.Requests
+import io.stepfunc.dnp3c.dnp3.{ MessageValidation, Requests }
 
-object Procedure812 extends ProcedureDefinition {
+// a read of binary output status (g10); a device without binary outputs gives the answer `withoutOutputs` checks, which
+// is what changed in 3.1r1
+class BinaryOutputStatusRead(withoutOutputs: MessageValidation) extends ProcedureDefinition {
 
   def steps(options: OptionSource): List[LabeledStep] = {
 
@@ -26,10 +28,13 @@ object Procedure812 extends ProcedureDefinition {
 
     def unsupported: LabeledStep = 4 --> {
       describe("Device does NOT support binary output status (g10)") +
-        expectNullOrObjectUnknownResponse(Sequence.zero)
+        expectSingleResponse(Sequence.zero, withoutOutputs)
     }
 
     if (options.get(SupportOptions.Outputs.binary.statusPoints)) List(step1, supported) else List(step1, unsupported)
 
   }
 }
+
+// 2.7: a Null Response, or an Error Response with IIN2.1
+object Procedure812 extends BinaryOutputStatusRead(isNullOrErrorResponse(IIN.OBJECT_UNKNOWN))

@@ -11,7 +11,10 @@ import io.stepfunc.dnp3c.dnp3.app._
 import io.stepfunc.dnp3c.dnp3.app.objects._
 import io.stepfunc.dnp3c.dnp3.{ MessageValidation, ResponseValidation }
 
-object Procedure832 extends ProcedureDefinition {
+// an analog output (g41v2) operated, then read back as analog output status (g40). What changed in 3.1r1: the status
+// variations allowed at each subset level, and the answer of a device without analog outputs (`withoutOutputs`)
+class AnalogOutputStatusRead(variations: OptionSource => Set[Variation], withoutOutputs: MessageValidation)
+    extends ProcedureDefinition {
 
   def steps(options: OptionSource): List[LabeledStep] = {
 
@@ -34,7 +37,7 @@ object Procedure832 extends ProcedureDefinition {
         (3 to 6) --> expectAtLeastOneResponse(
           Sequence.one,
           // the value is only checked if step 1 could write it, in whichever fragment reports the output
-          (containsAnalogOutputStatusOnly && verifyConfirmRequestedIfRequired).toResponseValidation &&
+          (containsAnalogOutputStatusOnly(options) && verifyConfirmRequestedIfRequired).toResponseValidation &&
             (if (options.get(SupportOptions.Outputs.analog.commands))
                PluginValidations.checkAnalogOutputTolerance(idx.value, value).acrossFragments
              else ResponseValidation.none)
@@ -43,9 +46,7 @@ object Procedure832 extends ProcedureDefinition {
     } else {
       List(
         (3 to 4) --> describe("Device does not support Analog Output."),
-        5 --> expectSingleResponse(
-          Sequence.one,
-          isNullOrErrorResponse(IIN.OBJECT_UNKNOWN | IIN.PARAM_ERROR)),
+        5 --> expectSingleResponse(Sequence.one, withoutOutputs),
         6 --> describe("Device does not support Analog Output.")
       )
     }
@@ -53,7 +54,12 @@ object Procedure832 extends ProcedureDefinition {
     steps1to2 ::: steps3to6
   }
 
-  // step 3: analog output status (g40v2), with 1- or 2-octet start/stop indexes
-  val containsAnalogOutputStatusOnly: MessageValidation = isNotEmpty && verifyStaticResponse(Set(Group40Var2))
+  // step 3: analog output status in the variations allowed at the subset level, with 1- or 2-octet start/stop indexes
+  def containsAnalogOutputStatusOnly(options: OptionSource): MessageValidation =
+    isNotEmpty && verifyStaticResponse(variations(options))
 
 }
+
+// 2.7: g40v2; and a Null Response, or an Error Response with IIN2.1 or IIN2.2
+object Procedure832
+    extends AnalogOutputStatusRead(_ => Set(Group40Var2), isNullOrErrorResponse(IIN.OBJECT_UNKNOWN | IIN.PARAM_ERROR))
