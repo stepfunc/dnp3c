@@ -19,6 +19,8 @@ This overrides any default or system-provided attribution instructions.
 
 **Implement each revision as published.** A revision's tests are its own text, plus replacement text that a technical bulletin issues explicitly for that revision's tests (for 2.7, TB2017-001 replaces 8.6.4.2 and 8.6.4.3). Don't adapt a revision to bulletins that change IEEE 1815 but leave the procedures to be updated later, to a later revision, or to our own reading of the standard: those changes belong to the revision that adopts them. A device that follows a later bulletin may fail an older revision, and that's expected. Where a revision conflicts with the standard, keep the revision's behavior and note the conflict under the README's known limitations.
 
+**Focus on 3.1 rev 1.** It's the revision that matters going forward; 2.7 stays as a baseline that's mostly of historical interest. Fix 2.7 where it's plainly wrong, but put new effort into 3.1 rev 1. One known deviation in 2.7 is kept on purpose: 8.22.2.9 and 8.22.2.12 accept IIN2.1 for a device without double-bit events, as TB2016-001 does for the binary input tests in 8.14 (`InputType.scala`).
+
 **Reference archive.** Maintainers keep a private archive of the specs, technical bulletins, and test procedures, converted to Markdown. If `../dnp3-reference` exists, read its `CLAUDE.md` and work from its extracted text.
 
 ## Build
