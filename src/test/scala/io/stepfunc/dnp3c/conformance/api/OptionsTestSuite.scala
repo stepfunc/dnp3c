@@ -127,9 +127,16 @@ class OptionsTestSuite extends AnyFunSuite with Matchers {
   }
 
   test("every default parses back to itself") {
-    for (option <- OptionGroups.list.flatMap(_.options)) option match {
+    for (option <- OptionGroups.list.flatMap(_.options).filterNot(_.required)) option match {
       case o: TypedTestOption[?] => withClue(o.id)(o.parse(o.defaultAsString) should equal(o.default))
     }
+  }
+
+  test("a required option has no value until a configuration sets one, and only an allowed one") {
+    val level = options.OutstationOptions.subsetLevel
+    Options.from(Map()).get(level) should equal(None)
+    Options.from(Map(level.id -> "2")).get(level) should equal(Some(2))
+    an[ConfigurationException] should be thrownBy Options.from(Map(level.id -> "4"))
   }
 
   test("loads the default configuration file") {
@@ -137,6 +144,9 @@ class OptionsTestSuite extends AnyFunSuite with Matchers {
     path.toFile.deleteOnExit()
     OptionFileWriter.write(path.toFile, OptionGroups.list)
     Options.load(path).get(LinkOptions.timeout) should equal(LinkOptions.timeout.default)
+    // the subset level is written commented out, for you to set
+    Files.readString(path) should include("# outstation.subset.level = ")
+    Options.load(path).get(options.OutstationOptions.subsetLevel) should equal(None)
   }
 
   test("writing the default configuration file fails when the write does") {

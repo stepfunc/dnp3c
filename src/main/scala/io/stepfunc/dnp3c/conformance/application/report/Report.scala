@@ -10,11 +10,11 @@ import io.stepfunc.dnp3c.conformance.api.{ TestProcedure, TestSection }
 import io.stepfunc.dnp3c.conformance.application.TestResult
 
 /**
- * The report of one revision's results
+ * The report of one revision's results at one subset level
  *
  * @param notices results found but not counted, and why, e.g. one saved under another revision
  */
-case class Report(revision: Revision, sections: Iterable[Report.Section], notices: List[String]) {
+case class Report(revision: Revision, level: Int, sections: Iterable[Report.Section], notices: List[String]) {
 
   private def convert(level: Int, s: Report.Section)(implicit i: Indentation): Iterable[String] = {
     Tags.tr(Attributes.classes(Classes.section, Classes.level(level))) {
@@ -110,7 +110,7 @@ case class Report(revision: Revision, sections: Iterable[Report.Section], notice
       deviceUnderTest,
       Tags.h1(List("DNP3 Conformance Report")) ++
         Tags.p(Attributes.classes(Clazz("revision")))(
-          List(Tags.escape(s"${revision.title}, revision ${revision.id} (${revision.date})"))) ++
+          List(Tags.escape(s"${revision.title}, revision ${revision.id} (${revision.date}), subset level $level"))) ++
         Tags.p(List(s"Generated $generated")),
       totals.flatMap { case (clazz, text) => Tags.span(Attributes.classes(Clazz("total"), clazz))(List(text)) }
     ) {
@@ -137,12 +137,12 @@ object Report {
   case class Section(id: String, description: String, sections: Iterable[Section], procedures: Iterable[Procedure])
 
   /**
-   * The report of a revision's results
+   * The report of a revision's results at a subset level
    *
-   * @param path the revision's results folder
+   * @param path the folder of the revision's results at the level
    * @param notices anything else to tell the reader, e.g. results found outside the folder
    */
-  def create(path: Path, revision: Revision, notices: List[String] = Nil): Report = {
+  def create(path: Path, revision: Revision, level: Int, notices: List[String] = Nil): Report = {
     val ignored = List.newBuilder[String]
 
     def convert(section: TestSection): Section =
@@ -152,10 +152,15 @@ object Report {
       val folder = path.resolve(procedure.id)
       val file = folder.resolve("results.properties").toFile
       val saved = if (file.exists()) Some(TestResult.read(file)) else None
-      // a result saved under another revision, or before results recorded one, isn't this revision's
-      val counted = saved.filter(_.revision.contains(revision.id))
-      saved.filterNot(_.revision.contains(revision.id)).foreach { s =>
-        val when = s.revision.fold("before results recorded their revision")(r => s"under revision $r")
+      // a result saved under another revision or level, or before results recorded them, isn't this run's
+      def matches(s: TestResult.Saved) = s.revision.contains(revision.id) && s.level.contains(level)
+      val counted = saved.filter(matches)
+      saved.filterNot(matches).foreach { s =>
+        val when = (s.revision, s.level) match {
+          case (Some(r), Some(l)) => s"under revision $r at subset level $l"
+          case (Some(r), None) => s"under revision $r before results recorded their subset level"
+          case _ => "before results recorded their revision"
+        }
         ignored += s"The result in ${procedure.id}/ was saved $when, so it isn't counted. Run the procedure again."
       }
       // a run that was cut short leaves a log, or a capture, but no result
@@ -172,7 +177,7 @@ object Report {
     }
 
     val sections = revision.sections.map(convert)
-    Report(revision, sections, notices ++ ignored.result())
+    Report(revision, level, sections, notices ++ ignored.result())
   }
 
 }

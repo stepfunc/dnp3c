@@ -6,10 +6,10 @@ package io.stepfunc.dnp3c.conformance.application
 import java.io.Closeable
 import java.nio.file.{ Files, Path }
 
-import io.stepfunc.dnp3c.conformance.Revisions
+import io.stepfunc.dnp3c.conformance.{ Revision, Revisions }
 import io.stepfunc.dnp3c.conformance.api._
 import io.stepfunc.dnp3c.conformance.api.ProcedureOutcome.{ Failed, Passed, Skipped }
-import io.stepfunc.dnp3c.conformance.api.options.{ SupportOptions, TestOptions }
+import io.stepfunc.dnp3c.conformance.api.options.{ OutstationOptions, SupportOptions, TestOptions }
 import io.stepfunc.dnp3c.dnp3._
 import org.junit.runner.RunWith
 import org.scalatestplus.junit.JUnitRunner
@@ -99,20 +99,29 @@ class TestRunnerTest extends AnyFunSuite with Matchers {
       }
     )
 
-  private def section(elements: TestProcedure*): TestSection = new TestSection {
-    def id: String = "section"
-    def description: String = "section"
-    override def procedures: Iterable[TestProcedure] = elements
+  private def section(elements: TestProcedure*): TestSection = section(None, elements*)
+
+  private def section(levels: Option[Set[Int]], elements: TestProcedure*): TestSection = {
+    val sectionLevels = levels
+    new TestSection {
+      def id: String = "section"
+      def description: String = "section"
+      override def levels: Option[Set[Int]] = sectionLevels
+      override def procedures: Iterable[TestProcedure] = elements
+    }
   }
 
   private class Run(failAt: String*) {
     val events = new Events
     val fail = new Failures(events, failAt.toSet)
     val directory: Path = Files.createTempDirectory("dnp3c")
-    private val options = Options.from(Map(TestOptions.outputDirectory.id -> directory.toString))
+    def optionsAt(level: Int): Options = Options.from(Map(
+      TestOptions.outputDirectory.id -> directory.toString,
+      OutstationOptions.subsetLevel.id -> level.toString))
+    private val options = optionsAt(2)
 
     // the revision's folder, where the procedures' folders go
-    val folder: Path = directory.resolve(Revisions.v2_7.id)
+    val folder: Path = directory.resolve(Revisions.v2_7.id).resolve("L2")
 
     def apply(element: TestElement): RunSummary =
       TestRunner.run(Revisions.v2_7, element, options, new Plugin(fail), new Environment(fail))
@@ -168,11 +177,50 @@ class TestRunnerTest extends AnyFunSuite with Matchers {
     run.result("a") should equal(Some(TestResult.Skip))
   }
 
+  test("a skipped procedure opens nothing and calls no plugin method, but still has a log and a result") {
+    val run = new Run()
+    run(procedure("a", run.fail, List(SupportOptions.selfAddress)))
+    run.events.list should equal(Nil)
+    run.logged("a") should equal(true)
+    run.result("a") should equal(Some(TestResult.Skip))
+  }
+
+  test("a skip replaces an earlier result, so a pass can't outlive a skip that fails to be recorded") {
+    val run = new Run()
+    val folder = run.folder.resolve("a")
+    Files.createDirectories(folder)
+    TestResult.write(
+      TestResult.Saved(TestResult.Pass, Some("2.7"), Some(2), None),
+      folder.resolve("results.properties"))
+    // the log can't be written: log.html is a folder
+    Files.createDirectories(folder.resolve("log.html"))
+    an[HarnessExecutionException] should be thrownBy run(procedure("a", run.fail, List(SupportOptions.selfAddress)))
+    run.result("a") should equal(None)
+  }
+
+  test("a procedure that doesn't apply at the device's subset level is skipped, saying so") {
+    val run = new Run()
+    val revision =
+      new Revision(
+        "t",
+        "test",
+        "2026-01-01",
+        List(1, 2),
+        List(section(levels = Some(Set(1)), procedure("a", run.fail))))
+    val summary =
+      TestRunner.run(revision, revision.all, run.optionsAt(2), new Plugin(run.fail), new Environment(run.fail))
+    summary.results.map(_.outcome) should matchPattern {
+      case List(Skipped(reason)) if reason.contains("level(s) 1") =>
+    }
+    run.events.list should equal(Nil)
+  }
+
   test("a saved result records its revision, and why the procedure was skipped") {
     val run = new Run()
     run(procedure("a", run.fail, List(SupportOptions.selfAddress)))
     val saved = run.saved("a").get
     saved.revision should equal(Some("2.7"))
+    saved.level should equal(Some(2))
     saved.reason.get should include(SupportOptions.selfAddress.id)
   }
 
@@ -180,7 +228,7 @@ class TestRunnerTest extends AnyFunSuite with Matchers {
     val run = new Run("start#2")
     Files.createDirectories(run.folder.resolve("b"))
     TestResult.write(
-      TestResult.Saved(TestResult.Pass, Some("2.7"), None),
+      TestResult.Saved(TestResult.Pass, Some("2.7"), Some(2), None),
       run.folder.resolve("b").resolve("results.properties"))
 
     val ex = intercept[HarnessExecutionException](run(section(

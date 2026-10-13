@@ -36,11 +36,10 @@ class MainTest extends AnyFunSuite with Matchers {
       config = config
     )
 
-  private def describe(id: String): Int = {
-    val config = Files.createTempFile("dnp3c", ".properties").toFile
-    try Main.execute(command(Some(id), None, Some(config)), new DefaultIntegrationPlugin())
-    finally config.delete()
-  }
+  private val level2 = "outstation.subset.level = 2\n"
+
+  private def describe(id: String, contents: String = level2): Int =
+    withConfig(contents)(config => Main.execute(command(Some(id), None, Some(config)), new DefaultIntegrationPlugin()))
 
   test("describes a procedure") {
     describe("8.1.2") should equal(0)
@@ -48,6 +47,12 @@ class MainTest extends AnyFunSuite with Matchers {
 
   test("an unknown id is an error, not an exception") {
     describe("9.9") should not equal 0
+  }
+
+  test("a command that uses procedures needs a subset level the revision tests") {
+    describe("8.1.2", contents = "") should not equal 0
+    describe("8.1.2", contents = "outstation.subset.level = 3\n") should not equal 0
+    describe("8.1.2", contents = "outstation.subset.level = 4\n") should not equal 0
   }
 
   test("a command that uses procedures needs a known revision") {
@@ -83,7 +88,7 @@ class MainTest extends AnyFunSuite with Matchers {
   }
 
   test("a configuration file that can't be parsed is an error, not an exception") {
-    withConfig("test.deviceUnderTest = \\uZZZZ\n")(config =>
+    withConfig(level2 + "test.deviceUnderTest = \\uZZZZ\n")(config =>
       Main.execute(command(Some("8.1.2"), None, Some(config)), new DefaultIntegrationPlugin())) should not equal 0
   }
 
@@ -91,7 +96,7 @@ class MainTest extends AnyFunSuite with Matchers {
     // the output directory is a file
     val file = Files.createTempFile("dnp3c", ".results")
     try
-      withConfig(s"test.output.directory = ${file.toString.replace("\\", "/")}\n")(config =>
+      withConfig(level2 + s"test.output.directory = ${file.toString.replace("\\", "/")}\n")(config =>
         Main.execute(command(None, None, Some(config), report = true), new DefaultIntegrationPlugin())) should not equal
         0
     finally Files.delete(file)

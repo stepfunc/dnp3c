@@ -22,7 +22,9 @@ object OptionFileWriter {
 
     def writeOption(option: TestOption): Unit = {
       writer.println("# " + option.description)
-      writer.println(option.id + " = " + option.defaultAsString)
+      // a required option has no default to write: it's left for you to set
+      if (option.required) writer.println("# " + option.id + " = ")
+      else writer.println(option.id + " = " + option.defaultAsString)
       writer.println()
     }
 

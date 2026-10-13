@@ -16,6 +16,9 @@ sealed trait TestOption {
   def description: String
 
   def defaultAsString: String
+
+  // a required option has no default: a configuration must give it a value before procedures can use it
+  def required: Boolean = false
 }
 
 trait HasDefault[T] {
@@ -43,6 +46,11 @@ trait IntegerOption extends TypedTestOption[Int]
 trait IndexOption extends TypedTestOption[Index]
 trait OptionalIndexOption extends TypedTestOption[Option[Index]]
 trait IndexListOption extends TypedTestOption[List[Index]]
+// an integer that has no default, so None until a configuration sets it
+trait RequiredIntegerOption extends TypedTestOption[Option[Int]] {
+  def allowed: List[Int]
+  final override def required: Boolean = true
+}
 
 object OptionTypes {
 
@@ -77,6 +85,9 @@ object OptionTypes {
       description: String,
       default: List[Index] = (0 to 9).map(Index.apply).toList): IndexListOption =
     IndexListOptionImpl(group, name, description, default)
+  // one of the allowed values, which a configuration must set: there's no default
+  def requiredInteger(group: OptionGroup, name: String, desc: String, allowed: List[Int]): RequiredIntegerOption =
+    RequiredIntegerOptionImpl(group, name, desc, allowed)
   def hexByteInSet(group: OptionGroup, name: String, default: Byte, desc: String, allowed: Set[Byte]): HexByteOption =
     HexByteInSetImpl(group, name, default, desc, allowed)
 
@@ -137,6 +148,22 @@ object OptionTypes {
       case Some(idx) => idx.value.toString
       case None => "null"
     }
+  }
+
+  private case class RequiredIntegerOptionImpl(group: OptionGroup, name: String, desc: String, allowed: List[Int])
+      extends RequiredIntegerOption {
+
+    override def default: Option[Int] = None
+
+    override def description: String = s"$desc. Required, with no default: one of ${allowed.mkString(", ")}"
+
+    override def parse(s: String): Option[Int] = {
+      val value = Parse.integer(s)
+      if (!allowed.contains(value)) throw new Exception(s"$value isn't one of ${allowed.mkString(", ")}")
+      Some(value)
+    }
+
+    override def defaultAsString: String = ""
   }
 
   private def withMax(desc: String, max: Index): String =

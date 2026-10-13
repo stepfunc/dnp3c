@@ -25,6 +25,7 @@ Each option has a comment explaining it. The ones to set first:
 
 | Option | What it is |
 |---|---|
+| `outstation.subset.level` | The DNP3 subset level the DUT is configured for. It has no default: `-write` leaves it commented out, and every command that uses procedures fails until you set it. Revision 2.7 tests level 2. |
 | `test.deviceUnderTest` | The DUT's name in the report, e.g. its vendor, model and firmware version |
 | `test.output.directory` | Where results and the report are written |
 | `tcp.device.address`, `tcp.device.port` | Where the DUT listens |
@@ -37,7 +38,7 @@ The file is a Java properties file in UTF-8, where a backslash starts an escape:
 
 Pass the file with `-config` on every command. Without `-config`, dnp3c uses `./device.properties`, and creates it with the defaults if it doesn't exist.
 
-dnp3c checks the whole file before doing anything else, and lists every option it doesn't recognize or whose value is invalid. Options you leave out of the file have their defaults.
+dnp3c checks the whole file before doing anything else, and lists every option it doesn't recognize or whose value is invalid. Options you leave out of the file have their defaults, except `outstation.subset.level`, which has none.
 
 `dnp3c -options` prints every option and its default without writing a file.
 
@@ -86,22 +87,25 @@ A run stops at the first procedure that fails, and the procedures after it don't
 
 ## Results
 
-Each revision has its own folder in the output directory, and each procedure its own folder in that:
+Each revision has its own folder in the output directory, with a folder for each subset level in it, and each procedure has its own folder in that:
 
 ```
 results/
   2.7/
-    report.html          the report, linking to each procedure's log and capture
-    report.css
-    8.6.5.4/
-      log.html           every step, frame and check, with the outcome
-      results.properties the result (pass, fail or skip), the revision, and why it failed or was skipped
-      dump.pcap          the packet capture, if capture is on
+    L2/
+      report.html          the report, linking to each procedure's log and capture
+      report.css
+      8.6.5.4/
+        log.html           every step, frame and check, with the outcome
+        results.properties the result (pass, fail or skip), the revision and subset level, and why it failed or was skipped
+        dump.pcap          the packet capture, if capture is on
 ```
 
-The report is rebuilt after every run, including runs that fail. It names the revision, and shows every procedure: the ones you've run with their result (and, for one that was skipped, why), and the rest as not run. To rebuild it without running anything, use `dnp3c -rev 2.7 -config device.ini -report`.
+A procedure that won't run, because the DUT lacks a feature it needs, it doesn't apply at the subset level, or it isn't implemented, is recorded as skipped without connecting to the DUT.
 
-The report counts only results saved under its revision. It lists anything else it finds at the top and leaves it out: a result saved under another revision, a procedure whose last run didn't finish (it has a log but no result), or procedure folders straight in the output directory from dnp3c 0.1.0, which didn't keep results by revision.
+The report is rebuilt after every run, including runs that fail. It names the revision and the subset level, and shows every procedure: the ones you've run with their result (and, for one that was skipped, why), and the rest as not run. To rebuild it without running anything, use `dnp3c -rev 2.7 -config device.ini -report`.
+
+The report counts only results saved under its revision and level. It lists anything else it finds at the top and leaves it out: a result saved under another revision or level, a procedure whose last run didn't finish (it has a log but no result), or procedure folders straight in the output directory from dnp3c 0.1.0, which didn't keep results by revision.
 
 ## Working incrementally
 
