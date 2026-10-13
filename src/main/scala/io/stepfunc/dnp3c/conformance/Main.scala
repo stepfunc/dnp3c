@@ -125,8 +125,17 @@ object Main {
           return -1
       }
 
+    // and the subset level the device is configured for, which the revision must test
+    val level =
+      try revision.subsetLevel(options)
+      catch {
+        case ex: ConfigurationException =>
+          Colors.error.printLine(ErrorText.of(ex))
+          return -1
+      }
+
     if (config.listDisabled) {
-      listDisabled(options, revision)
+      listDisabled(options, revision, level)
       return 0
     }
 
@@ -134,6 +143,8 @@ object Main {
       case Some(id) =>
         revision.elements.get(id) match {
           case Some(section: TestSection) => print(section, Int.MaxValue, 0)
+          case Some(procedure: TestProcedure) if !revision.levelsOf(procedure).contains(level) =>
+            println(s"Not applicable at subset level $level: ${notApplicable(revision, procedure)}")
           case Some(procedure: TestProcedure) =>
             // building the steps checks the options the procedure uses, e.g. 8.23's device attributes
             try printDescription(procedure, options)
@@ -243,9 +254,17 @@ object Main {
   private def unknownRevision(id: String): String =
     s"Unknown revision: $id. The revisions are: ${Revisions.list.map(_.id).mkString(", ")}"
 
-  def listDisabled(options: OptionSource, revision: Revision): Unit = {
+  private def notApplicable(revision: Revision, p: TestProcedure): String =
+    s"${p.id} applies to subset level(s) ${revision.levelsOf(p).toList.sorted.mkString(", ")}"
+
+  def listDisabled(options: OptionSource, revision: Revision, level: Int): Unit = {
     Colors.text.printLine("Listing optional test procedures disabled by configuration: ")
     Colors.text.printLine("")
+
+    revision.flatMapProcedures(p => Option.when(!revision.levelsOf(p).contains(level))(p)).foreach { p =>
+      Colors.text.printLine("Procedure: " + p.id)
+      Colors.text.printLine(s"    Not applicable at subset level $level")
+    }
 
     val pairs: Iterable[(TestProcedure, BooleanOption)] =
       revision.flatMapProcedures(p => p.disabledBy(options).map(x => (p, x.option)))
@@ -273,7 +292,8 @@ object Main {
 
     def printOption(option: TestOption): Unit = {
       Colors.success.printLine("// " + option.description)
-      Colors.text.printLine(option.id + " = " + option.defaultAsString)
+      if (option.required) Colors.text.printLine(option.id + " = (required)")
+      else Colors.text.printLine(option.id + " = " + option.defaultAsString)
     }
 
     def printGroup(group: OptionGroup): Unit = {

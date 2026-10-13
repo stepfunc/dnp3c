@@ -26,12 +26,14 @@ object TestResult {
    * A result as saved in a procedure's folder
    *
    * @param revision the revision it was run under; None for a result saved before results recorded one (0.1.0)
+   * @param level the subset level it was run at; None for a result saved before results recorded one
    * @param reason why the procedure was skipped or failed
    */
-  case class Saved(result: TestResult, revision: Option[String], reason: Option[String])
+  case class Saved(result: TestResult, revision: Option[String], level: Option[Int], reason: Option[String])
 
   private val resultKey = "result"
   private val revisionKey = "revision"
+  private val levelKey = "subsetLevel"
   private val reasonKey = "reason"
 
   def read(file: File): Saved = {
@@ -42,7 +44,9 @@ object TestResult {
       Saved(
         TestResult.from(props.getProperty(resultKey)),
         Option(props.getProperty(revisionKey)),
-        Option(props.getProperty(reasonKey)))
+        Option(props.getProperty(levelKey)).flatMap(_.toIntOption),
+        Option(props.getProperty(reasonKey))
+      )
     } finally {
       stream.close()
     }
@@ -70,6 +74,7 @@ object TestResult {
         val props = new Properties()
         props.setProperty(resultKey, saved.result.value)
         saved.revision.foreach(props.setProperty(revisionKey, _))
+        saved.level.foreach(l => props.setProperty(levelKey, l.toString))
         saved.reason.foreach(props.setProperty(reasonKey, _))
         props.store(stream, "test result")
       }

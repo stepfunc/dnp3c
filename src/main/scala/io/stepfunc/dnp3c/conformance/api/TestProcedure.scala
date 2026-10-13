@@ -11,6 +11,10 @@ sealed trait TestElement {
 
   def description: String
 
+  // the subset levels the element applies to, if it says; otherwise those of the section it's in, and at the top, those
+  // of the revision
+  def levels: Option[Set[Int]] = None
+
   def subElements: Iterable[TestElement] = Nil
 }
 
@@ -64,8 +68,15 @@ trait ProcedureDefinition {
 
 }
 
-/** A procedure as a revision's tree places it: its number and title there, and its definition. */
-final class TestProcedure(val id: String, val description: String, val definition: ProcedureDefinition)
+/**
+ * A procedure as a revision's tree places it: its number and title there, its definition, and the subset levels it
+ * applies to, if they differ from its section's.
+ */
+final class TestProcedure(
+    val id: String,
+    val description: String,
+    val definition: ProcedureDefinition,
+    override val levels: Option[Set[Int]] = None)
     extends TestElement {
 
   def incomplete: Boolean = definition.incomplete
@@ -86,8 +97,12 @@ trait TestSection extends TestElement {
 
 object TestProcedure {
 
-  def apply(id: String, description: String, definition: ProcedureDefinition): TestProcedure =
-    new TestProcedure(id, description, definition)
+  def apply(
+      id: String,
+      description: String,
+      definition: ProcedureDefinition,
+      levels: Option[Set[Int]] = None): TestProcedure =
+    new TestProcedure(id, description, definition, levels)
 
   private[api] def enabledBy(options: List[OptionCondition]): Iterable[LabeledStep] = {
 

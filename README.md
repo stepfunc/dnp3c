@@ -45,7 +45,7 @@ dnp3c -rev 2.7 -config device.ini -describe 8.23 # print the steps of a section 
 dnp3c -rev 2.7 -help                             # list the commands and test sections
 ```
 
-Results, including `report.html`, are written to the revision's folder of the directory set by `test.output.directory`, e.g. `results/2.7/`. See [Testing a device by hand](docs/manual-testing.md) for the whole workflow.
+Results, including `report.html`, are written to the revision's folder of the directory set by `test.output.directory`, e.g. `results/2.7/L2/`. The configuration must set `outstation.subset.level`, the DNP3 subset level the device is configured for: it has no default. See [Testing a device by hand](docs/manual-testing.md) for the whole workflow.
 
 ## Library
 

@@ -3,7 +3,7 @@
 
 package io.stepfunc.dnp3c.conformance.api.options
 
-import io.stepfunc.dnp3c.conformance.api.{ IntegerOption, OptionGroup, OptionTypes, TestOption }
+import io.stepfunc.dnp3c.conformance.api.{ IntegerOption, OptionGroup, OptionTypes, RequiredIntegerOption, TestOption }
 import io.stepfunc.dnp3c.dnp3.transport.Transport
 
 object OutstationOptions extends OptionGroup {
@@ -30,11 +30,20 @@ object OutstationOptions extends OptionGroup {
       None
     )
 
+  val subsetLevel: RequiredIntegerOption = OptionTypes.requiredInteger(
+    this,
+    "subset.level",
+    "The DNP3 subset level the outstation is configured for and tested at; a revision of the test procedures tests " +
+      "only the levels it covers (see -revs)",
+    List(1, 2, 3)
+  )
+
   def prefix: String = "outstation"
 
   def description: String = "Outstation application layer options"
 
   def options: List[TestOption] = List(
+    subsetLevel,
     selectTimeout,
     responseTimeout,
     appConfirmTimeout,

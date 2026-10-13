@@ -39,8 +39,9 @@ object Main {
 
 - `Options.load` parses and checks the whole file, and throws a `ConfigurationException` listing every problem.
 - The revision decides which procedures exist and what their ids mean. `Revisions.list` holds every revision dnp3c has, and `Revisions.find("2.7")` looks one up by id. There's no default.
+- The configuration must set `outstation.subset.level`, the subset level the device is configured for, to a level the revision tests: level 2 for 2.7. `run` and `writeReport` throw a `ConfigurationException` before doing anything if it doesn't.
 - `run` takes a procedure or section id of the revision, e.g. `"8.6.5.4"` or `"8.6"`, or `"all"`, and throws an `IllegalArgumentException` for an unknown one before anything runs. It runs the procedures in order and stops at the first that fails. It returns a `RunSummary` with each procedure's outcome (`Passed`, `Failed(message)` or `Skipped(reason)`) and the procedures it didn't reach.
-- Results go in the revision's folder of the output directory, e.g. `results/2.7/`, so runs of different revisions never mix.
+- Results go in the folder for the revision and subset level in the output directory, e.g. `results/2.7/L2/`, so runs of different revisions or levels never mix.
 - `writeReport` writes `report.html` in that folder from every result there, from this run and earlier ones, and returns its path. `Harness.writeReport(options, revision)` does the same without a plugin.
 
 For each procedure, the harness:
@@ -48,6 +49,8 @@ For each procedure, the harness:
 1. calls `startProcedure` on the plugin;
 2. connects to the DUT over TCP and runs the steps, calling the plugin for each step it can't perform itself;
 3. calls `endProcedure`, closes the connection, and writes the procedure's results.
+
+A procedure that won't run is skipped before any of that: one that isn't implemented, doesn't apply at the subset level, or needs a feature the device lacks. It gets a log and a result saying why, but the harness doesn't connect to the DUT or call the plugin, not even `startProcedure` or `endProcedure`.
 
 The plugin runs in the same JVM as dnp3c. It can control a device elsewhere, e.g. through a test fixture, an API or a simulator, or it can host the device itself. A software outstation can be started in `startProcedure` and stopped in `endProcedure`, so each procedure starts from a known state.
 
@@ -105,7 +108,7 @@ To fail a step, throw an exception with a message saying what went wrong. The pr
 
 Every method gets a `PluginReporter` (verifications get a `CheckReporter`, which extends it). Anything you pass to its `log` method appears in the procedure's log, e.g. what the plugin did, or the values it compared.
 
-`startProcedure` and `endProcedure` do nothing by default. Override them to set the device up and tear it down around each procedure.
+`startProcedure` and `endProcedure` do nothing by default. Override them to set the device up and tear it down around each procedure that runs; they aren't called for a skipped procedure.
 
 ### Automating step by step
 

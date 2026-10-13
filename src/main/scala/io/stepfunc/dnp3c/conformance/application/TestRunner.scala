@@ -72,6 +72,9 @@ object TestRunner {
       integrationPlugin: IntegrationPlugin,
       environment: ProcedureEnvironment): RunSummary = {
 
+    // the configuration must give a subset level this revision tests, before anything runs
+    val level = revision.subsetLevel(options)
+
     // the sections and procedures in the order they run: a section's subsections, then its procedures
     def walk(e: TestElement): List[TestElement] = e match {
       case s: TestSection => s :: (s.sections.toList ++ s.procedures.toList).flatMap(walk)
@@ -94,7 +97,7 @@ object TestRunner {
         ConsoleLogger.info("Entering test section: " + s.id + " - " + s.description)
       case p: TestProcedure =>
         try {
-          results += ProcedureResult(p.id, runProcedure(revision, p, options, integrationPlugin, environment))
+          results += ProcedureResult(p.id, runProcedure(revision, level, p, options, integrationPlugin, environment))
         } catch {
           case ex: ProcedureAborted => throw aborted(p, ex.outcome, ex.error)
           case NonFatal(ex) => throw aborted(p, None, ex)
@@ -107,15 +110,49 @@ object TestRunner {
   // the harness or the plugin failed, after the procedure reached the outcome, if any
   private class ProcedureAborted(val outcome: Option[ProcedureOutcome], val error: Throwable) extends Exception(error)
 
+  /**
+   * Why a procedure won't run, if it won't: it isn't implemented, it doesn't apply at the subset level, or the device
+   * lacks a feature it needs. Decided before anything is opened, so a skipped procedure never touches the device or the
+   * plugin.
+   */
+  private def skipReason(
+      revision: Revision,
+      level: Int,
+      procedure: TestProcedure,
+      options: OptionSource): Option[String] =
+    if (procedure.incomplete) Some("not implemented")
+    else {
+      val levels = revision.levelsOf(procedure)
+      if (!levels.contains(level))
+        Some(
+          s"not applicable: it applies to subset level(s) ${levels.toList.sorted.mkString(", ")}, and the device is " +
+            s"configured for level $level")
+      else
+        procedure.disabledBy(options).map(c =>
+          s"disabled because ${c.option.id} != ${c.requiredValue}: ${c.option.description}")
+    }
+
   private def runProcedure(
       revision: Revision,
+      level: Int,
       procedure: TestProcedure,
       options: OptionSource,
       integrationPlugin: IntegrationPlugin,
       environment: ProcedureEnvironment): ProcedureOutcome = {
 
-    val path = revision.resultsDirectory(options).resolve(procedure.id)
+    val path = revision.runDirectory(options).resolve(procedure.id)
     val resultsFile = path.resolve("results.properties")
+    val title = s"${procedure.id} ${procedure.description} (revision ${revision.id}, subset level $level)"
+
+    def save(result: ProcedureOutcome): Unit =
+      TestResult.write(
+        TestResult.Saved(TestResult.from(result), Some(revision.id), Some(level), TestResult.reason(result)),
+        resultsFile)
+
+    skipReason(revision, level, procedure, options) match {
+      case Some(reason) => return skip(procedure, path, title, reason, options, save)
+      case None =>
+    }
 
     // run once the procedure ends, however it ends, the last added first
     var cleanup: List[() => Unit] = Nil
@@ -131,7 +168,7 @@ object TestRunner {
 
         val htmlLogger = new ReportLogger(
           path.resolve("log.html").toFile,
-          s"${procedure.id} ${procedure.description} (revision ${revision.id})",
+          title,
           options.get(TestOptions.deviceUnderTest))
         cleanup ::= (() => htmlLogger.write())
 
@@ -165,11 +202,32 @@ object TestRunner {
 
     // the procedure, and everything around it, completed, so the outcome is known
     val result = outcome.get
-    try TestResult.write(
-        TestResult.Saved(TestResult.from(result), Some(revision.id), TestResult.reason(result)),
-        resultsFile)
+    try save(result)
     catch { case NonFatal(ex) => throw new ProcedureAborted(outcome, ex) }
     result
+  }
+
+  // records a procedure that won't run: its log says why, and nothing is opened
+  private def skip(
+      procedure: TestProcedure,
+      path: Path,
+      title: String,
+      reason: String,
+      options: OptionSource,
+      save: ProcedureOutcome => Unit): ProcedureOutcome = {
+    val outcome = ProcedureOutcome.Skipped(reason)
+    try {
+      Files.createDirectories(path)
+      // results from an earlier run must not look like this run's, even if writing this one fails
+      Files.deleteIfExists(path.resolve("results.properties"))
+      Files.deleteIfExists(path.resolve("dump.pcap"))
+      val htmlLogger =
+        new ReportLogger(path.resolve("log.html").toFile, title, options.get(TestOptions.deviceUnderTest))
+      try Logger.aggregate(ConsoleLogger, htmlLogger).info(s"Skipped procedure: ${procedure.id}, $reason")
+      finally htmlLogger.write()
+      save(outcome)
+    } catch { case NonFatal(ex) => throw new ProcedureAborted(Some(outcome), ex) }
+    outcome
   }
 
   // runs every cleanup action; the first failure is returned, with the later ones suppressed in it
