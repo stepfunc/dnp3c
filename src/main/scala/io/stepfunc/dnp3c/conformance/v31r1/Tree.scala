@@ -241,8 +241,8 @@ object Tree {
           test("8.6.4-2", "Test Procedure for Devices with Individual Remote Supervisory Control", individual8642)
         ),
         section("8.6.5", "Broadcast Address and All Stations Indication")(
-          notYet("8.6.5-1", "Test Procedure"),
-          notYet("8.6.5-2", "Test Procedure, Confirmed Response Options")
+          test("8.6.5-1", "Test Procedure", Broadcast.allStationsIndication),
+          test("8.6.5-2", "Test Procedure, Confirmed Response Options", Broadcast.confirmedResponseOptions)
         ),
         section("8.6.6", "Buffer Overflow")(
           test("8.6.6.2.1", "Buffer Overflow, Binary Input Change Event Buffers", s8.s86.s866.Procedure86621),
