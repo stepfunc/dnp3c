@@ -1,6 +1,6 @@
 # dnp3c
 
-A DNP3 conformance test harness from [Step Function I/O](https://stepfunc.io). It runs the DNP3 IED Level 2 outstation certification test procedures against a device and produces an HTML report of the results.
+A DNP3 conformance test harness from [Step Function I/O](https://stepfunc.io). It runs the outstation test procedures of the DNP3 IED Certification Procedure, Subset Level 2, version 2.7, against a device and produces an HTML report of the results.
 
 dnp3c can be used in two ways:
 
@@ -22,6 +22,12 @@ Commercial DNP3 test tools save their results in proprietary formats. dnp3c writ
 ![The report's summary](docs/images/report.png)
 
 ![A procedure's log](docs/images/log.png)
+
+## Test procedures
+
+dnp3c implements the DNP Users Group's *DNP3 IED Certification Procedure, Subset Level 2*, version 2.7 (2 March 2016). The section, procedure and step numbers in the tool, its logs and the report are those of 2.7.
+
+Later editions, 3.0 (December 2020) and 3.1 rev 1 (September 2022), cover Subset Levels 1 to 3. They renumber some tests, leave many tests without a number, and change what some tests send or accept, often to apply technical bulletins published after 2.7. A result from dnp3c can therefore differ from what those editions would give. Support for 3.1 rev 1 alongside 2.7 is planned.
 
 ## Requirements
 
