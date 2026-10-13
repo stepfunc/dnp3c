@@ -36,7 +36,7 @@ dnp3c is licensed GPL-3.0-only, copyright Step Function I/O LLC.
 
 ## Workflow
 
-`main` is protected: changes go through a branch and a pull request, including for admins.
+`main` is protected: changes go through a branch and a pull request, including for admins. A trivial pull request (docs, wording, a one-line fix) may be squash-merged as soon as CI passes, without waiting for a human review; anything else waits to be merged by a maintainer.
 
 Get a Codex review (the `codex` plugin: `codex:codex-rescue` or `codex:rescue`) before a major change, including a design, and before opening a pull request for one, or whenever you're uncertain. Trivial changes don't need one. Give it the proposal and the relevant code for a design, and the diff for a pull request. When the change touches procedure or spec behavior, have it read the relevant documents in `../dnp3-reference` too. Address its findings or say why not.
 
