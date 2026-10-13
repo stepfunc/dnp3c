@@ -153,7 +153,8 @@ object Revisions {
     "DNP3 IED Certification Procedure, Subset Levels 1, 2 and 3",
     "2022-09-13",
     List(1, 2, 3),
-    v31r1.Tree.sections)
+    v31r1.Tree.sections,
+    v31r1.Rules.all)
 
   /** every revision, oldest first */
   val list: List[Revision] = List(v2_7, v3_1r1)
