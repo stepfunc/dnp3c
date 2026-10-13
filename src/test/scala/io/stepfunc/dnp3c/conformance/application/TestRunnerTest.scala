@@ -6,6 +6,7 @@ package io.stepfunc.dnp3c.conformance.application
 import java.io.Closeable
 import java.nio.file.{ Files, Path }
 
+import io.stepfunc.dnp3c.conformance.Revisions
 import io.stepfunc.dnp3c.conformance.api._
 import io.stepfunc.dnp3c.conformance.api.ProcedureOutcome.{ Failed, Passed, Skipped }
 import io.stepfunc.dnp3c.conformance.api.options.{ SupportOptions, TestOptions }
@@ -110,15 +111,20 @@ class TestRunnerTest extends AnyFunSuite with Matchers {
     val directory: Path = Files.createTempDirectory("dnp3c")
     private val options = Options.from(Map(TestOptions.outputDirectory.id -> directory.toString))
 
-    def apply(element: TestElement): RunSummary =
-      TestRunner.run(element, options, new Plugin(fail), new Environment(fail))
+    // the revision's folder, where the procedures' folders go
+    val folder: Path = directory.resolve(Revisions.v2_7.id)
 
-    def result(id: String): Option[TestResult] = {
-      val file = directory.resolve(id).resolve("results.properties").toFile
+    def apply(element: TestElement): RunSummary =
+      TestRunner.run(Revisions.v2_7, element, options, new Plugin(fail), new Environment(fail))
+
+    def saved(id: String): Option[TestResult.Saved] = {
+      val file = folder.resolve(id).resolve("results.properties").toFile
       if (file.exists()) Some(TestResult.read(file)) else None
     }
 
-    def logged(id: String): Boolean = Files.exists(directory.resolve(id).resolve("log.html"))
+    def result(id: String): Option[TestResult] = saved(id).map(_.result)
+
+    def logged(id: String): Boolean = Files.exists(folder.resolve(id).resolve("log.html"))
   }
 
   test("runs a procedure between the plugin's callbacks, and cleans up in reverse") {
@@ -162,10 +168,20 @@ class TestRunnerTest extends AnyFunSuite with Matchers {
     run.result("a") should equal(Some(TestResult.Skip))
   }
 
+  test("a saved result records its revision, and why the procedure was skipped") {
+    val run = new Run()
+    run(procedure("a", run.fail, List(SupportOptions.selfAddress)))
+    val saved = run.saved("a").get
+    saved.revision should equal(Some("2.7"))
+    saved.reason.get should include(SupportOptions.selfAddress.id)
+  }
+
   test("a plugin that fails to start aborts the run, and the procedure gets no result") {
     val run = new Run("start#2")
-    Files.createDirectories(run.directory.resolve("b"))
-    TestResult.write(TestResult.Pass, run.directory.resolve("b").resolve("results.properties"))
+    Files.createDirectories(run.folder.resolve("b"))
+    TestResult.write(
+      TestResult.Saved(TestResult.Pass, Some("2.7"), None),
+      run.folder.resolve("b").resolve("results.properties"))
 
     val ex = intercept[HarnessExecutionException](run(section(
       procedure("a", run.fail),

@@ -3,12 +3,18 @@
 
 package io.stepfunc.dnp3c.conformance.application.report
 
-import java.nio.file.Path
+import java.nio.file.{ Files, Path }
 
+import io.stepfunc.dnp3c.conformance.Revision
 import io.stepfunc.dnp3c.conformance.api.{ TestProcedure, TestSection }
 import io.stepfunc.dnp3c.conformance.application.TestResult
 
-case class Report(sections: Iterable[Report.Section]) {
+/**
+ * The report of one revision's results
+ *
+ * @param notices results found but not counted, and why, e.g. one saved under another revision
+ */
+case class Report(revision: Revision, sections: Iterable[Report.Section], notices: List[String]) {
 
   private def convert(level: Int, s: Report.Section)(implicit i: Indentation): Iterable[String] = {
     Tags.tr(Attributes.classes(Classes.section, Classes.level(level))) {
@@ -49,6 +55,13 @@ case class Report(sections: Iterable[Report.Section]) {
       case None => Classes.noResult
     }
 
+    // why the procedure was skipped, under its title
+    def skipReason: String = (p.result, p.reason) match {
+      case (Some(TestResult.Skip), Some(reason)) =>
+        "<br><span class=\"reason\">Skipped: " + Tags.escape(reason) + "</span>"
+      case _ => ""
+    }
+
     val classes = {
       val base = List(Classes.procedure, Classes.level(level))
       if (p.incomplete) Classes.incomplete :: base else base
@@ -60,7 +73,7 @@ case class Report(sections: Iterable[Report.Section]) {
           List(getText())
         } ++
         Tags.td(List(pcapLink)) ++
-        Tags.td(List(Tags.escape(p.description)))
+        Tags.td(List(Tags.escape(p.description) + skipReason))
     }
   }
 
@@ -95,10 +108,14 @@ case class Report(sections: Iterable[Report.Section]) {
       "DNP3 Conformance Report",
       "report.css",
       deviceUnderTest,
-      Tags.h1(List("DNP3 Conformance Report")) ++ Tags.p(List(s"Generated $generated")),
+      Tags.h1(List("DNP3 Conformance Report")) ++
+        Tags.p(Attributes.classes(Clazz("revision")))(
+          List(Tags.escape(s"${revision.title}, revision ${revision.id} (${revision.date})"))) ++
+        Tags.p(List(s"Generated $generated")),
       totals.flatMap { case (clazz, text) => Tags.span(Attributes.classes(Clazz("total"), clazz))(List(text)) }
     ) {
-      Tags.p(Attributes.classes(Clazz("hint")))(List("Click a procedure's id or result to open its log.")) ++
+      notices.flatMap(n => Tags.p(Attributes.classes(Clazz("notice")))(List(Tags.escape(n)))) ++
+        Tags.p(Attributes.classes(Clazz("hint")))(List("Click a procedure's id or result to open its log.")) ++
         Tags.table(Attributes.classes(Clazz("results"))) {
           Tags.tr(headings) ++
             sections.flatMap(s => convert(0, s))
@@ -115,30 +132,47 @@ object Report {
       incomplete: Boolean,
       description: String,
       result: Option[TestResult],
+      reason: Option[String],
       hasPcaps: Boolean)
   case class Section(id: String, description: String, sections: Iterable[Section], procedures: Iterable[Procedure])
 
-  def create(path: Path, sections: Iterable[TestSection]): Report = {
-    Report(gather(path, sections))
-  }
+  /**
+   * The report of a revision's results
+   *
+   * @param path the revision's results folder
+   * @param notices anything else to tell the reader, e.g. results found outside the folder
+   */
+  def create(path: Path, revision: Revision, notices: List[String] = Nil): Report = {
+    val ignored = List.newBuilder[String]
 
-  private def gather(path: Path, sections: Iterable[TestSection]): Iterable[Section] = {
-
-    def convert(section: TestSection): Section = {
-      val sections = gather(path, section.sections)
-      val procedures = section.procedures.map(p => read(p))
-      Section(section.id, section.description, sections, procedures)
-    }
+    def convert(section: TestSection): Section =
+      Section(section.id, section.description, section.sections.map(convert), section.procedures.map(read))
 
     def read(procedure: TestProcedure): Procedure = {
       val folder = path.resolve(procedure.id)
       val file = folder.resolve("results.properties").toFile
-      val results = if (file.exists()) Some(TestResult.read(file)) else None
+      val saved = if (file.exists()) Some(TestResult.read(file)) else None
+      // a result saved under another revision, or before results recorded one, isn't this revision's
+      val counted = saved.filter(_.revision.contains(revision.id))
+      saved.filterNot(_.revision.contains(revision.id)).foreach { s =>
+        val when = s.revision.fold("before results recorded their revision")(r => s"under revision $r")
+        ignored += s"The result in ${procedure.id}/ was saved $when, so it isn't counted. Run the procedure again."
+      }
+      // a run that was cut short leaves a log, or a capture, but no result
+      if (saved.isEmpty && List("log.html", "dump.pcap").exists(f => Files.isRegularFile(folder.resolve(f))))
+        ignored += s"${procedure.id}/ has a log or capture but no result: its last run didn't finish. Run it again."
       val hasPcaps = folder.resolve("dump.pcap").toFile.exists()
-      Procedure(procedure.id, procedure.incomplete, procedure.description, results, hasPcaps)
+      Procedure(
+        procedure.id,
+        procedure.incomplete,
+        procedure.description,
+        counted.map(_.result),
+        counted.flatMap(_.reason),
+        hasPcaps)
     }
 
-    sections.map(s => convert(s))
+    val sections = revision.sections.map(convert)
+    Report(revision, sections, notices ++ ignored.result())
   }
 
 }

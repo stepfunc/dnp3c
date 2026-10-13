@@ -9,7 +9,7 @@ import io.stepfunc.dnp3c.conformance.api.{ ProcedureDefinition, TestProcedure }
 object Placements {
 
   private lazy val nodes: Map[ProcedureDefinition, TestProcedure] =
-    Sections.flatMapProcedures(p => Some(p.definition -> p)).toMap
+    Revisions.v2_7.flatMapProcedures(p => Some(p.definition -> p)).toMap
 
   def of(definition: ProcedureDefinition): TestProcedure = nodes(definition)
 

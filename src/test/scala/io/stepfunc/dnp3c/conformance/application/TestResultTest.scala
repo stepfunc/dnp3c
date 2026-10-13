@@ -18,8 +18,19 @@ class TestResultTest extends AnyFunSuite with Matchers {
     val directory = Files.createTempDirectory("dnp3c")
     val other = Files.write(directory.resolve("log.html"), Array.emptyByteArray)
     val results = directory.resolve("results.properties")
-    TestResult.write(TestResult.Pass, results)
+    TestResult.write(TestResult.Saved(TestResult.Pass, Some("2.7"), None), results)
     Files.getPosixFilePermissions(results) should equal(Files.getPosixFilePermissions(other))
     List(results, other, directory).foreach(Files.delete)
+  }
+
+  test("a result keeps its revision and reason, and one saved by 0.1.0 has neither") {
+    val directory = Files.createTempDirectory("dnp3c")
+    val results = directory.resolve("results.properties")
+    val saved = TestResult.Saved(TestResult.Skip, Some("2.7"), Some("disabled because x != true"))
+    TestResult.write(saved, results)
+    TestResult.read(results.toFile) should equal(saved)
+    Files.writeString(results, "result=pass\n")
+    TestResult.read(results.toFile) should equal(TestResult.Saved(TestResult.Pass, None, None))
+    List(results, directory).foreach(Files.delete)
   }
 }

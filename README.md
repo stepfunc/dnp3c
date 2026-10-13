@@ -38,13 +38,14 @@ Java 17 or newer.
 Download `dnp3c-<version>.zip` from the [releases](https://github.com/stepfunc/dnp3c/releases), unzip it, and run `bin/dnp3c` (`bin\dnp3c.cmd` on Windows). The launcher uses the Java in `JAVA_HOME`, or on the `PATH`, and tells you if it's missing or too old.
 
 ```
-dnp3c -write device.ini                  # write a configuration file with every option
-dnp3c -config device.ini -run all        # run every procedure and write the report
-dnp3c -config device.ini -describe 8.23  # print the steps of a section or procedure
-dnp3c -help                              # list the commands and test sections
+dnp3c -write device.ini                          # write a configuration file with every option
+dnp3c -revs                                      # list the revisions of the test procedures
+dnp3c -rev 2.7 -config device.ini -run all       # run every procedure and write the report
+dnp3c -rev 2.7 -config device.ini -describe 8.23 # print the steps of a section or procedure
+dnp3c -rev 2.7 -help                             # list the commands and test sections
 ```
 
-Results, including `report.html`, are written to the directory set by `test.output.directory`. See [Testing a device by hand](docs/manual-testing.md) for the whole workflow.
+Results, including `report.html`, are written to the revision's folder of the directory set by `test.output.directory`, e.g. `results/2.7/`. See [Testing a device by hand](docs/manual-testing.md) for the whole workflow.
 
 ## Library
 

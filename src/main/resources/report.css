@@ -221,6 +221,20 @@ p.hint {
   color: var(--sf-slate);
 }
 
+/* results that were found but not counted, e.g. saved under another revision */
+p.notice {
+  color: var(--skip);
+  background-color: var(--skip-bg);
+  padding: 6px 10px;
+  border-radius: 4px;
+}
+
+/* why a procedure was skipped, under its title */
+span.reason {
+  color: var(--sf-grey);
+  font-size: 12px;
+}
+
 td.no-result, td.unimplemented {
   color: var(--sf-grey);
 }

@@ -25,6 +25,8 @@ object Console {
   }
 
   case class Configuration(
+      revision: Option[String],
+      listRevisions: Boolean,
       run: Option[String],
       help: Boolean,
       describe: Option[String],
@@ -36,6 +38,8 @@ object Console {
       config: Option[File]) {
 
     def this(cmd: CommandLine) = this(
+      Console.rev.getOptional(cmd),
+      Console.revs.isPresent(cmd),
       Console.run.getOptional(cmd),
       Console.help.isPresent(cmd),
       Console.describe.getOptional(cmd),
@@ -54,6 +58,8 @@ object Console {
     def getOptional(cmd: CommandLine): Option[String] = Option(cmd.getOptionValue(id))
   }
 
+  private val rev = OptionDefinition("rev", true, "The revision of the test procedures to use, e.g. 2.7 (see -revs)")
+  private val revs = OptionDefinition("revs", false, "List the revisions of the test procedures")
   private val run = OptionDefinition("run", true, "Run the specified test section/procedure")
   private val help = OptionDefinition("help", false, "Print this help information")
   private val describe =
@@ -76,6 +82,8 @@ object Console {
     help,
     options,
     report,
+    rev,
+    revs,
     run,
     writeConfig).foldLeft(new Options)((sum, o) => sum.addOption(o.id, o.hasArgument, o.description))
 

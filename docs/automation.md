@@ -6,18 +6,18 @@ dnp3c is also a library. The command-line tool prompts you for the steps it can'
 
 ## How it fits together
 
-Your program loads a configuration file, creates a `Harness` with your plugin, and runs procedures:
+Your program loads a configuration file, creates a `Harness` with your plugin and the revision of the certification procedure to run, and runs procedures:
 
 ```scala
 import java.nio.file.Paths
 import scala.util.control.NonFatal
 
-import io.stepfunc.dnp3c.conformance.Harness
+import io.stepfunc.dnp3c.conformance.{ Harness, Revisions }
 import io.stepfunc.dnp3c.conformance.api.Options
 
 object Main {
   def main(args: Array[String]): Unit = {
-    val harness = new Harness(Options.load(Paths.get("device.ini")), new MyDevicePlugin())
+    val harness = new Harness(Options.load(Paths.get("device.ini")), new MyDevicePlugin(), Revisions.v2_7)
 
     // write the report however the run ends, without hiding why it ended
     var reported = true
@@ -38,8 +38,10 @@ object Main {
 ```
 
 - `Options.load` parses and checks the whole file, and throws a `ConfigurationException` listing every problem.
-- `run` takes a procedure or section id, e.g. `"8.6.5.4"` or `"8.6"`, or `"all"`, and throws an `IllegalArgumentException` for an unknown one before anything runs. It runs the procedures in order and stops at the first that fails. It returns a `RunSummary` with each procedure's outcome (`Passed`, `Failed(message)` or `Skipped(reason)`) and the procedures it didn't reach.
-- `writeReport` writes `report.html` from every result in the output directory, from this run and earlier ones, and returns its path. `Harness.writeReport(options)` does the same without a plugin.
+- The revision decides which procedures exist and what their ids mean. `Revisions.list` holds every revision dnp3c has, and `Revisions.find("2.7")` looks one up by id. There's no default.
+- `run` takes a procedure or section id of the revision, e.g. `"8.6.5.4"` or `"8.6"`, or `"all"`, and throws an `IllegalArgumentException` for an unknown one before anything runs. It runs the procedures in order and stops at the first that fails. It returns a `RunSummary` with each procedure's outcome (`Passed`, `Failed(message)` or `Skipped(reason)`) and the procedures it didn't reach.
+- Results go in the revision's folder of the output directory, e.g. `results/2.7/`, so runs of different revisions never mix.
+- `writeReport` writes `report.html` in that folder from every result there, from this run and earlier ones, and returns its path. `Harness.writeReport(options, revision)` does the same without a plugin.
 
 For each procedure, the harness:
 
@@ -88,7 +90,7 @@ Until it's published, install it into your local Maven repository from a checkou
 
 dnp3c is written in Scala 3, and so is `IntegrationPlugin`. Writing the plugin in Scala is the easiest path, since its methods take Scala collections.
 
-The supported API is `Harness`, the configuration, results and exceptions in `io.stepfunc.dnp3c.conformance.api`, `IntegrationPlugin` and `DefaultIntegrationPlugin`, and the types their methods use, such as `PluginReporter`. Other public types, such as `TestDriver`, `TestReporter` and `ProcedureReporter`, are implementation details that can change between versions.
+The supported API is `Harness`, `Revision` and `Revisions`, the configuration, results and exceptions in `io.stepfunc.dnp3c.conformance.api`, `IntegrationPlugin` and `DefaultIntegrationPlugin`, and the types their methods use, such as `PluginReporter`. Other public types, such as `TestDriver`, `TestReporter` and `ProcedureReporter`, are implementation details that can change between versions.
 
 ## Writing the plugin
 
@@ -127,7 +129,7 @@ The rest still prompts. You can automate the steps you hit most often first, and
 
 [stepfunc/dnp3](https://github.com/stepfunc/dnp3) runs every procedure on each pull request against its DNP3 outstation, and is a complete working example. Its plugin, in the `conformance` directory, starts the outstation inside the JVM for each procedure, generates events through the outstation's API, and checks controls and attributes against what the outstation recorded. The `conformance` job in its `.github/workflows/ci.yml`:
 
-1. builds the plugin and runs it with `-config device.ini -run all`;
+1. builds the plugin and runs it with `-rev 2.7 -config device.ini -run all`;
 2. turns on packet capture, by setting `tcp.capture.adapter` to the loopback adapter, which works because the job runs as root;
 3. checks that every procedure which sent frames captured packets;
 4. uploads the whole output directory, with the report, logs and captures, as a build artifact, even when the run fails.

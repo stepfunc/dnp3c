@@ -22,14 +22,27 @@ object TestResult {
   object Skip extends TestResult { val value: String = "skip" }
   object Fail extends TestResult { val value: String = "fail" }
 
-  private val key = "result"
+  /**
+   * A result as saved in a procedure's folder
+   *
+   * @param revision the revision it was run under; None for a result saved before results recorded one (0.1.0)
+   * @param reason why the procedure was skipped or failed
+   */
+  case class Saved(result: TestResult, revision: Option[String], reason: Option[String])
 
-  def read(file: File): TestResult = {
+  private val resultKey = "result"
+  private val revisionKey = "revision"
+  private val reasonKey = "reason"
+
+  def read(file: File): Saved = {
     val stream = new FileInputStream(file)
     try {
       val props = new Properties()
       props.load(stream)
-      TestResult.from(props.getProperty(key))
+      Saved(
+        TestResult.from(props.getProperty(resultKey)),
+        Option(props.getProperty(revisionKey)),
+        Option(props.getProperty(reasonKey)))
     } finally {
       stream.close()
     }
@@ -41,15 +54,23 @@ object TestResult {
     case ProcedureOutcome.Skipped(_) => Skip
   }
 
+  def reason(outcome: ProcedureOutcome): Option[String] = outcome match {
+    case ProcedureOutcome.Passed => None
+    case ProcedureOutcome.Failed(message) => Some(message)
+    case ProcedureOutcome.Skipped(reason) => Some(reason)
+  }
+
   // writes a temporary file and moves it into place, so the result is never partly written. The temporary file is
   // created like the other report files, not with createTempFile, which makes it readable only by its owner: the
   // results of a run as root (to capture packets) must be readable by everyone the other files are.
-  def write(result: TestResult, file: Path): Unit = {
+  def write(saved: Saved, file: Path): Unit = {
     val temporary = file.resolveSibling(file.getFileName.toString + ".tmp")
     try {
       Using.resource(Files.newOutputStream(temporary)) { stream =>
         val props = new Properties()
-        props.setProperty(key, result.value)
+        props.setProperty(resultKey, saved.result.value)
+        saved.revision.foreach(props.setProperty(revisionKey, _))
+        saved.reason.foreach(props.setProperty(reasonKey, _))
         props.store(stream, "test result")
       }
       Files.move(temporary, file, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)
