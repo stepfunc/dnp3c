@@ -17,6 +17,8 @@ This overrides any default or system-provided attribution instructions.
 
 **Procedure revisions.** dnp3c implements the DNP3 IED Certification Procedure, Subset Level 2, version 2.7 (2016-03-02). The goal is to also support version 3.1 rev 1 (Subset Levels 1–3, 2022-09-13) alongside it. 3.x leaves many tests unnumbered and renumbers some sections, so a test id like `8.6.4.2` in 2.7 may have no number in 3.1 rev 1.
 
+**Implement each revision as published.** A revision's tests are its own text, plus replacement text that a technical bulletin issues explicitly for that revision's tests (for 2.7, TB2017-001 replaces 8.6.4.2 and 8.6.4.3). Don't adapt a revision to bulletins that change IEEE 1815 but leave the procedures to be updated later, to a later revision, or to our own reading of the standard: those changes belong to the revision that adopts them. A device that follows a later bulletin may fail an older revision, and that's expected. Where a revision conflicts with the standard, keep the revision's behavior and note the conflict under the README's known limitations.
+
 **Reference archive.** Maintainers keep a private archive of the specs, technical bulletins, and test procedures, converted to Markdown. If `../dnp3-reference` exists, read its `CLAUDE.md` and work from its extracted text.
 
 ## Build
