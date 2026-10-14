@@ -110,7 +110,14 @@ object EventRules {
             s"required by 3.1r1's ${input.name} relative time test, which waits for the clock to go unsynchronized"
           ))
       }
-    unreadable ++ unreadableStatic ++ defaults ++ rejected ++ relativeRejected ++ expiry
+    // 8.16.2: a subset level 3 device with frozen counters generates frozen counter events
+    val frozenCounterEvents = Option.when(
+      level.contains(3) && options.get(Inputs.frozenCounter.points) && !options.get(Inputs.frozenCounter.events))(
+      ConfigProblem(
+        Inputs.frozenCounter.events.id,
+        "false",
+        "a subset level 3 device with frozen counters must generate frozen counter events (8.16.2)"))
+    unreadable ++ unreadableStatic ++ defaults ++ rejected ++ relativeRejected ++ expiry ++ frozenCounterEvents
   }
 
   /** the preferred variation for a read of `requested`: itself, or for variation 0 the Device Profile's default */
