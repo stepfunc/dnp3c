@@ -297,13 +297,14 @@ object Tree {
       ),
       section("8.13", "Binary Inputs Specific Object Requests")(
         section("8.13.2", "Test Procedure")(
-          notYet(
+          test(
             "8.13.2-1",
             "Subset Level 1 device that does not support a read for binary input object group",
+            StaticInputs.binaryLevelOne,
             levels = Some(Set(1))),
-          notYet("8.13.2-2", "Device does not have Binary Inputs"),
-          test("8.13.2-3", "Device has Binary Inputs", s8.s813.Procedure81322),
-          notYet("8.13.2-4", "Device supports Binary Inputs, Configurable Device")
+          test("8.13.2-2", "Device does not have Binary Inputs", StaticInputs.binaryWithout),
+          test("8.13.2-3", "Device has Binary Inputs", StaticInputs.binaryHas),
+          test("8.13.2-4", "Device supports Binary Inputs, Configurable Device", StaticInputs.binaryConfigurable)
         )
       ),
       section("8.14", "Binary Input Change Specific Requests")(
@@ -411,13 +412,21 @@ object Tree {
       ),
       section("8.21", "Double-bit Inputs")(
         test("8.21.1", "Disable Double Bit Binaries", DisableDoubleBit.static),
-        notYet(
+        test(
           "8.21-8.13.2-1",
           "Subset Level 1 device that does not support a read for binary input object group, with double-bit inputs",
-          levels = Some(Set(1))),
-        notYet("8.21-8.13.2-2", "Device does not have Binary Inputs, with double-bit inputs"),
-        test("8.21-8.13.2-3", "Device has Binary Inputs, with double-bit inputs", s8.s821.Procedure82121),
-        notYet("8.21-8.13.2-4", "Device supports Binary Inputs, Configurable Device, with double-bit inputs")
+          StaticInputs.doubleBitLevelOne,
+          levels = Some(Set(1))
+        ),
+        test(
+          "8.21-8.13.2-2",
+          "Device does not have Binary Inputs, with double-bit inputs",
+          StaticInputs.doubleBitWithout),
+        test("8.21-8.13.2-3", "Device has Binary Inputs, with double-bit inputs", StaticInputs.doubleBitHas),
+        test(
+          "8.21-8.13.2-4",
+          "Device supports Binary Inputs, Configurable Device, with double-bit inputs",
+          StaticInputs.doubleBitConfigurable)
       ),
       section("8.22", "Double-bit Input Change")(
         test("8.22.1", "Disable Double Bit Binaries", DisableDoubleBit.events),

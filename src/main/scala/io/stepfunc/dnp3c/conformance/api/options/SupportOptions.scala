@@ -64,7 +64,15 @@ object SupportOptions extends OptionGroup {
         "3 it must"
     )
 
-    override def allOptions: List[BooleanOption] = List(points, disabling, events, eventReads)
+    // 3.1r1: a subset level 1 device needn't support reading the static objects either
+    val reads: BooleanOption = OptionTypes.boolean(
+      SupportOptions,
+      s"${shortName}Reads",
+      true,
+      s"Can the DUT's $longName points be read? A subset level 1 device needn't support it; at levels 2 and 3 it must"
+    )
+
+    override def allOptions: List[BooleanOption] = List(points, disabling, events, eventReads, reads)
 
     // the DUT has these points and their events (events without the points can't be tested)
     def withEvents: List[OptionCondition] = List(points, events)
