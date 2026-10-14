@@ -15,19 +15,19 @@ object Group40 extends Group {
 import io.stepfunc.dnp3c.dnp3.app.Fields._
 
 object Group40Var0 extends EmptyVariation(Group40, 0) with TypeTraits.StaticVariationZero with TypeTraits.Level1
-object Group40Var1 extends FixedSize(Group40, 1, List(flags, value32), StaticAnalogOutputStatusBuilder)
+object Group40Var1 extends FixedSize(Group40, 1, List(flags, value32), AnalogOutputStatusBuilder)
     with TypeTraits.Static with TypeTraits.Level3 {
   def apply(flags: Byte, value: Int): Field.Collection = {
     Field.collect(Fields.flags(flags), Fields.value32(value))
   }
 }
-object Group40Var2 extends FixedSize(Group40, 2, List(flags, value16), StaticAnalogOutputStatusBuilder)
+object Group40Var2 extends FixedSize(Group40, 2, List(flags, value16), AnalogOutputStatusBuilder)
     with TypeTraits.Static with TypeTraits.Level1 {
   def apply(flags: Byte, value: Short): Field.Collection = {
     Field.collect(Fields.flags(flags), Fields.value16(value))
   }
 }
-object Group40Var3 extends FixedSize(Group40, 3, List(flags, valueF32), StaticAnalogOutputStatusBuilder)
+object Group40Var3 extends FixedSize(Group40, 3, List(flags, valueF32), AnalogOutputStatusBuilder)
     with TypeTraits.Static with TypeTraits.Level4
-object Group40Var4 extends FixedSize(Group40, 4, List(flags, valueF64), StaticAnalogOutputStatusBuilder)
+object Group40Var4 extends FixedSize(Group40, 4, List(flags, valueF64), AnalogOutputStatusBuilder)
     with TypeTraits.Static with TypeTraits.None

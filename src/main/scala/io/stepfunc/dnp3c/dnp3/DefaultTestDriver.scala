@@ -6,7 +6,7 @@ package io.stepfunc.dnp3c.dnp3
 import io.stepfunc.dnp3c.dnp3.link.FrameValidator
 import io.stepfunc.dnp3c.dnp3.app.{ Message, Unsolicited }
 import io.stepfunc.dnp3c.dnp3.link._
-import io.stepfunc.dnp3c.dnp3.transport.{ SegmentWriter, TransportReader }
+import io.stepfunc.dnp3c.dnp3.transport.TransportReader
 import io.stepfunc.dnp3c.dnp3
 import io.stepfunc.dnp3c.protocol.channel.{
   ChannelFactory, ReadableWritableChannel, SerialChannel, SocketReadWriteChannel, TcpClientChannelFactory, UdpChannel
@@ -142,12 +142,9 @@ class DefaultTestDriver(
     val channel = UdpChannel.open(remote, local)
     try {
       reporter.transmit(message)
-      SegmentWriter.write(message.toBytes, 0, reporter) { segment =>
-        LinkWriter.write(this.local, options.destination.getOrElse(this.remote), options.controlBlock, reporter)(
-          segment) { bytes =>
-          reporter.transmit(bytes)
-          channel.write(ByteBuffer.wrap(bytes.toArray))
-        }
+      toFrames(message, options) { bytes =>
+        reporter.transmit(bytes)
+        channel.write(ByteBuffer.wrap(bytes.toArray))
       }
     } finally channel.close()
   }
@@ -192,13 +189,7 @@ class DefaultTestDriver(
 
   override def writeMessage(message: Message, options: LinkOverride): Unit = getConnection { c =>
     reporter.transmit(message)
-    SegmentWriter.write(message.toBytes, 0, reporter) { segment =>
-      LinkWriter.write(
-        local,
-        options.destination.getOrElse(remote),
-        options.controlBlock,
-        reporter)(segment)(writeToChannel(c))
-    }
+    toFrames(message, options)(writeToChannel(c))
   }
 
   override def writeFrame(frame: LinkFrame): Unit = getConnection { c =>

@@ -64,20 +64,17 @@ trait Variation {
 
   override def toString: String = key.toString
 
-  def parse(range: Range, bytes: List[Byte]): Parser.Result[IterableHeaderPayload] = {
-    throw new Exception(key.name + " may not by used with a start/stop header")
-  }
-
+  // count objects, as a start/stop or count header carries them
   def parse(count: Int, bytes: List[Byte]): Parser.Result[IterableHeaderPayload] = {
-    throw new Exception(key.name + " may not by used with a count header")
+    throw new Exception(key.name + " may not be used with a start/stop or count header")
   }
 
   def parsePrefixedU8(count: Int, bytes: List[Byte]): Parser.Result[PrefixedPayload.U8] = {
-    throw new Exception(key.name + " may not by used with a one-byte count and prefix header")
+    throw new Exception(key.name + " may not be used with a one-byte count and prefix header")
   }
 
   def parsePrefixedU16(count: Int, bytes: List[Byte]): Parser.Result[PrefixedPayload.U16] = {
-    throw new Exception(key.name + " may not by used with a two-byte count and prefix header")
+    throw new Exception(key.name + " may not be used with a two-byte count and prefix header")
   }
 }
 
@@ -85,28 +82,15 @@ abstract case class EmptyVariation(group: Group, id: Byte) extends Variation
 
 abstract case class SingleBitField(group: Group, id: Byte, isOutputStatus: Boolean) extends Variation {
 
-  override def parse(count: Int, bytes: List[Byte]): Parser.Result[IterableHeaderPayload] = {
-    val result = BitFieldParser.apply(count).parse(bytes)
-    result.map(values => BitFieldHeaderPayload(values.map(BooleanValue.apply), isOutputStatus))
-  }
-
-  override def parse(range: Range, bytes: List[Byte]): Parser.Result[IterableHeaderPayload] = {
-    val result = BitFieldParser.apply(range.length).parse(bytes)
-    result.map(values => BitFieldHeaderPayload(values.map(BooleanValue.apply), isOutputStatus))
-  }
+  override def parse(count: Int, bytes: List[Byte]): Parser.Result[IterableHeaderPayload] =
+    BitFields.single(count).parse(bytes).map(values =>
+      BitFieldHeaderPayload(values.map(BooleanValue.apply), isOutputStatus))
 }
 
 abstract case class DoubleBitField(group: Group, id: Byte) extends Variation {
 
-  override def parse(count: Int, bytes: List[Byte]): Parser.Result[IterableHeaderPayload] = {
-    val result = DoubleBitFieldParser.apply(count).parse(bytes)
-    result.map(DoubleBitFieldHeaderPayload.apply)
-  }
-
-  override def parse(range: Range, bytes: List[Byte]): Parser.Result[IterableHeaderPayload] = {
-    val result = DoubleBitFieldParser.apply(range.length).parse(bytes)
-    result.map(DoubleBitFieldHeaderPayload.apply)
-  }
+  override def parse(count: Int, bytes: List[Byte]): Parser.Result[IterableHeaderPayload] =
+    BitFields.double(count).parse(bytes).map(DoubleBitFieldHeaderPayload.apply)
 }
 
 // a fixed sequence of fields; a field may carry its own length, as device attributes do
@@ -124,24 +108,23 @@ abstract case class FixedSize(
   private def parserPrefixU16(pointBuilder: PointBuilder): Parser[Prefix.U16Fields] =
     Prefix.parserU16(parser(pointBuilder))
 
+  // its points' type: an event variation's are events, and any other's static
+  private def pointType: PointType = if (objectType == Event) PointType.Event else PointType.Static
+
   // parses count objects in turn, each with a fresh point builder, keeping their order
   private def parseObjects[A](count: Int, bytes: List[Byte])(
       parseOne: (PointBuilder, List[Byte]) => Parser.Result[A]): Parser.Result[List[A]] = {
     val end = (1 to count).foldLeft(Parser.start[A](bytes)) { (s, _) =>
-      val result = parseOne(pointBuilderFactory.create(), s.remainder)
+      val result = parseOne(pointBuilderFactory.create(pointType), s.remainder)
       Parser.Result[List[A]](result.value :: s.value, result.remainder)
     }
     end.map(_.reverse)
   }
 
-  override def parse(range: Range, bytes: List[Byte]): Parser.Result[IterableHeaderPayload] =
-    parseObjects(range.size, bytes) { (builder, input) =>
+  override def parse(count: Int, bytes: List[Byte]): Parser.Result[IterableHeaderPayload] =
+    parseObjects(count, bytes) { (builder, input) =>
       parser(builder).parse(input).map(e => FieldHeaderPayloadObject(e, builder.build()))
     }.map(FieldHeaderPayload.apply)
-
-  override def parse(count: Int, bytes: List[Byte]): Parser.Result[IterableHeaderPayload] = {
-    parse(1 to count, bytes)
-  }
 
   override def parsePrefixedU8(count: Int, bytes: List[Byte]): Parser.Result[PrefixedPayload.U8] =
     parseObjects(count, bytes) { (builder, input) =>

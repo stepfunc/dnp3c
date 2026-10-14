@@ -15,5 +15,5 @@ object Group1Var0 extends EmptyVariation(Group1, 0) with TypeTraits.StaticVariat
 
 object Group1Var1 extends SingleBitField(Group1, 1, false) with TypeTraits.Static with TypeTraits.Level1
 
-object Group1Var2 extends FixedSize(Group1, 2, List(Fields.flagsWithBinary), StaticBinaryBuilder) with TypeTraits.Static
+object Group1Var2 extends FixedSize(Group1, 2, List(Fields.flagsWithBinary), BinaryBuilder) with TypeTraits.Static
     with TypeTraits.Level2

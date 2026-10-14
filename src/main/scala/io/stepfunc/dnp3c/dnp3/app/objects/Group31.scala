@@ -13,26 +13,26 @@ object Group31 extends Group {
 
 import io.stepfunc.dnp3c.dnp3.app.Fields._
 
-object Group31Var1 extends FixedSize(Group31, 1, List(flags, value32), StaticFrozenAnalogBuilder) with TypeTraits.Static
+object Group31Var1 extends FixedSize(Group31, 1, List(flags, value32), FrozenAnalogBuilder) with TypeTraits.Static
     with TypeTraits.None
 
-object Group31Var2 extends FixedSize(Group31, 2, List(flags, value16), StaticFrozenAnalogBuilder) with TypeTraits.Static
+object Group31Var2 extends FixedSize(Group31, 2, List(flags, value16), FrozenAnalogBuilder) with TypeTraits.Static
     with TypeTraits.None
 
-object Group31Var3 extends FixedSize(Group31, 3, List(flags, value32, time48), StaticFrozenAnalogBuilder)
+object Group31Var3 extends FixedSize(Group31, 3, List(flags, value32, time48), FrozenAnalogBuilder)
     with TypeTraits.Static with TypeTraits.None
 
-object Group31Var4 extends FixedSize(Group31, 4, List(flags, value16, time48), StaticFrozenAnalogBuilder)
+object Group31Var4 extends FixedSize(Group31, 4, List(flags, value16, time48), FrozenAnalogBuilder)
     with TypeTraits.Static with TypeTraits.None
 
-object Group31Var5 extends FixedSize(Group31, 5, List(value32), StaticFrozenAnalogBuilder) with TypeTraits.Static
+object Group31Var5 extends FixedSize(Group31, 5, List(value32), FrozenAnalogBuilder) with TypeTraits.Static
     with TypeTraits.None
 
-object Group31Var6 extends FixedSize(Group31, 6, List(value16), StaticFrozenAnalogBuilder) with TypeTraits.Static
+object Group31Var6 extends FixedSize(Group31, 6, List(value16), FrozenAnalogBuilder) with TypeTraits.Static
     with TypeTraits.None
 
-object Group31Var7 extends FixedSize(Group31, 7, List(flags, valueF32), StaticFrozenAnalogBuilder)
+object Group31Var7 extends FixedSize(Group31, 7, List(flags, valueF32), FrozenAnalogBuilder)
     with TypeTraits.Static with TypeTraits.None
 
-object Group31Var8 extends FixedSize(Group31, 8, List(flags, valueF64), StaticFrozenAnalogBuilder)
+object Group31Var8 extends FixedSize(Group31, 8, List(flags, valueF64), FrozenAnalogBuilder)
     with TypeTraits.Static with TypeTraits.None

@@ -24,26 +24,26 @@ import io.stepfunc.dnp3c.dnp3.app.Fields._
 
 object Group23Var0 extends EmptyVariation(Group23, 0) with TypeTraits.EventVariationZero with TypeTraits.Level3
 
-object Group23Var1 extends FixedSize(Group23, 1, List(flags, count32), EventFrozenCounterBuilder) with TypeTraits.Event
+object Group23Var1 extends FixedSize(Group23, 1, List(flags, count32), FrozenCounterBuilder) with TypeTraits.Event
     with TypeTraits.Level3
 
-object Group23Var2 extends FixedSize(Group23, 2, List(flags, count16), EventFrozenCounterBuilder) with TypeTraits.Event
+object Group23Var2 extends FixedSize(Group23, 2, List(flags, count16), FrozenCounterBuilder) with TypeTraits.Event
     with TypeTraits.Level3
 
-object Group23Var3 extends FixedSize(Group23, 3, List(flags, count32), EventFrozenCounterBuilder) with TypeTraits.Event
+object Group23Var3 extends FixedSize(Group23, 3, List(flags, count32), FrozenCounterBuilder) with TypeTraits.Event
     with TypeTraits.None
 
-object Group23Var4 extends FixedSize(Group23, 4, List(flags, count16), EventFrozenCounterBuilder) with TypeTraits.Event
+object Group23Var4 extends FixedSize(Group23, 4, List(flags, count16), FrozenCounterBuilder) with TypeTraits.Event
     with TypeTraits.None
 
-object Group23Var5 extends FixedSize(Group23, 5, List(flags, count32, time48), EventFrozenCounterBuilder)
+object Group23Var5 extends FixedSize(Group23, 5, List(flags, count32, time48), FrozenCounterBuilder)
     with TypeTraits.Event with TypeTraits.Level4
 
-object Group23Var6 extends FixedSize(Group23, 6, List(flags, count16, time48), EventFrozenCounterBuilder)
+object Group23Var6 extends FixedSize(Group23, 6, List(flags, count16, time48), FrozenCounterBuilder)
     with TypeTraits.Event with TypeTraits.Level4
 
-object Group23Var7 extends FixedSize(Group23, 7, List(flags, count32, time48), EventFrozenCounterBuilder)
+object Group23Var7 extends FixedSize(Group23, 7, List(flags, count32, time48), FrozenCounterBuilder)
     with TypeTraits.Event with TypeTraits.None
 
-object Group23Var8 extends FixedSize(Group23, 8, List(flags, count16, time48), EventFrozenCounterBuilder)
+object Group23Var8 extends FixedSize(Group23, 8, List(flags, count16, time48), FrozenCounterBuilder)
     with TypeTraits.Event with TypeTraits.None

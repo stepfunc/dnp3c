@@ -103,19 +103,6 @@ trait PointBuilder {
   def build(): Point
 }
 
-abstract class MeasurementBuild extends PointBuilder {
-  var flags: Option[Byte] = None
-  var timestamp: Option[Timestamp] = None
-
-  override def onFlags(flags: Byte): Unit = {
-    this.flags = Some(flags)
-  }
-
-  override def onTimestamp(timestamp: Timestamp): Unit = {
-    this.timestamp = Some(timestamp)
-  }
-}
-
 class OtherPointBuilder extends PointBuilder {
   override def onFlags(flags: Byte): Unit = {}
   override def onTimestamp(timestamp: Timestamp): Unit = {}
@@ -144,131 +131,65 @@ class TimeOffsetPointBuilder extends PointBuilder {
   }
 }
 
-class BinaryBuilder(pointType: PointType) extends MeasurementBuild {
-  var value: Option[Boolean] = None
+// a measurement's value, flags and time, as its fields are parsed, made into a point once they all have been; a
+// builder takes the values of the kinds its overrides accept
+private abstract class MeasurementBuilder[V](kind: String, point: (V, Option[Byte], Option[Timestamp]) => Point)
+    extends PointBuilder {
+  private var flags: Option[Byte] = None
+  private var timestamp: Option[Timestamp] = None
+  private var value: Option[V] = None
 
-  override def onBooleanValue(value: Boolean): Unit = {
-    this.value = Some(value)
-  }
+  override def onFlags(flags: Byte): Unit = this.flags = Some(flags)
+  override def onTimestamp(timestamp: Timestamp): Unit = this.timestamp = Some(timestamp)
+  protected def onValue(value: V): Unit = this.value = Some(value)
 
-  override def build(): Point = {
-    this.value match {
-      case Some(value) => BinaryPoint(value, flags, timestamp, pointType)
-      case None => throw new Exception("Missing boolean value")
-    }
-  }
-}
-
-class DoubleBitBuilder(pointType: PointType) extends MeasurementBuild {
-  var value: Option[DoubleBit] = None
-
-  override def onDoubleBitValue(value: DoubleBit): Unit = {
-    this.value = Some(value)
-  }
-
-  override def build(): Point = {
-    this.value match {
-      case Some(value) => DoubleBitPoint(value, flags, timestamp, pointType)
-      case None => throw new Exception("Missing double-bit value")
-    }
+  override def build(): Point = value match {
+    case Some(v) => point(v, flags, timestamp)
+    case None => throw new Exception(s"Missing $kind value")
   }
 }
 
-class CounterBuilder(pointType: PointType, isFrozen: Boolean) extends MeasurementBuild {
-  var value: Option[Long] = None
-
-  override def onIntegerValue(value: Long): Unit = {
-    this.value = Some(value)
-  }
-
-  override def build(): Point = {
-    this.value match {
-      case Some(value) => CounterPoint(value, isFrozen, flags, timestamp, pointType)
-      case None => throw new Exception("Missing counter value")
-    }
-  }
+private class BooleanValueBuilder(point: (Boolean, Option[Byte], Option[Timestamp]) => Point)
+    extends MeasurementBuilder[Boolean]("boolean", point) {
+  override def onBooleanValue(value: Boolean): Unit = onValue(value)
 }
 
-class AnalogBuilder(pointType: PointType, isFrozen: Boolean) extends MeasurementBuild {
-  var value: Option[Double] = None
-
-  override def onIntegerValue(value: Long): Unit = {
-    this.value = Some(value.toDouble)
-  }
-
-  override def onFloatingValue(value: Double): Unit = {
-    this.value = Some(value)
-  }
-
-  override def build(): Point = {
-    this.value match {
-      case Some(value) => AnalogPoint(value, isFrozen, flags, timestamp, pointType)
-      case None => throw new Exception("Missing analog value")
-    }
-  }
+private class DoubleBitValueBuilder(point: (DoubleBit, Option[Byte], Option[Timestamp]) => Point)
+    extends MeasurementBuilder[DoubleBit]("double-bit", point) {
+  override def onDoubleBitValue(value: DoubleBit): Unit = onValue(value)
 }
 
-class BinaryOutputStatusBuilder(pointType: PointType) extends MeasurementBuild {
-  var value: Option[Boolean] = None
-
-  override def onBooleanValue(value: Boolean): Unit = {
-    this.value = Some(value)
-  }
-
-  override def build(): Point = {
-    this.value match {
-      case Some(value) => BinaryOutputStatusPoint(value, flags, timestamp, pointType)
-      case None => throw new Exception("Missing boolean value")
-    }
-  }
+private class IntegerValueBuilder(point: (Long, Option[Byte], Option[Timestamp]) => Point)
+    extends MeasurementBuilder[Long]("counter", point) {
+  override def onIntegerValue(value: Long): Unit = onValue(value)
 }
 
-class AnalogOutputStatusBuilder(pointType: PointType) extends MeasurementBuild {
-  var value: Option[Double] = None
-
-  override def onIntegerValue(value: Long): Unit = {
-    this.value = Some(value.toDouble)
-  }
-
-  override def onFloatingValue(value: Double): Unit = {
-    this.value = Some(value)
-  }
-
-  override def build(): Point = {
-    this.value match {
-      case Some(value) => AnalogOutputStatusPoint(value, flags, timestamp, pointType)
-      case None => throw new Exception("Missing analog value")
-    }
-  }
+// an integer value is taken as a floating-point one
+private class FloatingValueBuilder(point: (Double, Option[Byte], Option[Timestamp]) => Point)
+    extends MeasurementBuilder[Double]("analog", point) {
+  override def onIntegerValue(value: Long): Unit = onValue(value.toDouble)
+  override def onFloatingValue(value: Double): Unit = onValue(value)
 }
 
-// creates a fresh point builder for each object a variation parses
-final class PointBuilderFactory(builder: () => PointBuilder) {
-  def create(): PointBuilder = builder()
+// creates a fresh point builder for each object a variation parses, for its static values or its events
+final class PointBuilderFactory(builder: PointType => PointBuilder) {
+  def create(pointType: PointType): PointBuilder = builder(pointType)
 }
 
-val OtherBuilder: PointBuilderFactory = PointBuilderFactory(() => new OtherPointBuilder())
-val TimeOffsetBuilder: PointBuilderFactory = PointBuilderFactory(() => new TimeOffsetPointBuilder())
-val StaticBinaryBuilder: PointBuilderFactory = PointBuilderFactory(() => new BinaryBuilder(PointType.Static))
-val EventBinaryBuilder: PointBuilderFactory = PointBuilderFactory(() => new BinaryBuilder(PointType.Event))
-val StaticDoubleBitBuilder: PointBuilderFactory = PointBuilderFactory(() => new DoubleBitBuilder(PointType.Static))
-val EventDoubleBitBuilder: PointBuilderFactory = PointBuilderFactory(() => new DoubleBitBuilder(PointType.Event))
-val StaticCounterBuilder: PointBuilderFactory = PointBuilderFactory(() => new CounterBuilder(PointType.Static, false))
-val EventCounterBuilder: PointBuilderFactory = PointBuilderFactory(() => new CounterBuilder(PointType.Event, false))
-val StaticFrozenCounterBuilder: PointBuilderFactory =
-  PointBuilderFactory(() => new CounterBuilder(PointType.Static, true))
-val EventFrozenCounterBuilder: PointBuilderFactory =
-  PointBuilderFactory(() => new CounterBuilder(PointType.Event, true))
-val StaticAnalogBuilder: PointBuilderFactory = PointBuilderFactory(() => new AnalogBuilder(PointType.Static, false))
-val EventAnalogBuilder: PointBuilderFactory = PointBuilderFactory(() => new AnalogBuilder(PointType.Event, false))
-val StaticFrozenAnalogBuilder: PointBuilderFactory =
-  PointBuilderFactory(() => new AnalogBuilder(PointType.Static, true))
-val EventFrozenAnalogBuilder: PointBuilderFactory = PointBuilderFactory(() => new AnalogBuilder(PointType.Event, true))
-val StaticBinaryOutputStatusBuilder: PointBuilderFactory =
-  PointBuilderFactory(() => new BinaryOutputStatusBuilder(PointType.Static))
-val EventBinaryOutputStatusBuilder: PointBuilderFactory =
-  PointBuilderFactory(() => new BinaryOutputStatusBuilder(PointType.Event))
-val StaticAnalogOutputStatusBuilder: PointBuilderFactory =
-  PointBuilderFactory(() => new AnalogOutputStatusBuilder(PointType.Static))
-val EventAnalogOutputStatusBuilder: PointBuilderFactory =
-  PointBuilderFactory(() => new AnalogOutputStatusBuilder(PointType.Event))
+val OtherBuilder: PointBuilderFactory = PointBuilderFactory(_ => new OtherPointBuilder())
+val TimeOffsetBuilder: PointBuilderFactory = PointBuilderFactory(_ => new TimeOffsetPointBuilder())
+val BinaryBuilder: PointBuilderFactory = PointBuilderFactory(t => new BooleanValueBuilder(BinaryPoint(_, _, _, t)))
+val DoubleBitBuilder: PointBuilderFactory =
+  PointBuilderFactory(t => new DoubleBitValueBuilder(DoubleBitPoint(_, _, _, t)))
+val CounterBuilder: PointBuilderFactory =
+  PointBuilderFactory(t => new IntegerValueBuilder(CounterPoint(_, false, _, _, t)))
+val FrozenCounterBuilder: PointBuilderFactory =
+  PointBuilderFactory(t => new IntegerValueBuilder(CounterPoint(_, true, _, _, t)))
+val AnalogBuilder: PointBuilderFactory =
+  PointBuilderFactory(t => new FloatingValueBuilder(AnalogPoint(_, false, _, _, t)))
+val FrozenAnalogBuilder: PointBuilderFactory =
+  PointBuilderFactory(t => new FloatingValueBuilder(AnalogPoint(_, true, _, _, t)))
+val BinaryOutputStatusBuilder: PointBuilderFactory =
+  PointBuilderFactory(t => new BooleanValueBuilder(BinaryOutputStatusPoint(_, _, _, t)))
+val AnalogOutputStatusBuilder: PointBuilderFactory =
+  PointBuilderFactory(t => new FloatingValueBuilder(AnalogOutputStatusPoint(_, _, _, t)))

@@ -17,5 +17,5 @@ object Group3Var0 extends EmptyVariation(Group3, 0) with TypeTraits.StaticVariat
 
 object Group3Var1 extends DoubleBitField(Group3, 1) with TypeTraits.Static with TypeTraits.Level4
 
-object Group3Var2 extends FixedSize(Group3, 2, List(flagsWithDoubleBit), StaticDoubleBitBuilder) with TypeTraits.Static
+object Group3Var2 extends FixedSize(Group3, 2, List(flagsWithDoubleBit), DoubleBitBuilder) with TypeTraits.Static
     with TypeTraits.Level4

@@ -13,6 +13,9 @@ object Integers {
   }
 
   def toBytesLE(value: Long, bytes: Int): List[Byte] = toBytesBE(value, bytes).reverse
+
+  // the bits of up to 8 bytes, least significant first, as a Long: unsigned for fewer than 8
+  def fromBytesLE(bytes: Seq[Byte]): Long = bytes.foldRight(0L)((b, sum) => (sum << 8) | (b & 0xFF))
 }
 
 object UInt8 {
@@ -44,12 +47,7 @@ object UInt16LE {
     if (i < 0) UInt16LE(i + 65536) else UInt16LE(i)
   }
 
-  def apply(lsb: Byte, msb: Byte): UInt16LE = {
-    val b1 = UInt8.byteToShort(lsb)
-    val b2 = UInt8.byteToShort(msb)
-
-    UInt16LE((b2.toInt << 8) | b1.toInt)
-  }
+  def apply(lsb: Byte, msb: Byte): UInt16LE = UInt16LE(Integers.fromBytesLE(List(lsb, msb)).toInt)
 }
 
 case class UInt16LE(value: Int) extends ToBytes {
@@ -59,28 +57,8 @@ case class UInt16LE(value: Int) extends ToBytes {
   def toBytes = Integers.toBytesLE(value, 2)
 }
 
-object SInt16LE {
-  def apply(lsb: Byte, msb: Byte): SInt16LE = {
-    val b1 = UInt8.byteToShort(lsb)
-    val b2 = UInt8.byteToShort(msb)
-    SInt16LE(((b2.toShort << 8) | b1.toShort).toShort)
-  }
-}
-
 case class SInt16LE(value: Short) extends ToBytes {
   def toBytes = Integers.toBytesLE(value, 2)
-}
-
-object SInt32LE {
-
-  def apply(b1: Byte, b2: Byte, b3: Byte, b4: Byte): SInt32LE = {
-    val sb1 = UInt8.byteToShort(b1)
-    val sb2 = UInt8.byteToShort(b2)
-    val sb3 = UInt8.byteToShort(b3)
-    val sb4 = UInt8.byteToShort(b4)
-    SInt32LE((sb4.toInt << 24) | (sb3.toInt << 16) | (sb2.toInt << 8) | sb1.toInt)
-  }
-
 }
 
 case class SInt32LE(value: Int) extends ToBytes {
@@ -91,14 +69,6 @@ object UInt32LE {
 
   private val minValue = 0
   private val maxValue = 4294967295L
-
-  def apply(b1: Byte, b2: Byte, b3: Byte, b4: Byte): UInt32LE = {
-    val sb1 = UInt8.byteToShort(b1)
-    val sb2 = UInt8.byteToShort(b2)
-    val sb3 = UInt8.byteToShort(b3)
-    val sb4 = UInt8.byteToShort(b4)
-    UInt32LE((sb4.toLong << 24) | (sb3.toLong << 16) | (sb2.toLong << 8) | sb1.toLong)
-  }
 }
 
 case class UInt32LE(value: Long) extends ToBytes {
@@ -112,17 +82,6 @@ object UInt48LE {
 
   private val minValue = 0
   private val maxValue = 281474976710655L
-
-  def apply(b1: Byte, b2: Byte, b3: Byte, b4: Byte, b5: Byte, b6: Byte): UInt48LE = {
-    val sb1 = UInt8.byteToShort(b1)
-    val sb2 = UInt8.byteToShort(b2)
-    val sb3 = UInt8.byteToShort(b3)
-    val sb4 = UInt8.byteToShort(b4)
-    val sb5 = UInt8.byteToShort(b5)
-    val sb6 = UInt8.byteToShort(b6)
-    UInt48LE((sb6.toLong << 40) | (sb5.toLong << 32) | (sb4.toLong << 24) | (sb3.toLong << 16) | (sb2.toLong << 8) |
-      sb1.toLong)
-  }
 }
 
 case class UInt48LE(value: Long) extends ToBytes {

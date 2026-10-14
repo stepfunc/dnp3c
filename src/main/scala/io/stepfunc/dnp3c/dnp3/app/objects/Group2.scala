@@ -15,11 +15,11 @@ import io.stepfunc.dnp3c.dnp3.app.Fields._
 
 object Group2Var0 extends EmptyVariation(Group2, 0) with TypeTraits.EventVariationZero with TypeTraits.Level2
 
-object Group2Var1 extends FixedSize(Group2, 1, List(flagsWithBinary), EventBinaryBuilder) with TypeTraits.Event
+object Group2Var1 extends FixedSize(Group2, 1, List(flagsWithBinary), BinaryBuilder) with TypeTraits.Event
     with TypeTraits.Level1
 
-object Group2Var2 extends FixedSize(Group2, 2, List(flagsWithBinary, time48), EventBinaryBuilder) with TypeTraits.Event
+object Group2Var2 extends FixedSize(Group2, 2, List(flagsWithBinary, time48), BinaryBuilder) with TypeTraits.Event
     with TypeTraits.Level1
 
-object Group2Var3 extends FixedSize(Group2, 3, List(flagsWithBinary, timeCTO), EventBinaryBuilder)
+object Group2Var3 extends FixedSize(Group2, 3, List(flagsWithBinary, timeCTO), BinaryBuilder)
     with TypeTraits.Event with TypeTraits.Level1

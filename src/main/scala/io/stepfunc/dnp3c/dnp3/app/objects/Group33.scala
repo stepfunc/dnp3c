@@ -14,26 +14,26 @@ object Group33 extends Group {
 
 import io.stepfunc.dnp3c.dnp3.app.Fields._
 
-object Group33Var1 extends FixedSize(Group33, 1, List(flags, value32), EventFrozenAnalogBuilder) with TypeTraits.Event
+object Group33Var1 extends FixedSize(Group33, 1, List(flags, value32), FrozenAnalogBuilder) with TypeTraits.Event
     with TypeTraits.None
 
-object Group33Var2 extends FixedSize(Group33, 2, List(flags, value16), EventFrozenAnalogBuilder) with TypeTraits.Event
+object Group33Var2 extends FixedSize(Group33, 2, List(flags, value16), FrozenAnalogBuilder) with TypeTraits.Event
     with TypeTraits.None
 
-object Group33Var3 extends FixedSize(Group33, 3, List(flags, value32, time48), EventFrozenAnalogBuilder)
+object Group33Var3 extends FixedSize(Group33, 3, List(flags, value32, time48), FrozenAnalogBuilder)
     with TypeTraits.Event with TypeTraits.None
 
-object Group33Var4 extends FixedSize(Group33, 4, List(flags, value16, time48), EventFrozenAnalogBuilder)
+object Group33Var4 extends FixedSize(Group33, 4, List(flags, value16, time48), FrozenAnalogBuilder)
     with TypeTraits.Event with TypeTraits.None
 
-object Group33Var5 extends FixedSize(Group33, 5, List(flags, valueF32), EventFrozenAnalogBuilder) with TypeTraits.Event
+object Group33Var5 extends FixedSize(Group33, 5, List(flags, valueF32), FrozenAnalogBuilder) with TypeTraits.Event
     with TypeTraits.None
 
-object Group33Var6 extends FixedSize(Group33, 6, List(flags, valueF64), EventFrozenAnalogBuilder) with TypeTraits.Event
+object Group33Var6 extends FixedSize(Group33, 6, List(flags, valueF64), FrozenAnalogBuilder) with TypeTraits.Event
     with TypeTraits.None
 
-object Group33Var7 extends FixedSize(Group33, 7, List(flags, valueF32, time48), EventFrozenAnalogBuilder)
+object Group33Var7 extends FixedSize(Group33, 7, List(flags, valueF32, time48), FrozenAnalogBuilder)
     with TypeTraits.Event with TypeTraits.None
 
-object Group33Var8 extends FixedSize(Group33, 8, List(flags, valueF64, time48), EventFrozenAnalogBuilder)
+object Group33Var8 extends FixedSize(Group33, 8, List(flags, valueF64, time48), FrozenAnalogBuilder)
     with TypeTraits.Event with TypeTraits.None
