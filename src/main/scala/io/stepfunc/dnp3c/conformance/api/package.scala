@@ -75,11 +75,15 @@ package object api {
     }
   }
 
-  def section(identifier: String, title: String, procedureSeq: TestProcedure*): TestSection = new TestSection {
-    override def id: String = identifier
-    override def description: String = title
-    override def sections: List[TestSection] = Nil
-    override def procedures: List[TestProcedure] = procedureSeq.toList
+  /** a section of a revision's tree, holding sections and procedures, which it lists sections first */
+  def section(id: String, title: String)(children: TestElement*): TestSection = {
+    val (sectionId, sectionTitle) = (id, title)
+    new TestSection {
+      def id: String = sectionId
+      def description: String = sectionTitle
+      override def sections: Iterable[TestSection] = children.collect { case s: TestSection => s }
+      override def procedures: Iterable[TestProcedure] = children.collect { case p: TestProcedure => p }
+    }
   }
 
   def unimplemented(identifier: String, title: String, levels: Option[Set[Int]] = None): TestProcedure =

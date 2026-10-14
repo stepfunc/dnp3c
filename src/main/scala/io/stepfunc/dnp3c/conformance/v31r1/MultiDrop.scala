@@ -5,7 +5,7 @@ package io.stepfunc.dnp3c.conformance.v31r1
 
 import io.stepfunc.dnp3c.conformance.api._
 import io.stepfunc.dnp3c.conformance.api.options.{ LinkOptions, OutstationOptions, SerialOptions }
-import io.stepfunc.dnp3c.conformance.s8.helpers.GenericSteps.{ expectAtLeastOneResponse, send }
+import io.stepfunc.dnp3c.conformance.common.GenericSteps.{ expectAtLeastOneResponse, send }
 import io.stepfunc.dnp3c.dnp3._
 import io.stepfunc.dnp3c.dnp3.app.{ Message, Sequence }
 import io.stepfunc.dnp3c.dnp3.app.objects.{ Group60Var2, Group60Var3, Group60Var4 }

@@ -3,7 +3,7 @@
 
 package io.stepfunc.dnp3c.conformance.v31r1
 
-import io.stepfunc.dnp3c.conformance.s8
+import io.stepfunc.dnp3c.conformance.v27
 import io.stepfunc.dnp3c.conformance.api.{ Options, ProcedureDefinition }
 import io.stepfunc.dnp3c.conformance.api.options.TimeSyncOptions
 import org.junit.runner.RunWith
@@ -24,8 +24,8 @@ class CommonTimeTest extends AnyFunSuite with Matchers {
     procedure.configure(Options.from(options)).steps.flatMap(_.step.description).mkString("\n")
 
   test("8.15.3 is 2.7's 8.15.2 without its first step, so every step is one earlier") {
-    labels(s8.s815.Procedure8152).head should equal("1")
-    labels(s8.s815.Procedure8152).last should equal("38")
+    labels(v27.Procedure8_15_2).head should equal("1")
+    labels(v27.Procedure8_15_2).last should equal("38")
     labels(CommonTime.relativeTimeSupported).head should equal("1")
     labels(CommonTime.relativeTimeSupported).last should equal("37")
     describes(CommonTime.relativeTimeSupported, relative) should not include "DUT supports Binary Input Change"

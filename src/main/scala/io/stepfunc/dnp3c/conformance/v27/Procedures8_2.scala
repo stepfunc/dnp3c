@@ -1,0 +1,27 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright Step Function I/O LLC
+
+package io.stepfunc.dnp3c.conformance.v27
+
+import io.stepfunc.dnp3c.conformance.common.OperationType
+import io.stepfunc.dnp3c.conformance.common.OutputProcedures._
+import io.stepfunc.dnp3c.dnp3.app.AppFunction
+
+object Procedure8_2_1_2_1 extends SelectBeforeOperateTwoByte(OperationType.BinaryOutput)
+object Procedure8_2_1_2_2 extends SelectBeforeOperateOneByte(OperationType.BinaryOutput)
+object Procedure8_2_1_2_3 extends ToUninstalledPoint(OperationType.BinaryOutput, AppFunction.select)
+object Procedure8_2_1_2_4 extends OperateAfterSelectTimeout(OperationType.BinaryOutput)
+object Procedure8_2_1_2_9 extends SelectTwoByteOperateOneByte(OperationType.BinaryOutput)
+object Procedure8_2_1_2_10 extends SelectConfigurableDevice(OperationType.BinaryOutput)
+object Procedure8_2_1_2_11 extends SelectRetrySameSequence(OperationType.BinaryOutput)
+object Procedure8_2_1_2_12 extends SelectRetryIncrementedSequence(OperationType.BinaryOutput)
+object Procedure8_2_1_2_13 extends OperateRetrySameSequence(OperationType.BinaryOutput)
+object Procedure8_2_1_2_14 extends OperateRetryIncrementedSequence(OperationType.BinaryOutput)
+object Procedure8_2_1_2_15 extends SequenceNumberChecking(OperationType.BinaryOutput)
+object Procedure8_2_2_2_1 extends DirectOperate(OperationType.BinaryOutput)
+object Procedure8_2_2_2_2 extends ToUninstalledPoint(OperationType.BinaryOutput, AppFunction.directOp)
+object Procedure8_2_2_2_3 extends DirectOperateConfigurableDevice(OperationType.BinaryOutput)
+object Procedure8_2_3_2_1 extends DirectOperateNoAck(OperationType.BinaryOutput)
+object Procedure8_2_3_2_2 extends DirectOperateNoAckToUninstalledPoint(OperationType.BinaryOutput)
+object Procedure8_2_3_2_3 extends DirectOperateNoAckConfigurableDevice(OperationType.BinaryOutput)
+object Procedure8_2_4_2 extends MultipleObjects(OperationType.BinaryOutput)

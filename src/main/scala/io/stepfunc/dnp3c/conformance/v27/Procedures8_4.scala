@@ -1,0 +1,27 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright Step Function I/O LLC
+
+package io.stepfunc.dnp3c.conformance.v27
+
+import io.stepfunc.dnp3c.conformance.common.OperationType
+import io.stepfunc.dnp3c.conformance.common.OutputProcedures._
+import io.stepfunc.dnp3c.dnp3.app.AppFunction
+
+object Procedure8_4_1_2_1 extends SelectBeforeOperateTwoByte(OperationType.AnalogOutput)
+object Procedure8_4_1_2_2 extends SelectBeforeOperateOneByte(OperationType.AnalogOutput)
+object Procedure8_4_1_2_3 extends ToUninstalledPoint(OperationType.AnalogOutput, AppFunction.select)
+object Procedure8_4_1_2_4 extends OperateAfterSelectTimeout(OperationType.AnalogOutput)
+object Procedure8_4_1_2_6 extends SelectTwoByteOperateOneByte(OperationType.AnalogOutput)
+object Procedure8_4_1_2_7 extends SelectConfigurableDevice(OperationType.AnalogOutput)
+object Procedure8_4_1_2_8 extends SelectRetrySameSequence(OperationType.AnalogOutput)
+object Procedure8_4_1_2_9 extends SelectRetryIncrementedSequence(OperationType.AnalogOutput)
+object Procedure8_4_1_2_10 extends OperateRetrySameSequence(OperationType.AnalogOutput)
+object Procedure8_4_1_2_11 extends OperateRetryIncrementedSequence(OperationType.AnalogOutput)
+object Procedure8_4_1_2_12 extends SequenceNumberChecking(OperationType.AnalogOutput)
+object Procedure8_4_2_2_1 extends DirectOperate(OperationType.AnalogOutput)
+object Procedure8_4_2_2_2 extends ToUninstalledPoint(OperationType.AnalogOutput, AppFunction.directOp)
+object Procedure8_4_2_2_3 extends DirectOperateConfigurableDevice(OperationType.AnalogOutput)
+object Procedure8_4_3_2_1 extends DirectOperateNoAck(OperationType.AnalogOutput)
+object Procedure8_4_3_2_2 extends DirectOperateNoAckToUninstalledPoint(OperationType.AnalogOutput)
+object Procedure8_4_3_2_3 extends DirectOperateNoAckConfigurableDevice(OperationType.AnalogOutput)
+object Procedure8_4_4_2 extends MultipleObjects(OperationType.AnalogOutput)

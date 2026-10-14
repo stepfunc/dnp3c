@@ -8,7 +8,7 @@ import scala.util.Try
 import io.stepfunc.dnp3c.conformance.Revisions
 import io.stepfunc.dnp3c.conformance.api.{ ConfigurationException, Options }
 import io.stepfunc.dnp3c.conformance.api.options.{ BinaryInputOptions, OutstationOptions, TimeSyncOptions }
-import io.stepfunc.dnp3c.conformance.s8.helpers.InputType.BinaryInput
+import io.stepfunc.dnp3c.conformance.common.InputType.BinaryInput
 import io.stepfunc.dnp3c.conformance.v31r1.EventRules.Clock
 import io.stepfunc.dnp3c.dnp3.StubDriver
 import io.stepfunc.dnp3c.dnp3.app.Message

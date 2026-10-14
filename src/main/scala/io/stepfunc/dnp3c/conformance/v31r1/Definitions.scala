@@ -4,9 +4,9 @@
 package io.stepfunc.dnp3c.conformance.v31r1
 
 import io.stepfunc.dnp3c.conformance.api.options.OutstationOptions
-import io.stepfunc.dnp3c.conformance.s8.helpers.Validations.{ isNullErrorResponse, isNullOrNullErrorResponse }
-import io.stepfunc.dnp3c.conformance.s8.s81.BinaryOutputStatusRead
-import io.stepfunc.dnp3c.conformance.s8.s83.AnalogOutputStatusRead
+import io.stepfunc.dnp3c.conformance.common.Validations.{ isNullErrorResponse, isNullOrNullErrorResponse }
+import io.stepfunc.dnp3c.conformance.v27.BinaryOutputStatusRead
+import io.stepfunc.dnp3c.conformance.v27.AnalogOutputStatusRead
 import io.stepfunc.dnp3c.dnp3.app.IIN
 import io.stepfunc.dnp3c.dnp3.app.objects.{ Group40Var1, Group40Var2 }
 

@@ -52,7 +52,7 @@ class ProcedureConfigurationTest extends AnyFunSuite with Matchers {
   }
 
   test("a procedure that needs Device Profile values fails to configure without them") {
-    an[Exception] should be thrownBy build(s8.s823.Procedure82321, Options.from(Map()))
+    an[Exception] should be thrownBy build(v27.Procedure8_23_2_1, Options.from(Map()))
   }
 
   test("an incomplete procedure fails to configure") {
@@ -67,20 +67,20 @@ class ProcedureConfigurationTest extends AnyFunSuite with Matchers {
 
     val (binary, analog) = (SupportOptions.Outputs.binary.commands, SupportOptions.Outputs.analog.commands)
 
-    skipped(s8.s84.s841.Procedure84122, analog -> false) should equal(true)
-    skipped(s8.s84.s841.Procedure84122, analog -> true) should equal(false)
+    skipped(v27.Procedure8_4_1_2_2, analog -> false) should equal(true)
+    skipped(v27.Procedure8_4_1_2_2, analog -> true) should equal(false)
 
-    skipped(s6.s64.Procedure642, SupportOptions.dataLinkConfirmRequests -> false) should equal(true)
-    skipped(s6.s64.Procedure642, SupportOptions.dataLinkRetries -> false) should equal(true)
+    skipped(v27.Procedure6_4_2, SupportOptions.dataLinkConfirmRequests -> false) should equal(true)
+    skipped(v27.Procedure6_4_2, SupportOptions.dataLinkRetries -> false) should equal(true)
     skipped(
-      s6.s64.Procedure642,
+      v27.Procedure6_4_2,
       SupportOptions.dataLinkConfirmRequests -> true,
       SupportOptions.dataLinkRetries -> true) should equal(false)
 
     // either kind of output will do
-    skipped(s8.s86.s865.Procedure8653, binary -> false, analog -> false) should equal(true)
-    skipped(s8.s86.s865.Procedure8653, binary -> true, analog -> false) should equal(false)
-    skipped(s8.s86.s865.Procedure8653, binary -> false, analog -> true) should equal(false)
+    skipped(v27.Procedure8_6_5_3, binary -> false, analog -> false) should equal(true)
+    skipped(v27.Procedure8_6_5_3, binary -> true, analog -> false) should equal(false)
+    skipped(v27.Procedure8_6_5_3, binary -> false, analog -> true) should equal(false)
   }
 
   test("every element's id extends its parent's") {

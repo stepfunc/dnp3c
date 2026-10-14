@@ -153,7 +153,7 @@ object Revisions {
     "DNP3 IED Certification Procedure, Subset Level 2",
     "2016-03-02",
     List(2),
-    List(s6.Section, s7.Section, s8.Section))
+    v27.Tree.sections)
 
   /** DNP3 IED Certification Procedure, Subset Levels 1, 2 and 3, version 3.1 rev 1 */
   val v3_1r1: Revision = new Revision(

@@ -5,8 +5,8 @@ package io.stepfunc.dnp3c.conformance.v31r1
 
 import io.stepfunc.dnp3c.conformance.api.ProcedureDefinition
 import io.stepfunc.dnp3c.conformance.api.options.UnsolicitedOptions
-import io.stepfunc.dnp3c.conformance.s8.helpers.UnsolicitedResponseSteps.RetryLimit
-import io.stepfunc.dnp3c.conformance.s8.s811.UnsolicitedAndPolledResponses
+import io.stepfunc.dnp3c.conformance.common.UnsolicitedResponseSteps.RetryLimit
+import io.stepfunc.dnp3c.conformance.v27.UnsolicitedAndPolledResponses
 
 /** 3.1r1's 8.11 tests whose steps differ from 2.7's */
 object Unsolicited {

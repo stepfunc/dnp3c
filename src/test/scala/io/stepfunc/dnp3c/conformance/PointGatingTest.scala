@@ -7,8 +7,7 @@ import io.stepfunc.dnp3c.conformance.Placements.id
 import io.stepfunc.dnp3c.conformance.api.{ Options, ProcedureDefinition }
 import io.stepfunc.dnp3c.conformance.api.options.SupportOptions
 import io.stepfunc.dnp3c.conformance.api.options.SupportOptions.Inputs
-import io.stepfunc.dnp3c.conformance.s8.{ s813, s814, s816, s817, s819, s821, s822 }
-import io.stepfunc.dnp3c.conformance.s8.s86.s866
+import io.stepfunc.dnp3c.conformance.v27
 import org.junit.runner.RunWith
 import org.scalatestplus.junit.JUnitRunner
 import org.scalatest.matchers.should.Matchers
@@ -29,10 +28,10 @@ class PointGatingTest extends AnyFunSuite with Matchers {
 
   // (input, procedures that test its events, procedures for a DUT without them)
   private val eventFamilies = List(
-    (Inputs.binary, List(s814.Procedure81422, s866.Procedure86621), List(s814.Procedure81421)),
-    (Inputs.doubleBit, List(s822.Procedure82222, s866.Procedure86624), List(s822.Procedure82221)),
-    (Inputs.counter, List(s817.Procedure81722, s866.Procedure86623), List(s817.Procedure81721)),
-    (Inputs.analog, List(s819.Procedure81922, s866.Procedure86622), Nil)
+    (Inputs.binary, List(v27.Procedure8_14_2_2, v27.Procedure8_6_6_2_1), List(v27.Procedure8_14_2_1)),
+    (Inputs.doubleBit, List(v27.Procedure8_22_2_2, v27.Procedure8_6_6_2_4), List(v27.Procedure8_22_2_1)),
+    (Inputs.counter, List(v27.Procedure8_17_2_2, v27.Procedure8_6_6_2_3), List(v27.Procedure8_17_2_1)),
+    (Inputs.analog, List(v27.Procedure8_19_2_2, v27.Procedure8_6_6_2_2), Nil)
   )
 
   test("event procedures need the points and their events; the procedure without them runs otherwise") {
@@ -55,15 +54,15 @@ class PointGatingTest extends AnyFunSuite with Matchers {
         api.options.TimeSyncOptions.binaryInputChangeWithRelativeTime.id -> relative.toString
       ))
       withClue(s"points=$points events=$events relative=$relative: ")(
-        s8.s815.Procedure8152.disabledBy(options).isEmpty should equal(points && events && relative))
+        v27.Procedure8_15_2.disabledBy(options).isEmpty should equal(points && events && relative))
     }
   }
 
   test("configurable device procedures need the points and disabling") {
     for ((input, procedure) <- List(
-        Inputs.binary -> s813.Procedure81323,
-        Inputs.doubleBit -> s821.Procedure82122,
-        Inputs.counter -> s816.Procedure816123);
+        Inputs.binary -> v27.Procedure8_13_2_3,
+        Inputs.doubleBit -> v27.Procedure8_21_2_2,
+        Inputs.counter -> v27.Procedure8_16_1_2_3);
       points <- List(true, false); disabling <- List(true, false))
       withClue(s"${procedure.id} points=$points disabling=$disabling: ")(
         runs(procedure, input, points, (_.disabling, disabling)) should equal(points && disabling))

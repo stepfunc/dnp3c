@@ -74,7 +74,7 @@ class Revision31r1Test extends AnyFunSuite with Matchers {
   }
 
   test("the unsolicited class tests share 2.7's, under 3.1r1's rule that an unsolicited response carries only events") {
-    procedure("8.11.2-2").definition should be theSameInstanceAs s8.s811.Procedure81122
+    procedure("8.11.2-2").definition should be theSameInstanceAs v27.Procedure8_11_2_2
     revision.policies should contain(v31r1.Rules.unsolicitedOnlyEvents)
   }
 
@@ -95,6 +95,6 @@ class Revision31r1Test extends AnyFunSuite with Matchers {
     labels("6.4.2", Revisions.v2_7).last should equal("21")
     labels("6.4.2", revision).last should equal("20")
     labels("6.4.2", revision) should contain("14")
-    procedure("7.2").definition should be theSameInstanceAs s7.Procedure72
+    procedure("7.2").definition should be theSameInstanceAs v27.Procedure7_2
   }
 }

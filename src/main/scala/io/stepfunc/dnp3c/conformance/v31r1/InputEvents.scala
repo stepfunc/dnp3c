@@ -4,9 +4,9 @@
 package io.stepfunc.dnp3c.conformance.v31r1
 
 import io.stepfunc.dnp3c.conformance.api._
-import io.stepfunc.dnp3c.conformance.s8.helpers.GenericSteps._
-import io.stepfunc.dnp3c.conformance.s8.helpers.InputEventProcedures.NoEvents
-import io.stepfunc.dnp3c.conformance.s8.helpers.{ InputType, Validations }
+import io.stepfunc.dnp3c.conformance.common.GenericSteps._
+import io.stepfunc.dnp3c.conformance.common.InputEventProcedures.NoEvents
+import io.stepfunc.dnp3c.conformance.common.{ InputType, Validations }
 import io.stepfunc.dnp3c.dnp3.app._
 import io.stepfunc.dnp3c.dnp3.{ AutoConfirm, Comment, DeferredCheck, MessageValidation, Requests, TestDriver }
 

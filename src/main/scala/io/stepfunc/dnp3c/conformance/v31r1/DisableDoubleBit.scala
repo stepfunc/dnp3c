@@ -5,8 +5,8 @@ package io.stepfunc.dnp3c.conformance.v31r1
 
 import io.stepfunc.dnp3c.conformance.api._
 import io.stepfunc.dnp3c.conformance.api.options.SupportOptions.Inputs
-import io.stepfunc.dnp3c.conformance.s8.helpers.GenericSteps._
-import io.stepfunc.dnp3c.conformance.s8.helpers.Validations
+import io.stepfunc.dnp3c.conformance.common.GenericSteps._
+import io.stepfunc.dnp3c.conformance.common.Validations
 import io.stepfunc.dnp3c.dnp3.app.{ IIN, Sequence, Variation }
 import io.stepfunc.dnp3c.dnp3.app.objects.{ Group3Var0, Group4Var0 }
 import io.stepfunc.dnp3c.dnp3.{ Comment, DeferredCheck, MessageValidation, Requests, TestDriver }

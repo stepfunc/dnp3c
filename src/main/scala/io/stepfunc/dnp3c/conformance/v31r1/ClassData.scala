@@ -4,10 +4,10 @@
 package io.stepfunc.dnp3c.conformance.v31r1
 
 import io.stepfunc.dnp3c.conformance.api.ProcedureDefinition
-import io.stepfunc.dnp3c.conformance.s8.helpers.ClassEventProcedures.{ AllQualifier, CountQualifier }
-import io.stepfunc.dnp3c.conformance.s8.helpers.EventClassData.{ class1, class2, class3 }
-import io.stepfunc.dnp3c.conformance.s8.helpers.EventClassSteps.CountConfirmSteps
-import io.stepfunc.dnp3c.conformance.s8.s85.s856.ClassAssignmentVerification
+import io.stepfunc.dnp3c.conformance.common.ClassEventProcedures.{ AllQualifier, CountQualifier }
+import io.stepfunc.dnp3c.conformance.common.EventClassData.{ class1, class2, class3 }
+import io.stepfunc.dnp3c.conformance.common.EventClassSteps.CountConfirmSteps
+import io.stepfunc.dnp3c.conformance.v27.ClassAssignmentVerification
 
 /**
  * 3.1r1's 8.5 tests whose steps differ from 2.7's, beyond the subset level Tables 8-3 and 8-4 apply at, which the

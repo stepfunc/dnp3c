@@ -5,10 +5,10 @@ package io.stepfunc.dnp3c.conformance.v31r1
 
 import io.stepfunc.dnp3c.conformance.api._
 import io.stepfunc.dnp3c.conformance.api.options.SupportOptions.{ InputOptions, Inputs }
-import io.stepfunc.dnp3c.conformance.s8.helpers.ConfigurableInputProcedure
-import io.stepfunc.dnp3c.conformance.s8.helpers.GenericSteps._
-import io.stepfunc.dnp3c.conformance.s8.helpers.Validations._
-import io.stepfunc.dnp3c.conformance.{ s8 }
+import io.stepfunc.dnp3c.conformance.common.ConfigurableInputProcedure
+import io.stepfunc.dnp3c.conformance.common.GenericSteps._
+import io.stepfunc.dnp3c.conformance.common.Validations._
+import io.stepfunc.dnp3c.conformance.v27
 import io.stepfunc.dnp3c.dnp3.app.{ IIN, Sequence, Variation }
 import io.stepfunc.dnp3c.dnp3.app.objects.{ Group1Var0, Group20Var0, Group20Var1, Group21Var0, Group30Var0, Group3Var0 }
 import io.stepfunc.dnp3c.dnp3.{ Comment, DeferredCheck, MessageValidation, Requests, TestDriver }
@@ -118,13 +118,13 @@ object StaticInputs {
 
   val binaryLevelOne = new LevelOneWithoutReads(Inputs.binary, List(Group1Var0))
   val binaryWithout = new WithoutInputs(Inputs.binary, Group1Var0)
-  val binaryHas = s8.s813.Procedure81322.requiring(OptionCondition(Inputs.binary.reads))
+  val binaryHas = v27.Procedure8_13_2_2.requiring(OptionCondition(Inputs.binary.reads))
   val binaryConfigurable =
     new Configurable(Inputs.binary, "binary inputs", PluginSteps.uninstallBinaryInputs, Group1Var0, Sequence.one)
 
   val doubleBitLevelOne = new LevelOneWithoutReads(Inputs.doubleBit, List(Group3Var0))
   val doubleBitWithout = new WithoutInputs(Inputs.doubleBit, Group3Var0)
-  val doubleBitHas = s8.s821.Procedure82121.requiring(OptionCondition(Inputs.doubleBit.reads))
+  val doubleBitHas = v27.Procedure8_21_2_1.requiring(OptionCondition(Inputs.doubleBit.reads))
   val doubleBitConfigurable = new Configurable(
     Inputs.doubleBit,
     "double-bit inputs",
@@ -134,7 +134,7 @@ object StaticInputs {
 
   val counterLevelOne = new LevelOneWithoutReads(Inputs.counter, List(Group20Var0, Group20Var1), condition = true)
   val counterWithout = new WithoutPoints(Inputs.counter, Group20Var0)
-  val counterHas = s8.s816.Procedure816122.requiring(OptionCondition(Inputs.counter.reads))
+  val counterHas = v27.Procedure8_16_1_2_2.requiring(OptionCondition(Inputs.counter.reads))
   val counterConfigurable =
     new Configurable(Inputs.counter, "counters", PluginSteps.uninstallCounterInputs, Group20Var0, Sequence.one)
 
@@ -143,5 +143,5 @@ object StaticInputs {
 
   val analogLevelOne = new LevelOneWithoutReads(Inputs.analog, List(Group30Var0))
   val analogWithout = new WithoutPoints(Inputs.analog, Group30Var0)
-  val analogHas = s8.s818.Procedure81822.requiring(OptionCondition(Inputs.analog.reads))
+  val analogHas = v27.Procedure8_18_2_2.requiring(OptionCondition(Inputs.analog.reads))
 }

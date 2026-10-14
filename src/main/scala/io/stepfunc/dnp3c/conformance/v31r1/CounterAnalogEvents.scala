@@ -6,9 +6,9 @@ package io.stepfunc.dnp3c.conformance.v31r1
 import io.stepfunc.dnp3c.conformance.api._
 import io.stepfunc.dnp3c.conformance.api.options.{ CounterOptions, OutstationOptions }
 import io.stepfunc.dnp3c.conformance.api.options.SupportOptions.Inputs
-import io.stepfunc.dnp3c.conformance.s8
-import io.stepfunc.dnp3c.conformance.s8.helpers.CounterEventSteps
-import io.stepfunc.dnp3c.conformance.s8.s819.AnalogInputChange
+import io.stepfunc.dnp3c.conformance.v27
+import io.stepfunc.dnp3c.conformance.common.CounterEventSteps
+import io.stepfunc.dnp3c.conformance.v27.AnalogInputChange
 import io.stepfunc.dnp3c.dnp3.app.objects.{ Group22Var0, Group32Var0 }
 
 /**
@@ -31,7 +31,7 @@ object CounterAnalogEvents {
   }
 
   val counterLevelOne = new StaticInputs.LevelOneWithoutReads(Inputs.counter, List(Group22Var0), events = true)
-  val counterWithout = s8.s817.Procedure81721.requiring(counterEventReads)
+  val counterWithout = v27.Procedure8_17_2_1.requiring(counterEventReads)
   val counterAll: ProcedureDefinition = counterTest(_ => CounterEventSteps.AllQualifierSteps(unconfirmed = true))
   val counterOneByteCount: ProcedureDefinition = counterTest(options =>
     CounterEventSteps.CountQualifierSteps(
@@ -43,9 +43,9 @@ object CounterAnalogEvents {
       options.get(CounterOptions.numCounterEventsGenerated),
       twoBytesQualifier = true,
       confirmSteps = true))
-  val counterWithoutConfirm = s8.s817.Procedure81725.requiring(counterEventReads)
+  val counterWithoutConfirm = v27.Procedure8_17_2_5.requiring(counterEventReads)
 
   val analogLevelOne = new StaticInputs.LevelOneWithoutReads(Inputs.analog, List(Group32Var0), events = true)
   val analogChange = new AnalogInputChange(confirmStep = true).requiring(analogEventReads)
-  val analogWithoutConfirm = s8.s819.Procedure81922.requiring(analogEventReads)
+  val analogWithoutConfirm = v27.Procedure8_19_2_2.requiring(analogEventReads)
 }

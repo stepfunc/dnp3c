@@ -10,7 +10,7 @@ import io.stepfunc.dnp3c.conformance.api.options.{ OutstationOptions, TimeSyncOp
 import io.stepfunc.dnp3c.conformance.api.options.{ AnalogInputOptions, AnalogOutputOptions, ClassOptions }
 import io.stepfunc.dnp3c.conformance.api.options.SupportOptions
 import io.stepfunc.dnp3c.conformance.api.options.SupportOptions.{ Inputs, Outputs }
-import io.stepfunc.dnp3c.conformance.s8.helpers.{ InputType, Validations }
+import io.stepfunc.dnp3c.conformance.common.{ InputType, Validations }
 import io.stepfunc.dnp3c.dnp3.{ Comment, DeferredCheck, MessageValidation, ProcedureReporter }
 import io.stepfunc.dnp3c.dnp3.app.{ Message, Variation }
 import io.stepfunc.dnp3c.dnp3.app.objects.{ Group51Var1, Group51Var2 }

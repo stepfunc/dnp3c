@@ -4,9 +4,9 @@
 package io.stepfunc.dnp3c.conformance.v31r1
 
 import io.stepfunc.dnp3c.conformance.api._
-import io.stepfunc.dnp3c.conformance.s8.helpers.GenericSteps._
-import io.stepfunc.dnp3c.conformance.s8.helpers.{ InputType, Validations }
-import io.stepfunc.dnp3c.conformance.s8.s815.RelativeTimeSupported
+import io.stepfunc.dnp3c.conformance.common.GenericSteps._
+import io.stepfunc.dnp3c.conformance.common.{ InputType, Validations }
+import io.stepfunc.dnp3c.conformance.v27.RelativeTimeSupported
 import io.stepfunc.dnp3c.dnp3.{ AutoConfirm, Requests }
 import io.stepfunc.dnp3c.dnp3.app.{ IIN, Sequence }
 import io.stepfunc.dnp3c.dnp3.app.objects.Group2Var3
