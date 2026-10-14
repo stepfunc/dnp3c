@@ -26,7 +26,11 @@ class ProcedureConfigurationTest extends AnyFunSuite with Matchers {
 
   private val booleans = OptionGroups.list.flatMap(_.options).collect { case o: BooleanOption => o.id }
 
-  private def build(procedure: ProcedureDefinition, options: Options): Unit = procedure.configure(options).steps.toList
+  // builds the steps, and their descriptions, as -describe and the log show them
+  private def build(procedure: ProcedureDefinition, options: Options): Unit = {
+    val config = procedure.configure(options)
+    (config.steps ++ config.cleanup).foreach(_.step.description.map(_.toString))
+  }
 
   // at each subset level a revision tests, its implemented procedures that apply at that level
   private def configuresEveryProcedure(options: Map[String, String]): Unit =
