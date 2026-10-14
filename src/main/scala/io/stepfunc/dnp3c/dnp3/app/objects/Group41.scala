@@ -20,6 +20,14 @@ object Group41Var2 extends FixedSize(Group41, 2, List(value16, status)) with Typ
 object Group41Var3 extends FixedSize(Group41, 3, List(valueF32, status)) with TypeTraits.Command with TypeTraits.Level4
 object Group41Var4 extends FixedSize(Group41, 4, List(valueF64, status)) with TypeTraits.Command with TypeTraits.None
 
+case class Group41Var1(value: Int, status: CommandStatus) extends FixedSizeSerializable {
+  override val variation: Variation = Group41Var1
+  override def toFixedSizeObject: Field.Collection = Field.collect(
+    value32(value),
+    Fields.status(status.value)
+  )
+}
+
 case class Group41Var2(value: Short, status: CommandStatus) extends FixedSizeSerializable {
   override val variation: Variation = Group41Var2
   override def toFixedSizeObject: Field.Collection = Field.collect(

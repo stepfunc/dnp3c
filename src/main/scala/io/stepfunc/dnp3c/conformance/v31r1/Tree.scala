@@ -175,7 +175,7 @@ object Tree {
             "Analog Output, SBO, Incrementing Sequence Number Operate Retries",
             s8.s84.s841.Procedure841211),
           test("8.4.1.2.12", "Analog Output, SBO, Sequence number checking", s8.s84.s841.Procedure841212),
-          notYet("8.4.1.2.13", "Analog Output, SBO, 32-bit values")
+          test("8.4.1.2.13", "Analog Output, SBO, 32-bit values", AnalogOutput32.sbo)
         ),
         section("8.4.2", "Direct Operate with Acknowledge")(
           test("8.4.2.2.1", "Analog Output, Direct Operate", s8.s84.s842.Procedure84221),
