@@ -116,6 +116,14 @@ class DefaultIntegrationPlugin extends IntegrationPlugin {
     ManualSteps.UserAction(reporter, s"${enableDisable(enabled)} the DUT's support for cold restart (function code 13)")
   }
 
+  override def uninstallFrozenCounters(reporter: PluginReporter): Unit = {
+    ManualSteps.UserAction(reporter, "Uninstall or disable every frozen counter on the DUT")
+  }
+
+  override def uninstallAnalogInputs(reporter: PluginReporter): Unit = {
+    ManualSteps.UserAction(reporter, "Uninstall or disable every analog input on the DUT")
+  }
+
   override def setAnalogInput(reporter: PluginReporter, index: Int, value: Double): Unit = {
     ManualSteps.UserAction(reporter, s"Apply a stable input of $value to analog input $index")
   }

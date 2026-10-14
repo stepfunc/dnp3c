@@ -8,6 +8,7 @@ import scala.util.Try
 import io.stepfunc.dnp3c.conformance.api.{ ConfigProblem, OptionSource, TestProcedure }
 import io.stepfunc.dnp3c.conformance.api.options.{ OutstationOptions, TimeSyncOptions }
 import io.stepfunc.dnp3c.conformance.api.options.{ AnalogInputOptions, AnalogOutputOptions }
+import io.stepfunc.dnp3c.conformance.api.options.SupportOptions
 import io.stepfunc.dnp3c.conformance.api.options.SupportOptions.{ Inputs, Outputs }
 import io.stepfunc.dnp3c.conformance.s8.helpers.{ InputType, Validations }
 import io.stepfunc.dnp3c.dnp3.{ Comment, DeferredCheck, MessageValidation, ProcedureReporter }
@@ -142,8 +143,14 @@ object EventRules {
           s"too wide for 3.1r1's 8.19.2.4 to tell the value it applies, ${AnalogValueReturn.change(d)} (150% of the " +
             "deadband) above the first, from the first"
         ))
+    // 8.23: subset level 3 reads input points with start/stop ranges
+    val rangeReads = Option.when(level.contains(3) && !options.get(SupportOptions.rangeReads))(
+      ConfigProblem(
+        SupportOptions.rangeReads.id,
+        "false",
+        "a subset level 3 device must read input points with start/stop ranges (8.23)"))
     unreadable ++ unreadableStatic ++ defaults ++ rejected ++ relativeRejected ++ expiry ++ frozenCounterEvents ++
-      analogOutputs32Bit ++ deadband
+      analogOutputs32Bit ++ deadband ++ rangeReads
   }
 
   /** the preferred variation for a read of `requested`: itself, or for variation 0 the Device Profile's default */

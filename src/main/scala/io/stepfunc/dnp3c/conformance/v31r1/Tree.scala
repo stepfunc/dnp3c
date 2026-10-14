@@ -48,6 +48,21 @@ object Tree {
   private val global8641 = new s8.s86.s864.GlobalRemoteSupervisoryControl(Numbering.dotted)
   private val individual8642 = new s8.s86.s864.IndividualRemoteSupervisoryControl(Numbering.afterCondition)
 
+  // 8.23's three tests of each point type
+  private final class RangeTests(t: PointRanges.RangedPoints) {
+    val without: ProcedureDefinition = PointRanges.withoutPoints(t)
+    val valid: ProcedureDefinition = PointRanges.validRequest(t)
+    val outOfRange: ProcedureDefinition = PointRanges.outOfRange(t)
+  }
+  private object ranges {
+    val binaryInputs = new RangeTests(PointRanges.binaryInputs)
+    val binaryOutputStatus = new RangeTests(PointRanges.binaryOutputStatus)
+    val counters = new RangeTests(PointRanges.counters)
+    val frozenCounters = new RangeTests(PointRanges.frozenCounters)
+    val analogInputs = new RangeTests(PointRanges.analogInputs)
+    val analogOutputStatus = new RangeTests(PointRanges.analogOutputStatus)
+  }
+
   val sections: List[TestSection] = List(
     section("6", "Link Layer")(
       section("6.1", "Reset Link and Passive Confirm support")(
@@ -504,14 +519,51 @@ object Tree {
       ),
       section("8.23", "Specific Point Ranges")(
         section("8.23.2", "Test Procedure")(
-          notYet("8.23.2.1.1", "Device Does Not Support Binary inputs"),
-          notYet("8.23.2.1.2", "Device Support Binary inputs, Valid Request"),
-          notYet("8.23.2.1.3", "Device Supports Binary inputs, Out of Range Request"),
-          notYet("8.23.2-1", "Binary Output Status"),
-          notYet("8.23.2-2", "Counters"),
-          notYet("8.23.2-3", "Frozen Counters"),
-          notYet("8.23.2-4", "Analog Inputs"),
-          notYet("8.23.2-5", "Analog Output Status")
+          section("8.23.2.1", "Binary Inputs")(
+            test("8.23.2.1.1", "Device Does Not Support Binary inputs", ranges.binaryInputs.without),
+            test("8.23.2.1.2", "Device Support Binary inputs, Valid Request", ranges.binaryInputs.valid),
+            test("8.23.2.1.3", "Device Supports Binary inputs, Out of Range Request", ranges.binaryInputs.outOfRange)
+          ),
+          section("8.23.2.2", "Binary Output Status")(
+            test(
+              "8.23.2.2.1",
+              "Device Does Not Support Binary Output Status Points",
+              ranges.binaryOutputStatus.without),
+            test(
+              "8.23.2.2.2",
+              "Device Support Binary Output Status Points, Valid Request",
+              ranges.binaryOutputStatus.valid),
+            test(
+              "8.23.2.2.3",
+              "Device Supports Binary Output Status, Out of Range Request",
+              ranges.binaryOutputStatus.outOfRange)
+          ),
+          section("8.23.2.3", "Counters")(
+            test("8.23.2.3.1", "Device Does Not Support Counters", ranges.counters.without),
+            test("8.23.2.3.2", "Device Support Counters, Valid Request", ranges.counters.valid),
+            test("8.23.2.3.3", "Device Supports Counters, Out of Range Request", ranges.counters.outOfRange)
+          ),
+          section("8.23.2.4", "Frozen Counters")(
+            test("8.23.2.4.1", "Device Does Not Support Frozen Counters", ranges.frozenCounters.without),
+            test("8.23.2.4.2", "Device Support Frozen Counters, Valid Request", ranges.frozenCounters.valid),
+            test(
+              "8.23.2.4.3",
+              "Device Supports Frozen Counters, Out of Range Request",
+              ranges.frozenCounters.outOfRange)
+          ),
+          section("8.23.2.5", "Analog Inputs")(
+            test("8.23.2.5.1", "Device Does Not Support Analog inputs", ranges.analogInputs.without),
+            test("8.23.2.5.2", "Device Support Analog inputs, Valid Request", ranges.analogInputs.valid),
+            test("8.23.2.5.3", "Device Supports Analog inputs, Out of Range Request", ranges.analogInputs.outOfRange)
+          ),
+          section("8.23.2.6", "Analog Output Status")(
+            test("8.23.2.6.1", "Device Does Not Support Analog Output Status", ranges.analogOutputStatus.without),
+            test("8.23.2.6.2", "Device Support Analog Output Status, Valid Request", ranges.analogOutputStatus.valid),
+            test(
+              "8.23.2.6.3",
+              "Device Supports Analog Output Status, Out of Range Request",
+              ranges.analogOutputStatus.outOfRange)
+          )
         )
       ),
       section("8.24", "Specific variations for Static Inputs")(
