@@ -270,6 +270,25 @@ class TestRunnerTest extends AnyFunSuite with Matchers {
     intercept[ConfigurationException](revision.validate(run.optionsAt(2))).problems.map(_.key) should equal(List("a"))
   }
 
+  test("a pass keeps the notes its procedure made") {
+    val run = new Run()
+    val noting = TestProcedure(
+      "a",
+      "a",
+      new ProcedureDefinition {
+        protected def steps(options: OptionSource): Iterable[LabeledStep] = List(LabeledStep(
+          "note",
+          new TestStep {
+            def description: List[Comment] = Nil
+            def run(driver: TestDriver): List[DeferredCheck] = { driver.reporter.note("compliant with 2012 only"); Nil }
+          }
+        ))
+      }
+    )
+    run(noting).results.map(_.notes) should equal(List(List("compliant with 2012 only")))
+    run.saved("a").map(_.notes) should equal(Some(List("compliant with 2012 only")))
+  }
+
   test("a saved result records its revision, and why the procedure was skipped") {
     val run = new Run()
     run(procedure("a", run.fail, List(SupportOptions.selfAddress)))

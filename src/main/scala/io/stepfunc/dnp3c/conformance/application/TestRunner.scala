@@ -98,7 +98,7 @@ object TestRunner {
         ConsoleLogger.info("Entering test section: " + s.id + " - " + s.description)
       case p: TestProcedure =>
         try {
-          results += ProcedureResult(p.id, runProcedure(revision, level, p, options, integrationPlugin, environment))
+          results += runProcedure(revision, level, p, options, integrationPlugin, environment)
         } catch {
           case ex: ProcedureAborted => throw aborted(p, ex.outcome, ex.error)
           case NonFatal(ex) => throw aborted(p, None, ex)
@@ -138,19 +138,23 @@ object TestRunner {
       procedure: TestProcedure,
       options: OptionSource,
       integrationPlugin: IntegrationPlugin,
-      environment: ProcedureEnvironment): ProcedureOutcome = {
+      environment: ProcedureEnvironment): ProcedureResult = {
 
     val path = revision.runDirectory(options).resolve(procedure.id)
     val resultsFile = path.resolve("results.properties")
     val title = s"${procedure.id} ${procedure.description} (revision ${revision.id}, subset level $level)"
 
-    def save(result: ProcedureOutcome): Unit =
+    // a pass keeps the notes the procedure made about it
+    def save(result: ProcedureOutcome, notes: List[String] = Nil): Unit = {
+      val kept = if (result == ProcedureOutcome.Passed) notes else Nil
       TestResult.write(
-        TestResult.Saved(TestResult.from(result), Some(revision.id), Some(level), TestResult.reason(result)),
+        TestResult.Saved(TestResult.from(result), Some(revision.id), Some(level), TestResult.reason(result), kept),
         resultsFile)
+    }
 
     skipReason(revision, level, procedure, options) match {
-      case Some(reason) => return skip(procedure, path, title, reason, options, save)
+      case Some(reason) =>
+        return ProcedureResult(procedure.id, skip(procedure, path, title, reason, options, r => save(r)))
       case None =>
     }
 
@@ -203,9 +207,10 @@ object TestRunner {
 
     // the procedure, and everything around it, completed, so the outcome is known
     val result = outcome.get
-    try save(result)
+    val notes = if (result == ProcedureOutcome.Passed) reporter.toList.flatMap(_.notes) else Nil
+    try save(result, notes)
     catch { case NonFatal(ex) => throw new ProcedureAborted(outcome, ex) }
-    result
+    ProcedureResult(procedure.id, result, notes)
   }
 
   // records a procedure that won't run: its log says why, and nothing is opened

@@ -104,7 +104,7 @@ results/
 
 A procedure that won't run, because the DUT lacks a feature it needs, it doesn't apply at the subset level, or it isn't implemented, is recorded as skipped without connecting to the DUT.
 
-The report is rebuilt after every run, including runs that fail. It names the revision and the subset level, and shows every procedure: the ones you've run with their result (and, for one that was skipped, why), and the rest as not run. To rebuild it without running anything, use `dnp3c -rev 2.7 -config device.ini -report`.
+The report is rebuilt after every run, including runs that fail. It names the revision and the subset level, and shows every procedure: the ones you've run with their result (and, for one that was skipped, why, or for one that passed, anything it noted, such as a device that complies with IEEE 1815-2012 but not 1815-202x), and the rest as not run. To rebuild it without running anything, use `dnp3c -rev 2.7 -config device.ini -report`.
 
 The report counts only results saved under its revision and level. It lists anything else it finds at the top and leaves it out: a result saved under another revision or level, a procedure whose last run didn't finish (it has a log but no result), or procedure folders straight in the output directory from dnp3c 0.1.0, which didn't keep results by revision.
 

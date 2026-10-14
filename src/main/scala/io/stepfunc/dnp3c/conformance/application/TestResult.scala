@@ -28,13 +28,20 @@ object TestResult {
    * @param revision the revision it was run under; None for a result saved before results recorded one (0.1.0)
    * @param level the subset level it was run at; None for a result saved before results recorded one
    * @param reason why the procedure was skipped or failed
+   * @param notes what the procedure noted about a pass, e.g. that it's to IEEE 1815-2012 but not 1815-202x
    */
-  case class Saved(result: TestResult, revision: Option[String], level: Option[Int], reason: Option[String])
+  case class Saved(
+      result: TestResult,
+      revision: Option[String],
+      level: Option[Int],
+      reason: Option[String],
+      notes: List[String] = Nil)
 
   private val resultKey = "result"
   private val revisionKey = "revision"
   private val levelKey = "subsetLevel"
   private val reasonKey = "reason"
+  private val noteKey = "note"
 
   def read(file: File): Saved = {
     val stream = new FileInputStream(file)
@@ -45,7 +52,8 @@ object TestResult {
         TestResult.from(props.getProperty(resultKey)),
         Option(props.getProperty(revisionKey)),
         Option(props.getProperty(levelKey)).flatMap(_.toIntOption),
-        Option(props.getProperty(reasonKey))
+        Option(props.getProperty(reasonKey)),
+        Iterator.from(1).map(i => props.getProperty(s"$noteKey.$i")).takeWhile(_ != null).toList
       )
     } finally {
       stream.close()
@@ -76,6 +84,7 @@ object TestResult {
         saved.revision.foreach(props.setProperty(revisionKey, _))
         saved.level.foreach(l => props.setProperty(levelKey, l.toString))
         saved.reason.foreach(props.setProperty(reasonKey, _))
+        saved.notes.zipWithIndex.foreach((n, i) => props.setProperty(s"$noteKey.${i + 1}", n))
         props.store(stream, "test result")
       }
       Files.move(temporary, file, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)

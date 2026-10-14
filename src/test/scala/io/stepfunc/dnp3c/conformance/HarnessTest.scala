@@ -101,6 +101,17 @@ class HarnessTest extends AnyFunSuite with Matchers {
     Files.readString(Harness.writeReport(options(directory), revision)) should not include "folders named after"
   }
 
+  test("the report shows what a procedure noted about a pass") {
+    val directory = output
+    val folder = directory.resolve("2.7").resolve("L2").resolve("8.1.2")
+    Files.createDirectories(folder)
+    TestResult.write(
+      TestResult.Saved(TestResult.Pass, Some("2.7"), Some(2), None, List("compliant with 1815-2012 only")),
+      folder.resolve("results.properties"))
+    Files.readString(Harness.writeReport(options(directory), revision)) should include(
+      "Note: compliant with 1815-2012 only")
+  }
+
   test("tells about a procedure whose run left a log but no result") {
     val directory = output
     val folder = directory.resolve("2.7").resolve("L2").resolve("8.1.2")

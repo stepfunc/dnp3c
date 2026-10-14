@@ -14,7 +14,13 @@ object ProcedureOutcome {
   case class Skipped(reason: String) extends ProcedureOutcome
 }
 
-case class ProcedureResult(id: String, outcome: ProcedureOutcome)
+/**
+ * A procedure's outcome
+ *
+ * @param notes what the procedure noted about a pass, e.g. that the device complies with IEEE 1815-2012 but not
+ *              1815-202x; empty otherwise
+ */
+case class ProcedureResult(id: String, outcome: ProcedureOutcome, notes: List[String] = Nil)
 
 /**
  * The procedures a run reached, in order, and the ones it didn't because it stopped at a failure
