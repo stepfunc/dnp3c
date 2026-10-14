@@ -164,6 +164,13 @@ trait IntegrationPlugin {
     throw new UnsupportedOperationException("this plugin doesn't implement uninstallFrozenCounters")
   def uninstallAnalogInputs(reporter: PluginReporter): Unit =
     throw new UnsupportedOperationException("this plugin doesn't implement uninstallAnalogInputs")
+  // exactly numEvents frozen counter events, as a new batch (3.1r1's 8.25)
+  def generateExactFrozenCounterEvents(reporter: PluginReporter, numEvents: Int): Unit =
+    throw new UnsupportedOperationException("this plugin doesn't implement generateExactFrozenCounterEvents")
+  // exactly numEvents analog input events whose values' magnitudes are below 32768, so a 16-bit variation reports
+  // them, as a new batch (3.1r1's 8.25)
+  def generateExactSmallAnalogInputEvents(reporter: PluginReporter, numEvents: Int): Unit =
+    throw new UnsupportedOperationException("this plugin doesn't implement generateExactSmallAnalogInputEvents")
   // every point of the kind with its flags normal: ONLINE set, all others clear (3.1r1's 8.24)
   def setFlagsNormal(reporter: PluginReporter, kind: PointKind): Unit =
     throw new UnsupportedOperationException("this plugin doesn't implement setFlagsNormal")
@@ -242,6 +249,13 @@ trait IntegrationPlugin {
       reporter: CheckReporter,
       previous: Seq[GenIndexedPoint[MeasurementPoint]],
       current: Seq[GenIndexedPoint[MeasurementPoint]]): Option[DeferredCheck]
+
+  // Check that the frozen counter events reported are those of the latest batch generated, with their values (3.1r1's
+  // 8.25)
+  def verifyFrozenCounterEvents(
+      reporter: CheckReporter,
+      points: Seq[GenIndexedPoint[CounterPoint]]): Option[DeferredCheck] =
+    throw new UnsupportedOperationException("this plugin doesn't implement verifyFrozenCounterEvents")
 
   // Misc validations
   def verifyDelayMeasurementAccuracy(reporter: CheckReporter, delayMs: Long): Option[DeferredCheck]

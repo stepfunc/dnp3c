@@ -3,7 +3,9 @@
 
 package io.stepfunc.dnp3c.conformance.api
 import io.stepfunc.dnp3c.dnp3.app.EventClass
-import io.stepfunc.dnp3c.dnp3.{ ActionTiming, Comment, InputKind, IntegrationPlugin, PluginReporter, TestDriver }
+import io.stepfunc.dnp3c.dnp3.{
+  ActionTiming, Comment, InputKind, IntegrationPlugin, PluginReporter, PointKind, TestDriver
+}
 import io.stepfunc.dnp3c.dnp3.DeferredCheck
 
 object PluginSteps {
@@ -188,6 +190,22 @@ object PluginSteps {
   def generateExactAnalogInputChangeEvents(numEvents: Int): TestStep =
     action(s"Generate ${numEvents} Analog Input Change Event(s)") { (plugin, reporter) =>
       plugin.generateExactInputEvents(reporter, InputKind.AnalogInput, numEvents)
+    }
+
+  def generateExactSmallAnalogInputEvents(numEvents: Int): TestStep =
+    action(s"Generate $numEvents analog input events, with values whose magnitudes are below 32768") {
+      (plugin, reporter) =>
+        plugin.generateExactSmallAnalogInputEvents(reporter, numEvents)
+    }
+
+  def generateExactFrozenCounterEvents(numEvents: Int): TestStep =
+    action(s"Generate $numEvents frozen counter events") { (plugin, reporter) =>
+      plugin.generateExactFrozenCounterEvents(reporter, numEvents)
+    }
+
+  def setFlagsNormal(kind: PointKind): TestStep =
+    action(s"Set every ${kind.name} point's flags normal: ONLINE set, all others clear") { (plugin, reporter) =>
+      plugin.setFlagsNormal(reporter, kind)
     }
 
   def setColdRestartSupport(enabled: Boolean): TestStep =
