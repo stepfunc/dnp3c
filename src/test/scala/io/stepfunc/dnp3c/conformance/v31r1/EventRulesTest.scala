@@ -85,7 +85,8 @@ class EventRulesTest extends AnyFunSuite with Matchers {
     val set = level ++ Map(
       BinaryInputOptions.defaultEventVariation.id -> "1",
       io.stepfunc.dnp3c.conformance.api.options.DoubleBitInputOptions.defaultEventVariation.id -> "1",
-      TimeSyncOptions.timeToUnsynchronizedMs.id -> "0"
+      TimeSyncOptions.timeToUnsynchronizedMs.id -> "0",
+      io.stepfunc.dnp3c.conformance.api.options.AnalogInputOptions.valueReturnDeadband.id -> "10"
     )
     Revisions.v3_1r1.validate(Options.from(set)) should equal(2)
   }
@@ -108,7 +109,11 @@ class EventRulesTest extends AnyFunSuite with Matchers {
     val test =
       List(Revisions.v3_1r1.elements("8.14.2-13").asInstanceOf[io.stepfunc.dnp3c.conformance.api.TestProcedure])
     an[ConfigurationException] should be thrownBy Revisions.v3_1r1.validate(Options.from(base), test)
-    Revisions.v3_1r1.validate(Options.from(base + (TimeSyncOptions.timeToUnsynchronizedMs.id -> "0")), test) should
+    Revisions.v3_1r1.validate(
+      Options.from(base + (TimeSyncOptions.timeToUnsynchronizedMs.id -> "0") +
+        (io.stepfunc.dnp3c.conformance.api.options.AnalogInputOptions.valueReturnDeadband.id -> "10")),
+      test
+    ) should
       equal(2)
     // a device whose time the master can't write never asks for it, so there's no third phase
     Revisions.v3_1r1.validate(
@@ -122,7 +127,8 @@ class EventRulesTest extends AnyFunSuite with Matchers {
       io.stepfunc.dnp3c.conformance.api.options.SupportOptions.Inputs.binary.eventReads.id -> "false",
       BinaryInputOptions.defaultEventVariation.id -> "1",
       io.stepfunc.dnp3c.conformance.api.options.DoubleBitInputOptions.defaultEventVariation.id -> "1",
-      TimeSyncOptions.timeToUnsynchronizedMs.id -> "0"
+      TimeSyncOptions.timeToUnsynchronizedMs.id -> "0",
+      io.stepfunc.dnp3c.conformance.api.options.AnalogInputOptions.valueReturnDeadband.id -> "10"
     ))
     Revisions.v3_1r1.validate(withoutReads("1")) should equal(1)
     an[ConfigurationException] should be thrownBy Revisions.v3_1r1.validate(withoutReads("2"))
@@ -136,7 +142,8 @@ class EventRulesTest extends AnyFunSuite with Matchers {
         input.eventReads.id -> "false",
         BinaryInputOptions.defaultEventVariation.id -> "1",
         io.stepfunc.dnp3c.conformance.api.options.DoubleBitInputOptions.defaultEventVariation.id -> "1",
-        TimeSyncOptions.timeToUnsynchronizedMs.id -> "0"
+        TimeSyncOptions.timeToUnsynchronizedMs.id -> "0",
+        io.stepfunc.dnp3c.conformance.api.options.AnalogInputOptions.valueReturnDeadband.id -> "10"
       ))
       Revisions.v3_1r1.validate(withoutReads("1")) should equal(1)
       an[ConfigurationException] should be thrownBy Revisions.v3_1r1.validate(withoutReads("3"))
@@ -150,9 +157,31 @@ class EventRulesTest extends AnyFunSuite with Matchers {
       Inputs.frozenCounter.events.id -> "false",
       BinaryInputOptions.defaultEventVariation.id -> "1",
       io.stepfunc.dnp3c.conformance.api.options.DoubleBitInputOptions.defaultEventVariation.id -> "1",
-      TimeSyncOptions.timeToUnsynchronizedMs.id -> "0"
+      TimeSyncOptions.timeToUnsynchronizedMs.id -> "0",
+      io.stepfunc.dnp3c.conformance.api.options.AnalogInputOptions.valueReturnDeadband.id -> "10"
     ))
     Revisions.v3_1r1.validate(withoutEvents("2")) should equal(2)
     an[ConfigurationException] should be thrownBy Revisions.v3_1r1.validate(withoutEvents("3"))
+  }
+
+  test("8.19.2.4 needs the deadband only where it runs, and a tolerance that tells its two values apart") {
+    import io.stepfunc.dnp3c.conformance.api.options.AnalogInputOptions
+    import io.stepfunc.dnp3c.conformance.api.options.SupportOptions.Inputs
+    val base = Map(
+      OutstationOptions.subsetLevel.id -> "2",
+      BinaryInputOptions.defaultEventVariation.id -> "1",
+      io.stepfunc.dnp3c.conformance.api.options.DoubleBitInputOptions.defaultEventVariation.id -> "1",
+      TimeSyncOptions.timeToUnsynchronizedMs.id -> "0"
+    )
+    def valid(settings: (String, String)*) =
+      scala.util.Try(Revisions.v3_1r1.validate(Options.from(base ++ settings))).isSuccess
+    valid() should equal(false)
+    valid(Inputs.analog.events.id -> "false") should equal(true)
+    valid(AnalogInputOptions.valueReturnDeadband.id -> "10") should equal(true)
+    // a change of 15: values 7 away from each are still closer to it than to the other
+    valid(AnalogInputOptions.valueReturnDeadband.id -> "10", AnalogInputOptions.valueTolerance.id -> "7") should
+      equal(true)
+    valid(AnalogInputOptions.valueReturnDeadband.id -> "10", AnalogInputOptions.valueTolerance.id -> "8") should
+      equal(false)
   }
 }

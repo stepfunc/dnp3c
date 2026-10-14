@@ -116,6 +116,10 @@ class DefaultIntegrationPlugin extends IntegrationPlugin {
     ManualSteps.UserAction(reporter, s"${enableDisable(enabled)} the DUT's support for cold restart (function code 13)")
   }
 
+  override def setAnalogInput(reporter: PluginReporter, index: Int, value: Double): Unit = {
+    ManualSteps.UserAction(reporter, s"Apply a stable input of $value to analog input $index")
+  }
+
   override def enableUnsolicitedResponse(reporter: PluginReporter, enabled: Boolean): Unit = {
     ManualSteps.UserAction(reporter, s"${enableDisable(enabled)} unsolicited response support")
   }

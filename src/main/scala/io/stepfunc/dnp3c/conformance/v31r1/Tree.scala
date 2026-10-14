@@ -405,7 +405,7 @@ object Tree {
             levels = Some(Set(1))),
           test("8.19.2-2", "Analog Input Change", CounterAnalogEvents.analogChange),
           test("8.19.2-3", "Analog Input Change, Without Confirm", CounterAnalogEvents.analogWithoutConfirm),
-          notYet("8.19.2.4", "Analog Input Change, Value Return")
+          test("8.19.2.4", "Analog Input Change, Value Return", AnalogValueReturn.valueReturn)
         )
       ),
       section("8.20", "Multiple Read Requests")(
