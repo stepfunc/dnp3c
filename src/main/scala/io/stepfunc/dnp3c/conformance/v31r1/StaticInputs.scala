@@ -30,10 +30,18 @@ object StaticInputs {
    *
    * @param variations what it reads, one request each: 8.16.1.2.1 reads g20v0 and g20v1
    * @param condition whether step 1 states the condition the test runs on, as 8.16.1.2.1 and 8.16.2.2.1 do
+   * @param events whether it's the input's events the device can't read, as in 8.17.2-1 and 8.19.2-1, not its points
    */
-  final class LevelOneWithoutReads(input: InputOptions, variations: List[Variation], condition: Boolean = false)
+  final class LevelOneWithoutReads(
+      input: InputOptions,
+      variations: List[Variation],
+      condition: Boolean = false,
+      events: Boolean = false)
       extends ProcedureDefinition {
-    override protected def requirement: Requirement = !input.reads
+    override protected def requirement: Requirement = !(if (events) input.eventReads else input.reads)
+
+    private val what = if (events) s"${input.longName} events" else s"${input.longName} points"
+    private val tests = if (events) s"${input.longName} event" else input.longName
 
     private val errors = IIN.FUNC_NOT_SUPPORTED | IIN.OBJECT_UNKNOWN | IIN.PARAM_ERROR
 
@@ -46,9 +54,9 @@ object StaticInputs {
           first + 2 * i + 1 --> declined(seq, variation))
       }
       Option.when(condition)(
-        1 --> describe(s"Runs only for a subset level 1 device that can't read ${input.longName} points")).toList ++
+        1 --> describe(s"Runs only for a subset level 1 device that can't read $what")).toList ++
         reads :+
-        (first + 2 * variations.size --> describe(s"No further ${input.longName} tests apply to this DUT"))
+        (first + 2 * variations.size --> describe(s"No further $tests tests apply to this DUT"))
     }
 
     private def declined(seq: Sequence, variation: Variation): TestStep = new TestStep {

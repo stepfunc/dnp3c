@@ -44,21 +44,23 @@ object EventRules {
 
   /**
    * What 3.1r1 needs configured for the procedures a run selects: the Device Profile's default variation for each input
-   * whose event tests run; and at subset levels 2 and 3, event reads, which only a level 1 device may lack
+   * whose event tests run; and at subset levels 2 and 3, reads of every input and of its events, which only a level 1
+   * device may lack
    */
   def configurationProblems(options: OptionSource, selected: Iterable[TestProcedure]): List[ConfigProblem] = {
     val inputs = List(InputType.BinaryInput, InputType.DoubleBitBinaryInput)
     val level = options.get(OutstationOptions.subsetLevel)
-    val unreadable = inputs.flatMap { input =>
-      Option.when(level.exists(_ != 1) && !options.get(input.support.eventReads))(
+    val allInputs = List(Inputs.binary, Inputs.doubleBit, Inputs.counter, Inputs.frozenCounter, Inputs.analog)
+    val unreadable = allInputs.flatMap { input =>
+      Option.when(level.exists(_ != 1) && !options.get(input.eventReads))(
         ConfigProblem(
-          input.support.eventReads.id,
+          input.eventReads.id,
           "false",
-          s"only a subset level 1 device may lack reads of ${input.name} events; this one is configured for level " +
-            level.getOrElse("")
+          s"only a subset level 1 device may lack reads of ${input.longName} events; this one is configured for " +
+            s"level ${level.getOrElse("")}"
         ))
     }
-    val unreadableStatic = List(Inputs.binary, Inputs.doubleBit, Inputs.counter, Inputs.analog).flatMap { input =>
+    val unreadableStatic = allInputs.flatMap { input =>
       Option.when(level.exists(_ != 1) && !options.get(input.reads))(
         ConfigProblem(
           input.reads.id,
