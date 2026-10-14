@@ -14,6 +14,13 @@ object TimeSyncOptions extends OptionGroup {
     "supportSynchronizingTimeFromMaster",
     true,
     "Does the DUT support setting its time via DNP3 from a master (i.e. reports IIN1-4) ?")
+  val supportLanTimeSync: BooleanOption = OptionTypes.boolean(
+    this,
+    "supportLanTimeSync",
+    false,
+    "Does the DUT support the LAN time sync method (Record Current Time, function code 24), as its Device Profile " +
+      "claims? 3.1r1's 8.7.2 tests it"
+  )
   val binaryInputChangeWithTime: BooleanOption = OptionTypes.boolean(
     this,
     "binaryInputChangeWithTime",
@@ -98,6 +105,7 @@ object TimeSyncOptions extends OptionGroup {
 
   override def options: List[TestOption] = List(
     supportSynchronizingTimeFromMaster,
+    supportLanTimeSync,
     binaryInputChangeWithTime,
     binaryInputChangeWithRelativeTime,
     doubleBitInputChangeWithTime,

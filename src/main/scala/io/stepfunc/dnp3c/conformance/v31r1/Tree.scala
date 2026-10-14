@@ -258,7 +258,7 @@ object Tree {
           test("8.7.1.2.2", "Synchronization", s8.s87.s872.Procedure8722)
         ),
         section("8.7.2", "LAN Time Sync Method")(
-          notYet("8.7.2-1", "Test Procedure")
+          test("8.7.2-1", "Test Procedure", LanTimeSync.lanTimeSync)
         )
       ),
       section("8.8", "Cold Restart")(

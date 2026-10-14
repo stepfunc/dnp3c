@@ -39,7 +39,7 @@ object Procedure8722 extends ProcedureDefinition {
     )
   }
 
-  private def timeTaggedEvent: MessageValidation =
+  private[conformance] def timeTaggedEvent: MessageValidation =
     MessageValidation.check("Verify that the response holds an event that carries its time") { message =>
       if (!message.measurements(PointType.Event).exists(_.point.timestamp.isDefined))
         throw new Exception("Expected an event with a time in the response")
