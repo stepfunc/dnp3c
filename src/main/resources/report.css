@@ -229,6 +229,12 @@ p.notice {
   border-radius: 4px;
 }
 
+/* what a procedure noted about a pass, under its title */
+span.note {
+  color: var(--pass);
+  font-size: 12px;
+}
+
 /* why a procedure was skipped, under its title */
 span.reason {
   color: var(--sf-grey);

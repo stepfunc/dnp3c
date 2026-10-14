@@ -67,7 +67,16 @@ object EventRules {
             "Profile's default"
         ))
     }
-    unreadable ++ defaults
+    val rejected = inputs.flatMap { input =>
+      Option.when(options.get(input.withTimeRejected) && options.get(input.withTime))(
+        ConfigProblem(
+          input.withTimeRejected.id,
+          "true",
+          s"only a device without ${input.name} events with time answers a read of them with IIN2.1, but " +
+            s"${input.withTime.id} is true"
+        ))
+    }
+    unreadable ++ defaults ++ rejected
   }
 
   /** the preferred variation for a read of `requested`: itself, or for variation 0 the Device Profile's default */

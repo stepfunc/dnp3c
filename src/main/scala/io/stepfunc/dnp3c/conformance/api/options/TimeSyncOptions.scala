@@ -32,6 +32,23 @@ object TimeSyncOptions extends OptionGroup {
     "doubleBitInputChangeWithRelativeTime",
     true,
     "Does the DUT support Double-bit Input Change with Relative Time events (g4v3) ?")
+  // 3.1r1: a device without events with time may answer a read for them with IIN2.1, which 1815-2012 allows
+  val binaryInputChangeWithTimeRejected: BooleanOption = OptionTypes.boolean(
+    this,
+    "binaryInputChangeWithTimeRejected",
+    false,
+    "For a DUT without Binary Input Change with Time events: does it answer a read of g2v2 with IIN2.1, as IEEE " +
+      "1815-2012 allows? 3.1r1 then notes it as compliant with 1815-2012 but not 1815-202x, and skips its other " +
+      "with-time tests"
+  )
+  val doubleBitInputChangeWithTimeRejected: BooleanOption = OptionTypes.boolean(
+    this,
+    "doubleBitInputChangeWithTimeRejected",
+    false,
+    "For a DUT without Double-bit Input Change with Time events: does it answer a read of g4v2 with IIN2.1, as IEEE " +
+      "1815-2012 allows? 3.1r1 then notes it as compliant with 1815-2012 but not 1815-202x, and skips its other " +
+      "with-time tests"
+  )
   val maxTimeFromResetToIIN14Ms: IntegerOption = OptionTypes.integer(
     this,
     "maxTimeFromResetToIIN14Ms",
@@ -58,6 +75,8 @@ object TimeSyncOptions extends OptionGroup {
     binaryInputChangeWithRelativeTime,
     doubleBitInputChangeWithTime,
     doubleBitInputChangeWithRelativeTime,
+    binaryInputChangeWithTimeRejected,
+    doubleBitInputChangeWithTimeRejected,
     maxTimeFromResetToIIN14Ms,
     maxTimeBetweenSyncRequestsMs,
     timeWriteLatencyMs

@@ -8,7 +8,7 @@ import io.stepfunc.dnp3c.conformance.s8.helpers.GenericSteps._
 import io.stepfunc.dnp3c.conformance.s8.helpers.InputEventProcedures.NoEvents
 import io.stepfunc.dnp3c.conformance.s8.helpers.{ InputType, Validations }
 import io.stepfunc.dnp3c.dnp3.app._
-import io.stepfunc.dnp3c.dnp3.{ AutoConfirm, MessageValidation, Requests }
+import io.stepfunc.dnp3c.dnp3.{ AutoConfirm, Comment, DeferredCheck, MessageValidation, Requests, TestDriver }
 
 /**
  * 3.1r1's 8.14 tests, for binary inputs, and its 8.22 tests, which are the same tests for double-bit inputs. Each
@@ -102,6 +102,71 @@ object InputEvents {
     }
   }
 
+  // the note on a device that answers a read of events with time with IIN2.1
+  private val compliantWith2012Only = "the DUT answers a read of events with time with IIN2.1: it complies with IEEE " +
+    "1815-2012, but not with IEEE 1815-202x"
+
+  /**
+   * With time, qualifier 0x06 (8.14.2-10). A device without events with time may answer with a Null Error Response
+   * with IIN2.1, if it's configured to: that passes, noted as compliant with 1815-2012 but not 1815-202x, and its other
+   * with-time tests are skipped. Otherwise the events, with time or not, are reported as the rules require.
+   */
+  final class AllQualifierWithTime(input: InputType) extends EventTest(input) {
+    import input._
+    override protected def steps(options: OptionSource): Iterable[LabeledStep] = {
+      val start = empty(Sequence.one) ++ List(
+        4 --> generateEvents,
+        5 --> send(Requests.readAllObjects(Sequence.two, absoluteTimeVariation)))
+      if (options.get(withTimeRejected))
+        start :+
+          (6 -->
+            // the step asks for IIN2.1; other error bits aren't ruled out
+            (expectSingleResponse(Sequence.two, Validations.isEmpty && Validations.containing(IIN.OBJECT_UNKNOWN)) +
+              new TestStep {
+                def description = List(Comment(s"Note the result: $compliantWith2012Only"))
+                def run(driver: TestDriver): List[DeferredCheck] = { driver.reporter.note(compliantWith2012Only); Nil }
+              }))
+      else
+        start ++ List(
+          (7 to 12) --> expectSingleResponse(
+            Sequence.two,
+            AutoConfirm.Yes,
+            events(verifyLatestEvents, absoluteTimeVariation, options)),
+          13 --> send(Requests.readAllObjects(Sequence.three, anyVariation)),
+          14 --> expectNullResponse(Sequence.three)
+        )
+    }
+  }
+
+  /**
+   * With time, qualifier 0x07 (8.14.2-11), or 0x08 with twoByteCount (8.14.2-12): skipped for a device that answers a
+   * read of events with time with IIN2.1, which 8.14.2-10 tests
+   */
+  final class CountQualifierWithTime(input: InputType, twoByteCount: Boolean) extends EventTest(input) {
+    import input._
+    override protected def requiredOptions: List[OptionCondition] = super.requiredOptions :+ !withTimeRejected
+    override protected def steps(options: OptionSource): Iterable[LabeledStep] = {
+      val count = options.get(numEventsGenerated)
+      // 0x08's steps are numbered one lower after its first response's checks begin: it has no step for the count
+      val shift = if (twoByteCount) 1 else 0
+      def at(n: Int): Int = n - shift
+      empty(Sequence.one) ++ List(
+        4 --> generateExactEvents(count),
+        5 --> send(Requests.readCount(Sequence.two, absoluteTimeVariation, 1, twoByteCount)),
+        (6 to at(12)) -->
+          expectSingleResponse(Sequence.two, AutoConfirm.Yes, events(verifyFirstEvent, absoluteTimeVariation, options)),
+        at(13) --> send(Requests.readCount(Sequence.three, absoluteTimeVariation, count - 1, twoByteCount)),
+        (at(14) to at(16)) -->
+          expectSingleResponse(
+            Sequence.three,
+            AutoConfirm.Yes,
+            events(verifyRestEvents, absoluteTimeVariation, options)),
+        at(17) --> send(Requests.readAllObjects(Sequence.four, anyVariation)),
+        at(18) --> expectNullResponse(Sequence.four)
+      )
+    }
+  }
+
   /**
    * A device without the input's events (8.14.2-2): as 2.7's, but only for a device whose events can be read, since a
    * subset level 1 device that can't read them answers with an error, which 8.14.2-1 tests
@@ -120,6 +185,9 @@ object InputEvents {
   val binaryAllWithoutTime = new AllQualifierWithoutTime(BinaryInput)
   val binaryCount07WithoutTime = new CountQualifierWithoutTime(BinaryInput, twoByteCount = false)
   val binaryCount08WithoutTime = new CountQualifierWithoutTime(BinaryInput, twoByteCount = true)
+  val binaryAllWithTime = new AllQualifierWithTime(BinaryInput)
+  val binaryCount07WithTime = new CountQualifierWithTime(BinaryInput, twoByteCount = false)
+  val binaryCount08WithTime = new CountQualifierWithTime(BinaryInput, twoByteCount = true)
 
   val doubleBitWithoutEvents = new WithoutEvents(DoubleBitBinaryInput)
   val doubleBitAll = new AllQualifier(DoubleBitBinaryInput)
@@ -128,4 +196,7 @@ object InputEvents {
   val doubleBitAllWithoutTime = new AllQualifierWithoutTime(DoubleBitBinaryInput)
   val doubleBitCount07WithoutTime = new CountQualifierWithoutTime(DoubleBitBinaryInput, twoByteCount = false)
   val doubleBitCount08WithoutTime = new CountQualifierWithoutTime(DoubleBitBinaryInput, twoByteCount = true)
+  val doubleBitAllWithTime = new AllQualifierWithTime(DoubleBitBinaryInput)
+  val doubleBitCount07WithTime = new CountQualifierWithTime(DoubleBitBinaryInput, twoByteCount = false)
+  val doubleBitCount08WithTime = new CountQualifierWithTime(DoubleBitBinaryInput, twoByteCount = true)
 }

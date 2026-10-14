@@ -55,10 +55,12 @@ case class Report(revision: Revision, level: Int, sections: Iterable[Report.Sect
       case None => Classes.noResult
     }
 
-    // why the procedure was skipped, under its title
+    // why the procedure was skipped, or what it noted about a pass, under its title
     def skipReason: String = (p.result, p.reason) match {
       case (Some(TestResult.Skip), Some(reason)) =>
         "<br><span class=\"reason\">Skipped: " + Tags.escape(reason) + "</span>"
+      case (Some(TestResult.Pass), _) =>
+        p.notes.map(n => "<br><span class=\"note\">Note: " + Tags.escape(n) + "</span>").mkString
       case _ => ""
     }
 
@@ -133,7 +135,8 @@ object Report {
       description: String,
       result: Option[TestResult],
       reason: Option[String],
-      hasPcaps: Boolean)
+      hasPcaps: Boolean,
+      notes: List[String] = Nil)
   case class Section(id: String, description: String, sections: Iterable[Section], procedures: Iterable[Procedure])
 
   /**
@@ -173,7 +176,8 @@ object Report {
         procedure.description,
         counted.map(_.result),
         counted.flatMap(_.reason),
-        hasPcaps)
+        hasPcaps,
+        counted.toList.flatMap(_.notes))
     }
 
     val sections = revision.sections.map(convert)

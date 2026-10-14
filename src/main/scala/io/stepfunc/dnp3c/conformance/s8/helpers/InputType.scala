@@ -19,6 +19,8 @@ sealed abstract class InputType(val name: String, val support: SupportOptions.In
   def numEventsGenerated: IntegerOption
   def withTime: BooleanOption
   def withRelativeTime: BooleanOption
+  // 3.1r1: a device without events with time answers a read of them with IIN2.1
+  def withTimeRejected: BooleanOption
 
   // the Device Profile's default variation for the events, which 3.1r1's rules need
   def defaultEventVariation: RequiredIntegerOption
@@ -53,6 +55,7 @@ object InputType {
     def defaultEventVariation: RequiredIntegerOption = BinaryInputOptions.defaultEventVariation
     def withTime: BooleanOption = TimeSyncOptions.binaryInputChangeWithTime
     def withRelativeTime: BooleanOption = TimeSyncOptions.binaryInputChangeWithRelativeTime
+    def withTimeRejected: BooleanOption = TimeSyncOptions.binaryInputChangeWithTimeRejected
 
     def anyVariation: Variation = Group2Var0
     def noTimeVariation: Variation = Group2Var1
@@ -76,6 +79,7 @@ object InputType {
     def defaultEventVariation: RequiredIntegerOption = DoubleBitInputOptions.defaultEventVariation
     def withTime: BooleanOption = TimeSyncOptions.doubleBitInputChangeWithTime
     def withRelativeTime: BooleanOption = TimeSyncOptions.doubleBitInputChangeWithRelativeTime
+    def withTimeRejected: BooleanOption = TimeSyncOptions.doubleBitInputChangeWithTimeRejected
 
     def anyVariation: Variation = Group4Var0
     def noTimeVariation: Variation = Group4Var1

@@ -131,4 +131,18 @@ class TestReporter(val logger: Logger) {
 }
 
 // the reporter of a running procedure, which reaches that procedure's integration plugin
-final class ProcedureReporter(logger: Logger, val plugin: IntegrationPlugin) extends TestReporter(logger)
+final class ProcedureReporter(logger: Logger, val plugin: IntegrationPlugin) extends TestReporter(logger) {
+
+  private val noted = scala.collection.mutable.ListBuffer.empty[String]
+
+  /**
+   * Note something about the result that a reader of the report should see, e.g. that a passing device complies with
+   * IEEE 1815-2012 but not 1815-202x. The note goes in the log now, and with the result if the procedure passes.
+   */
+  def note(text: String): Unit = {
+    noted += text
+    info("Note on the result: " + text)
+  }
+
+  def notes: List[String] = noted.toList
+}
