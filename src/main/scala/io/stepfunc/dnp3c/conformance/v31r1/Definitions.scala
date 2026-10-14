@@ -13,10 +13,8 @@ import io.stepfunc.dnp3c.dnp3.app.objects.{ Group40Var1, Group40Var2 }
 /** The definitions of 3.1r1 tests that differ from 2.7's: 2.7's, with 3.1r1's rules where only a rule changed */
 object Definitions {
 
-  private val objectUnknownOrParameterError = IIN.OBJECT_UNKNOWN | IIN.PARAM_ERROR
-
   /** 8.1.2: a device without binary outputs answers with a Null Error Response, IIN2.1 or IIN2.2 */
-  val binaryOutputStatus = new BinaryOutputStatusRead(isNullErrorResponse(objectUnknownOrParameterError))
+  val binaryOutputStatus = new BinaryOutputStatusRead(isNullErrorResponse(IIN.objectErrors))
 
   /**
    * 8.3.2: analog output status in g40v2, or in g40v1 too at level 3; a device without analog outputs answers with a
@@ -26,6 +24,6 @@ object Definitions {
   val analogOutputStatus = new AnalogOutputStatusRead(
     options =>
       if (options.get(OutstationOptions.subsetLevel).contains(3)) Set(Group40Var1, Group40Var2) else Set(Group40Var2),
-    isNullOrNullErrorResponse(objectUnknownOrParameterError)
+    isNullOrNullErrorResponse(IIN.objectErrors)
   )
 }

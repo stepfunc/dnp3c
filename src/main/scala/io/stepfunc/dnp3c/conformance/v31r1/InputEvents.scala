@@ -48,6 +48,30 @@ object InputEvents {
       1 --> send(Requests.readAllObjects(seq, anyVariation)),
       (2 to 3) --> expectEventsEmptied(seq)
     )
+
+    // steps 4 on of a test of qualifier 0x07, or 0x08 with twoByteCount: a known number of events, a read of the first
+    // of them, checked over the steps first, a read of the rest, at readRest, checked over rest, of the variation; then,
+    // at finalRead and the step after it, a read of any events left, answered with a Null Response
+    protected def countReads(
+        options: OptionSource,
+        variation: Variation,
+        twoByteCount: Boolean,
+        first: Label,
+        readRest: Label,
+        rest: Label,
+        finalRead: Option[Int] = None): List[LabeledStep] = {
+      val count = options.get(numEventsGenerated)
+      List(
+        4 --> generateExactEvents(count),
+        5 --> send(Requests.readCount(Sequence.two, variation, 1, twoByteCount)),
+        first --> expectSingleResponse(Sequence.two, AutoConfirm.Yes, events(verifyFirstEvent, variation, options)),
+        readRest --> send(Requests.readCount(Sequence.three, variation, count - 1, twoByteCount)),
+        rest --> expectSingleResponse(Sequence.three, AutoConfirm.Yes, events(verifyRestEvents, variation, options))
+      ) ++ finalRead.toList.flatMap(n =>
+        List(
+          n --> send(Requests.readAllObjects(Sequence.four, anyVariation)),
+          n + 1 --> expectNullResponse(Sequence.four)))
+    }
   }
 
   /** Qualifier 0x06 (8.14.2-3): every event in one response */
@@ -70,18 +94,8 @@ object InputEvents {
   /** Qualifier 0x07 (8.14.2-4), or 0x08 with twoByteCount (8.14.2-5): the events a few at a time */
   final class CountQualifier(input: InputType, twoByteCount: Boolean) extends EventTest(input) {
     import input._
-    override protected def steps(options: OptionSource): Iterable[LabeledStep] = {
-      val count = options.get(numEventsGenerated)
-      empty(Sequence.one) ++ List(
-        4 --> generateExactEvents(count),
-        5 --> send(Requests.readCount(Sequence.two, anyVariation, 1, twoByteCount)),
-        (6 to 11) -->
-          expectSingleResponse(Sequence.two, AutoConfirm.Yes, events(verifyFirstEvent, anyVariation, options)),
-        12 --> send(Requests.readCount(Sequence.three, anyVariation, count - 1, twoByteCount)),
-        (13 to 15) -->
-          expectSingleResponse(Sequence.three, AutoConfirm.Yes, events(verifyRestEvents, anyVariation, options))
-      )
-    }
+    override protected def steps(options: OptionSource): Iterable[LabeledStep] =
+      empty(Sequence.one) ++ countReads(options, anyVariation, twoByteCount, 6 to 11, 12, 13 to 15)
   }
 
   /** Without time, qualifier 0x06 (8.14.2-7) */
@@ -100,20 +114,8 @@ object InputEvents {
   /** Without time, qualifier 0x07 (8.14.2-8), or 0x08 with twoByteCount (8.14.2-9) */
   final class CountQualifierWithoutTime(input: InputType, twoByteCount: Boolean) extends EventTest(input) {
     import input._
-    override protected def steps(options: OptionSource): Iterable[LabeledStep] = {
-      val count = options.get(numEventsGenerated)
-      empty(Sequence.one) ++ List(
-        4 --> generateExactEvents(count),
-        5 --> send(Requests.readCount(Sequence.two, noTimeVariation, 1, twoByteCount)),
-        (6 to 12) -->
-          expectSingleResponse(Sequence.two, AutoConfirm.Yes, events(verifyFirstEvent, noTimeVariation, options)),
-        13 --> send(Requests.readCount(Sequence.three, noTimeVariation, count - 1, twoByteCount)),
-        (14 to 16) -->
-          expectSingleResponse(Sequence.three, AutoConfirm.Yes, events(verifyRestEvents, noTimeVariation, options)),
-        17 --> send(Requests.readAllObjects(Sequence.four, anyVariation)),
-        18 --> expectNullResponse(Sequence.four)
-      )
-    }
+    override protected def steps(options: OptionSource): Iterable[LabeledStep] =
+      empty(Sequence.one) ++ countReads(options, noTimeVariation, twoByteCount, 6 to 12, 13, 14 to 16, Some(17))
   }
 
   // the note on a device that answers a read of events with time with IIN2.1
@@ -157,24 +159,11 @@ object InputEvents {
     import input._
     override protected def requiredOptions: List[OptionCondition] = super.requiredOptions :+ !withTimeRejected
     override protected def steps(options: OptionSource): Iterable[LabeledStep] = {
-      val count = options.get(numEventsGenerated)
       // 0x08's steps are numbered one lower after its first response's checks begin: it has no step for the count
       val shift = if (twoByteCount) 1 else 0
       def at(n: Int): Int = n - shift
-      empty(Sequence.one) ++ List(
-        4 --> generateExactEvents(count),
-        5 --> send(Requests.readCount(Sequence.two, absoluteTimeVariation, 1, twoByteCount)),
-        (6 to at(12)) -->
-          expectSingleResponse(Sequence.two, AutoConfirm.Yes, events(verifyFirstEvent, absoluteTimeVariation, options)),
-        at(13) --> send(Requests.readCount(Sequence.three, absoluteTimeVariation, count - 1, twoByteCount)),
-        (at(14) to at(16)) -->
-          expectSingleResponse(
-            Sequence.three,
-            AutoConfirm.Yes,
-            events(verifyRestEvents, absoluteTimeVariation, options)),
-        at(17) --> send(Requests.readAllObjects(Sequence.four, anyVariation)),
-        at(18) --> expectNullResponse(Sequence.four)
-      )
+      empty(Sequence.one) ++
+        countReads(options, absoluteTimeVariation, twoByteCount, 6 to at(12), at(13), at(14) to at(16), Some(at(17)))
     }
   }
 
@@ -329,23 +318,8 @@ object InputEvents {
   final class CountQualifierWithRelativeTime(input: InputType, twoByteCount: Boolean) extends EventTest(input) {
     import input._
     override protected def requiredOptions: List[OptionCondition] = super.requiredOptions ++ relativeReadable(input)
-    override protected def steps(options: OptionSource): Iterable[LabeledStep] = {
-      val count = options.get(numEventsGenerated)
-      empty(Sequence.one) ++ List(
-        4 --> generateExactEvents(count),
-        5 --> send(Requests.readCount(Sequence.two, relativeTimeVariation, 1, twoByteCount)),
-        (6 to 12) -->
-          expectSingleResponse(Sequence.two, AutoConfirm.Yes, events(verifyFirstEvent, relativeTimeVariation, options)),
-        13 --> send(Requests.readCount(Sequence.three, relativeTimeVariation, count - 1, twoByteCount)),
-        (14 to 16) -->
-          expectSingleResponse(
-            Sequence.three,
-            AutoConfirm.Yes,
-            events(verifyRestEvents, relativeTimeVariation, options)),
-        17 --> send(Requests.readAllObjects(Sequence.four, anyVariation)),
-        18 --> expectNullResponse(Sequence.four)
-      )
-    }
+    override protected def steps(options: OptionSource): Iterable[LabeledStep] =
+      empty(Sequence.one) ++ countReads(options, relativeTimeVariation, twoByteCount, 6 to 12, 13, 14 to 16, Some(17))
   }
 
   /**
@@ -390,34 +364,12 @@ object InputEvents {
    * A subset level 1 device that can't read the input's events (8.14.2-1): it answers reads of variations 0 and 1 with a
    * Null Error Response with IIN2.0, 2.1 or 2.2 (2.1 preferred), which the result notes
    */
-  final class LevelOneWithoutEventReads(input: InputType) extends ProcedureDefinition {
-    import input._
-    override protected def requirement: Requirement = !input.support.eventReads
-
-    private val errors = IIN.FUNC_NOT_SUPPORTED | IIN.OBJECT_UNKNOWN | IIN.PARAM_ERROR
-
-    // the response must be a Null Error Response; which error bit it set goes in the result
-    private def rejected(seq: Sequence, read: Variation): TestStep = new TestStep {
-      private val check = Validations.isEmpty && Validations.containingAnyOf(errors)
-      def description: List[Comment] =
-        check.description :+ Comment("Note the error IIN bits set (IIN2.1 is preferred)")
-      def run(driver: TestDriver): List[DeferredCheck] = {
-        var set = IIN.empty
-        val noted = check && MessageValidation.check("") { m => set = m.iin.getOrElse(IIN.empty) & errors }
-        val checks = expectSingleResponse(seq, noted).run(driver)
-        driver.reporter.note(s"the DUT answers a read of $read with $set")
-        checks
-      }
-    }
-
-    override protected def steps(options: OptionSource): Iterable[LabeledStep] = List(
-      1 --> send(Requests.readAllObjects(Sequence.one, anyVariation)),
-      2 --> rejected(Sequence.one, anyVariation),
-      3 --> send(Requests.readAllObjects(Sequence.two, noTimeVariation)),
-      4 --> rejected(Sequence.two, noTimeVariation),
-      5 --> describe(s"No further ${input.name} event tests (or 8.15) apply to this DUT")
-    )
-  }
+  def levelOneWithoutEventReads(input: InputType): ProcedureDefinition = new StaticInputs.LevelOneWithoutReads(
+    input.support,
+    List(input.anyVariation, input.noTimeVariation),
+    events = true,
+    lastStep = Some(s"No further ${input.name} event tests (or 8.15) apply to this DUT")
+  )
 
   /**
    * A device without the input's events (8.14.2-2): as 2.7's, but only for a device whose events can be read, since a
@@ -430,7 +382,7 @@ object InputEvents {
 
   import InputType.{ BinaryInput, DoubleBitBinaryInput }
 
-  val binaryLevelOne = new LevelOneWithoutEventReads(BinaryInput)
+  val binaryLevelOne = levelOneWithoutEventReads(BinaryInput)
   val binaryWithoutEvents = new WithoutEvents(BinaryInput)
   val binaryAll = new AllQualifier(BinaryInput)
   val binaryCount07 = new CountQualifier(BinaryInput, twoByteCount = false)
@@ -447,7 +399,7 @@ object InputEvents {
   val binaryCount07WithTime = new CountQualifierWithTime(BinaryInput, twoByteCount = false)
   val binaryCount08WithTime = new CountQualifierWithTime(BinaryInput, twoByteCount = true)
 
-  val doubleBitLevelOne = new LevelOneWithoutEventReads(DoubleBitBinaryInput)
+  val doubleBitLevelOne = levelOneWithoutEventReads(DoubleBitBinaryInput)
   val doubleBitWithoutEvents = new WithoutEvents(DoubleBitBinaryInput)
   val doubleBitAll = new AllQualifier(DoubleBitBinaryInput)
   val doubleBitCount07 = new CountQualifier(DoubleBitBinaryInput, twoByteCount = false)

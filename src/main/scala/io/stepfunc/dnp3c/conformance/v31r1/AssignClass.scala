@@ -11,7 +11,6 @@ import io.stepfunc.dnp3c.conformance.common.Validations._
 import io.stepfunc.dnp3c.dnp3._
 import io.stepfunc.dnp3c.dnp3.app._
 import io.stepfunc.dnp3c.dnp3.app.objects._
-import io.stepfunc.dnp3c.protocol.parsing.{ UInt16LE, UInt8 }
 
 /**
  * 3.1r1's 8.26, Assign Class (function code 22), with binary inputs: the points the configuration puts in each class at
@@ -54,9 +53,7 @@ object AssignClass {
     }
 
   private def pointHeader(index: Int): ObjectHeader =
-    if (index <= 0xFF)
-      OneByteStartStopHeader(Group1Var0, UInt8(index.toShort), UInt8(index.toShort), FieldHeaderPayload.empty)
-    else TwoByteStartStopHeader(Group1Var0, UInt16LE(index), UInt16LE(index), FieldHeaderPayload.empty)
+    ObjectHeader.startStop(Group1Var0, index, index, twoByte = index > 0xFF)
 
   // an Assign Class request: each class object followed by the points it gets; points before any class get no class
   private def assign(seq: Sequence, noClass: List[Int], assignments: (Variation, List[Int])*): Message =
@@ -66,13 +63,10 @@ object AssignClass {
       noClass.map(pointHeader) ++
         assignments.toList.flatMap((c, points) => AllObjectsHeader(c) :: points.map(pointHeader)))
 
-  private def generate(what: String, index: => Int): TestStep = new TestStep {
-    def description: List[Comment] = List(s"Generate an event for $what")
-    def run(driver: TestDriver): List[DeferredCheck] = {
-      driver.reporter.plugin.generateEventOn(driver.reporter.pluginReporter(), PointKind.BinaryInput, index)
-      Nil
+  private def generate(what: String, index: => Int): TestStep =
+    PluginSteps.action(s"Generate an event for $what") { (plugin, reporter) =>
+      plugin.generateEventOn(reporter, PointKind.BinaryInput, index)
     }
-  }
 
   // the points the configuration puts in the class at startup, of which the test needs at least so many
   private final class Startup(options: OptionSource, option: IndexListOption, needed: Int) {
@@ -138,14 +132,11 @@ object AssignClass {
         def expect(n: Int, validation: MessageValidation, confirm: Boolean = false): TestStep =
 
           expectSingleResponse(seqs(n), if (confirm) AutoConfirm.Yes else AutoConfirm.No, validation)
-        def assignStep(describe: String, request: => Message): TestStep = new TestStep {
-          def description: List[Comment] = List(s"Issue an Assign Class request: $describe")
-          def run(driver: TestDriver): List[DeferredCheck] = {
+        def assignStep(describe: String, request: => Message): TestStep =
+          TestStep(List(s"Issue an Assign Class request: $describe")) { driver =>
             reassigned = true
             driver.writeMessage(request)
-            Nil
           }
-        }
 
         val escape = new TestStep {
           private val full = expectSingleResponse(seqs(4), isNull)

@@ -7,7 +7,8 @@ import java.nio.file.{ Files, Path }
 
 import io.stepfunc.dnp3c.conformance.Revision
 import io.stepfunc.dnp3c.conformance.api.{ TestProcedure, TestSection }
-import io.stepfunc.dnp3c.conformance.application.TestResult
+import io.stepfunc.dnp3c.conformance.api.ProcedureOutcome
+import io.stepfunc.dnp3c.conformance.application.{ ResultFiles, SavedResult }
 
 /**
  * The report of one revision's results at one subset level
@@ -27,39 +28,39 @@ case class Report(revision: Revision, level: Int, sections: Iterable[Report.Sect
 
   private def convert(level: Int, p: Report.Procedure)(implicit i: Indentation): Iterable[String] = {
 
-    def link(text: String) = "<a href=\"./" + p.id + "/log.html\">" + text + "</a>"
+    def link(text: String) = "<a href=\"./" + p.id + "/" + ResultFiles.log + "\">" + text + "</a>"
     // a procedure that has run has a log, which its id and its result both open
-    def id = if (p.incomplete || p.result.isEmpty) p.id else link(p.id)
+    def id = if (p.incomplete || p.outcome.isEmpty) p.id else link(p.id)
     def pcapLink =
       if (p.hasPcaps &&
         !p.incomplete &&
-        (p.result.contains(TestResult.Pass) || p.result.contains(TestResult.Fail))) {
-        "<a href=\"./" + p.id + "/dump.pcap\">pcap</a>"
+        p.outcome.exists(o => !o.isInstanceOf[ProcedureOutcome.Skipped])) {
+        "<a href=\"./" + p.id + "/" + ResultFiles.capture + "\">pcap</a>"
       } else {
         "----"
       }
 
     def getText(): String = if (p.incomplete) "----"
-    else p.result match {
-      case Some(TestResult.Pass) => link("PASS")
-      case Some(TestResult.Fail) => link("FAIL")
-      case Some(TestResult.Skip) => link("SKIP")
+    else p.outcome match {
+      case Some(ProcedureOutcome.Passed) => link("PASS")
+      case Some(ProcedureOutcome.Failed(_)) => link("FAIL")
+      case Some(ProcedureOutcome.Skipped(_)) => link("SKIP")
       case None => "not run"
     }
 
     def getClass(): Clazz = if (p.incomplete) Classes.unimplemented
-    else p.result match {
-      case Some(TestResult.Pass) => Classes.pass
-      case Some(TestResult.Fail) => Classes.fail
-      case Some(TestResult.Skip) => Classes.skip
+    else p.outcome match {
+      case Some(ProcedureOutcome.Passed) => Classes.pass
+      case Some(ProcedureOutcome.Failed(_)) => Classes.fail
+      case Some(ProcedureOutcome.Skipped(_)) => Classes.skip
       case None => Classes.noResult
     }
 
     // why the procedure was skipped, or what it noted about a pass, under its title
-    def skipReason: String = (p.result, p.reason) match {
-      case (Some(TestResult.Skip), Some(reason)) =>
+    def skipReason: String = p.outcome match {
+      case Some(ProcedureOutcome.Skipped(reason)) if reason.nonEmpty =>
         "<br><span class=\"reason\">Skipped: " + Tags.escape(reason) + "</span>"
-      case (Some(TestResult.Pass), _) =>
+      case Some(ProcedureOutcome.Passed) =>
         p.notes.map(n => "<br><span class=\"note\">Note: " + Tags.escape(n) + "</span>").mkString
       case _ => ""
     }
@@ -85,12 +86,12 @@ case class Report(revision: Revision, level: Int, sections: Iterable[Report.Sect
   // e.g. "146 passed", counting implemented procedures by result
   private def totals: Iterable[(Clazz, String)] = {
     val implemented = sections.flatMap(procedures).filterNot(_.incomplete).toList
-    def count(result: Option[TestResult]) = implemented.count(_.result == result)
+    def count(counted: Option[ProcedureOutcome] => Boolean) = implemented.count(p => counted(p.outcome))
     List(
-      (Classes.pass, s"${count(Some(TestResult.Pass))} passed"),
-      (Classes.fail, s"${count(Some(TestResult.Fail))} failed"),
-      (Classes.skip, s"${count(Some(TestResult.Skip))} skipped"),
-      (Classes.noResult, s"${count(None)} not run")
+      (Classes.pass, s"${count(_.contains(ProcedureOutcome.Passed))} passed"),
+      (Classes.fail, s"${count(_.exists(_.isInstanceOf[ProcedureOutcome.Failed]))} failed"),
+      (Classes.skip, s"${count(_.exists(_.isInstanceOf[ProcedureOutcome.Skipped]))} skipped"),
+      (Classes.noResult, s"${count(_.isEmpty)} not run")
     )
   }
 
@@ -108,7 +109,7 @@ case class Report(revision: Revision, level: Int, sections: Iterable[Report.Sect
 
     Branding.page(
       "DNP3 Conformance Report",
-      "report.css",
+      ResultFiles.stylesheet,
       deviceUnderTest,
       Tags.h1(List("DNP3 Conformance Report")) ++
         Tags.p(Attributes.classes(Clazz("revision")))(
@@ -133,8 +134,7 @@ object Report {
       id: String,
       incomplete: Boolean,
       description: String,
-      result: Option[TestResult],
-      reason: Option[String],
+      outcome: Option[ProcedureOutcome],
       hasPcaps: Boolean,
       notes: List[String] = Nil)
   case class Section(id: String, description: String, sections: Iterable[Section], procedures: Iterable[Procedure])
@@ -152,10 +152,10 @@ object Report {
 
     def read(procedure: TestProcedure): Procedure = {
       val folder = path.resolve(procedure.id)
-      val file = folder.resolve("results.properties").toFile
-      val saved = if (file.exists()) Some(TestResult.read(file)) else None
+      val file = folder.resolve(ResultFiles.result).toFile
+      val saved = if (file.exists()) Some(SavedResult.read(file)) else None
       // a result saved under another revision or level, or before results recorded them, isn't this run's
-      def matches(s: TestResult.Saved) = s.revision.contains(revision.id) && s.level.contains(level)
+      def matches(s: SavedResult) = s.revision.contains(revision.id) && s.level.contains(level)
       val counted = saved.filter(matches)
       saved.filterNot(matches).foreach { s =>
         val when = (s.revision, s.level) match {
@@ -166,15 +166,15 @@ object Report {
         ignored += s"The result in ${procedure.id}/ was saved $when, so it isn't counted. Run the procedure again."
       }
       // a run that was cut short leaves a log, or a capture, but no result
-      if (saved.isEmpty && List("log.html", "dump.pcap").exists(f => Files.isRegularFile(folder.resolve(f))))
+      if (saved.isEmpty &&
+        List(ResultFiles.log, ResultFiles.capture).exists(f => Files.isRegularFile(folder.resolve(f))))
         ignored += s"${procedure.id}/ has a log or capture but no result: its last run didn't finish. Run it again."
-      val hasPcaps = folder.resolve("dump.pcap").toFile.exists()
+      val hasPcaps = folder.resolve(ResultFiles.capture).toFile.exists()
       Procedure(
         procedure.id,
         procedure.incomplete,
         procedure.description,
-        counted.map(_.result),
-        counted.flatMap(_.reason),
+        counted.map(_.outcome),
         hasPcaps,
         counted.toList.flatMap(_.notes))
     }

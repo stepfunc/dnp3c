@@ -50,7 +50,7 @@ object Requests {
 
   // read a standard set (index 0) device attribute
   def readAttribute(seq: Sequence, variation: Int): Message =
-    readHeaders(seq, OneByteStartStopHeader(Group0(variation), UInt8(0), UInt8(0), FieldHeaderPayload.empty))
+    readHeaders(seq, ObjectHeader.startStop(Group0(variation), 0, 0, twoByte = false))
 
   // write a standard set (index 0) device attribute
   def writeAttribute(seq: Sequence, variation: Int, value: Field.Collection): Message = Message.request(

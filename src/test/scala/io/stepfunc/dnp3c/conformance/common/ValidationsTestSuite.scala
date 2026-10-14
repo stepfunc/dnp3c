@@ -52,12 +52,12 @@ class ValidationsTestSuite extends AnyFunSuite with Matchers {
   }
 
   test("Null-or-Error Response accepts an Error Response with data, but only the allowed error bits") {
-    val v = Validations.isNullOrErrorResponse(IIN.OBJECT_UNKNOWN | IIN.PARAM_ERROR)
+    val v = Validations.isNullOrErrorResponse(IIN.objectErrors)
     val data = List(AllObjectsHeader(Group60Var1))
     passes(v, response(IIN.empty)) should be(true)
     passes(v, response(IIN.empty, data)) should be(false)
     passes(v, response(IIN.OBJECT_UNKNOWN, data)) should be(true)
-    passes(v, response(IIN.OBJECT_UNKNOWN | IIN.PARAM_ERROR)) should be(true)
+    passes(v, response(IIN.objectErrors)) should be(true)
     passes(v, response(IIN.FUNC_NOT_SUPPORTED)) should be(false)
   }
 
@@ -171,10 +171,10 @@ class ValidationsTestSuite extends AnyFunSuite with Matchers {
   }
 
   test("containingAnyOf accepts one or both bits but not neither") {
-    val v = Validations.containingAnyOf(IIN.OBJECT_UNKNOWN | IIN.PARAM_ERROR)
+    val v = Validations.containingAnyOf(IIN.objectErrors)
     passes(v, response(IIN.OBJECT_UNKNOWN)) should be(true)
     passes(v, response(IIN.PARAM_ERROR)) should be(true)
-    passes(v, response(IIN.OBJECT_UNKNOWN | IIN.PARAM_ERROR)) should be(true)
+    passes(v, response(IIN.objectErrors)) should be(true)
     passes(v, response(IIN.empty)) should be(false)
   }
 

@@ -266,14 +266,11 @@ object CollisionAvoidance {
     }
   }
 
-  private def setDelays(delays: Option[CollisionDelays]): TestStep = new TestStep {
-    def description: List[Comment] = List(delays.fold("Restore the DUT's usual collision avoidance delays")(d =>
-      s"Set the DUT's fixed delay to ${d.fixedMs} ms and its maximum random delay to ${d.maxRandomMs} ms"))
-    def run(driver: TestDriver): List[DeferredCheck] = {
-      driver.reporter.plugin.setCollisionDelays(driver.reporter.pluginReporter(), delays)
-      Nil
+  private def setDelays(delays: Option[CollisionDelays]): TestStep =
+    PluginSteps.action(delays.fold("Restore the DUT's usual collision avoidance delays")(d =>
+      s"Set the DUT's fixed delay to ${d.fixedMs} ms and its maximum random delay to ${d.maxRandomMs} ms")) {
+      (plugin, reporter) => plugin.setCollisionDelays(reporter, delays)
     }
-  }
 
   val collisionAvoidance: ProcedureDefinition = new ProcedureDefinition {
     override protected def requiredOptions: List[OptionCondition] =

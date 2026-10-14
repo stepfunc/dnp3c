@@ -61,13 +61,10 @@ object AnalogValueReturn {
       var initial: Option[Double] = None
       def recorded: Double = initial.getOrElse(throw new Exception("Step 1 didn't record the analog input's value"))
 
-      def apply(what: String, value: => Double): TestStep = new TestStep {
-        def description: List[Comment] = List(s"Apply a stable input of $what to analog input $index")
-        def run(driver: TestDriver): List[DeferredCheck] = {
-          driver.reporter.plugin.setAnalogInput(driver.reporter.pluginReporter(), index, value)
-          Nil
+      def apply(what: String, value: => Double): TestStep =
+        PluginSteps.action(s"Apply a stable input of $what to analog input $index") { (plugin, reporter) =>
+          plugin.setAnalogInput(reporter, index, value)
         }
-      }
 
       val record = MessageValidation.check(s"Record the value of analog input $index") { message =>
         message.measurements(PointType.Static).collectFirst { case GenIndexedPoint(`index`, a: AnalogPoint) =>

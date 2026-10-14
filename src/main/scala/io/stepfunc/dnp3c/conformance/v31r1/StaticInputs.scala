@@ -21,8 +21,6 @@ import io.stepfunc.dnp3c.dnp3.{ Comment, DeferredCheck, MessageValidation, Reque
  */
 object StaticInputs {
 
-  private val objectUnknownOrParameterError = IIN.OBJECT_UNKNOWN | IIN.PARAM_ERROR
-
   /**
    * 8.13.2-1, 8.16.1.2.1, 8.16.2.2.1 and 8.18.2-1: a subset level 1 device that can't read the inputs answers each read
    * of them with a Null Error Response, IIN2.0, 2.1 or 2.2, which is noted. (8.16.1.2.1 accepts "any error
@@ -30,20 +28,21 @@ object StaticInputs {
    *
    * @param variations what it reads, one request each: 8.16.1.2.1 reads g20v0 and g20v1
    * @param condition whether step 1 states the condition the test runs on, as 8.16.1.2.1 and 8.16.2.2.1 do
-   * @param events whether it's the input's events the device can't read, as in 8.17.2-1 and 8.19.2-1, not its points
+   * @param events whether it's the input's events the device can't read, as in 8.14.2-1, 8.17.2-1 and 8.19.2-1, not
+   *               its points
+   * @param lastStep the last step's text, where it isn't that no further tests of the points or events apply
    */
   final class LevelOneWithoutReads(
       input: InputOptions,
       variations: List[Variation],
       condition: Boolean = false,
-      events: Boolean = false)
+      events: Boolean = false,
+      lastStep: Option[String] = None)
       extends ProcedureDefinition {
     override protected def requirement: Requirement = !(if (events) input.eventReads else input.reads)
 
     private val what = if (events) s"${input.longName} events" else s"${input.longName} points"
     private val tests = if (events) s"${input.longName} event" else input.longName
-
-    private val errors = IIN.FUNC_NOT_SUPPORTED | IIN.OBJECT_UNKNOWN | IIN.PARAM_ERROR
 
     override protected def steps(options: OptionSource): Iterable[LabeledStep] = {
       val first = if (condition) 2 else 1
@@ -56,11 +55,11 @@ object StaticInputs {
       Option.when(condition)(
         1 --> describe(s"Runs only for a subset level 1 device that can't read $what")).toList ++
         reads :+
-        (first + 2 * variations.size --> describe(s"No further $tests tests apply to this DUT"))
+        (first + 2 * variations.size --> describe(lastStep.getOrElse(s"No further $tests tests apply to this DUT")))
     }
 
     private def declined(seq: Sequence, variation: Variation): TestStep = new TestStep {
-      private val check = isEmpty && containingAnyOf(errors)
+      private val check = isEmpty && containingAnyOf(IIN.errors)
       def description: List[Comment] = check.description :+
         Comment("Note the error IIN bits set (IIN2.1 is preferred)")
       def run(driver: TestDriver): List[DeferredCheck] = {
@@ -69,7 +68,7 @@ object StaticInputs {
           expectSingleResponse(
             seq,
             check && MessageValidation.check("") { m =>
-              set = m.iin.getOrElse(IIN.empty) & errors
+              set = m.iin.getOrElse(IIN.empty) & IIN.errors
             }).run(driver)
         driver.reporter.note(s"the DUT answers a read of $variation with $set")
         checks
@@ -83,7 +82,7 @@ object StaticInputs {
       Requirement.all(!input.points, OptionCondition(input.reads))
     override protected def steps(options: OptionSource): Iterable[LabeledStep] = List(
       1 --> send(Requests.readAllObjects(Sequence.one, variation)),
-      2 --> expectSingleResponse(Sequence.one, containingAnyOf(objectUnknownOrParameterError))
+      2 --> expectSingleResponse(Sequence.one, containingAnyOf(IIN.objectErrors))
     )
   }
 
@@ -96,7 +95,7 @@ object StaticInputs {
       Requirement.all(!input.points, OptionCondition(input.reads))
     override protected def steps(options: OptionSource): Iterable[LabeledStep] = List(
       1 --> send(Requests.readAllObjects(Sequence.one, variation)),
-      2 --> expectSingleResponse(Sequence.one, isNullErrorResponse(objectUnknownOrParameterError))
+      2 --> expectSingleResponse(Sequence.one, isNullErrorResponse(IIN.objectErrors))
     )
   }
 
@@ -112,7 +111,7 @@ object StaticInputs {
         uninstall,
         variation,
         seq,
-        isNullErrorResponse(objectUnknownOrParameterError)) {
+        isNullErrorResponse(IIN.objectErrors)) {
     override protected def requiredOptions: List[OptionCondition] = input.withDisabling :+ OptionCondition(input.reads)
   }
 

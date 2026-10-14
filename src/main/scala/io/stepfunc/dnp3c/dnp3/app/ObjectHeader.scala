@@ -8,6 +8,11 @@ import io.stepfunc.dnp3c.protocol.parsing.{ Parser, ToBytes, UInt16LE, UInt8 }
 
 object ObjectHeader {
 
+  /** a start/stop header of the variation's points from start to stop, without objects: 16-bit if twoByte */
+  def startStop(variation: Variation, start: Int, stop: Int, twoByte: Boolean): ObjectHeader =
+    if (twoByte) TwoByteStartStopHeader(variation, UInt16LE(start), UInt16LE(stop), FieldHeaderPayload.empty)
+    else OneByteStartStopHeader(variation, UInt8(start), UInt8(stop), FieldHeaderPayload.empty)
+
   /** a header of the variation, by its qualifier code, with its range or count and objects, from the bytes after it */
   def parse(variation: Variation, qualifier: Byte, bytes: List[Byte]): Parser.Result[ObjectHeader] = {
 

@@ -28,6 +28,8 @@ object IIN {
   val RESERVED2 = IIN(0, 0x80.toByte)
 
   val errors: IIN = FUNC_NOT_SUPPORTED | OBJECT_UNKNOWN | PARAM_ERROR
+  // IIN2.1 or IIN2.2: how an outstation answers a request for objects it doesn't have
+  val objectErrors: IIN = OBJECT_UNKNOWN | PARAM_ERROR
   val iin2x: IIN = IIN(0, 0xFF.toByte)
 
   case class Named(mask: IIN, name: String)

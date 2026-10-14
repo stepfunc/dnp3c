@@ -45,11 +45,9 @@ final class DisableDoubleBit(read: Variation, answer: MessageValidation) extends
 
 object DisableDoubleBit {
 
-  private val objectUnknownOrParameterError = IIN.OBJECT_UNKNOWN | IIN.PARAM_ERROR
-
   /** 8.21.1: a read of g3 gets an error response with IIN2.1 or IIN2.2 */
-  val static = new DisableDoubleBit(Group3Var0, Validations.isNullErrorResponse(objectUnknownOrParameterError))
+  val static = new DisableDoubleBit(Group3Var0, Validations.isNullErrorResponse(IIN.objectErrors))
 
   /** 8.22.1: a read of g4 gets a Null Response, with IIN2.1 or IIN2.2 optional */
-  val events = new DisableDoubleBit(Group4Var0, Validations.isNullOrNullErrorResponse(objectUnknownOrParameterError))
+  val events = new DisableDoubleBit(Group4Var0, Validations.isNullOrNullErrorResponse(IIN.objectErrors))
 }

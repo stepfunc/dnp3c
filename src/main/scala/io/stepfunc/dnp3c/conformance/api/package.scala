@@ -12,26 +12,15 @@ package object api {
   implicit def toLabel(range: Range): Label = Label.apply(range.start, range.end)
   implicit def stringToComment(value: String): Comment = Comment(value)
 
-  def delay(ms: Int): TestStep = new TestStep {
-    def description: List[Comment] = List("Wait for " + ms + " milliseconds")
-    def run(driver: TestDriver): List[DeferredCheck] = {
-      driver.clock.sleep(ms)
-      Nil
-    }
+  def delay(ms: Int): TestStep = TestStep(List("Wait for " + ms + " milliseconds")) { driver =>
+    driver.clock.sleep(ms)
   }
 
-  val disconnect: TestStep = new TestStep {
-    def description: List[Comment] = List("Disconnect from the DUT")
-    def run(driver: TestDriver): List[DeferredCheck] = {
-      driver.close()
-      Nil
-    }
+  val disconnect: TestStep = TestStep(List("Disconnect from the DUT")) { driver =>
+    driver.close()
   }
 
-  def describe(desc: List[Comment]): TestStep = new TestStep {
-    def description: List[Comment] = desc
-    def run(driver: TestDriver): List[DeferredCheck] = Nil
-  }
+  def describe(desc: List[Comment]): TestStep = TestStep(desc)(_ => ())
 
   def describe(desc: String*): TestStep = describe(desc.map(Comment.apply).toList)
 
@@ -50,12 +39,8 @@ package object api {
   }.toList
 
   /** a step that notes `text` on the procedure's result, which the report shows even when it passes */
-  def noting(text: String): TestStep = new TestStep {
-    def description: List[Comment] = List(Comment(s"Note the result: $text"))
-    def run(driver: TestDriver): List[DeferredCheck] = {
-      driver.reporter.note(text)
-      Nil
-    }
+  def noting(text: String): TestStep = TestStep(List(Comment(s"Note the result: $text"))) { driver =>
+    driver.reporter.note(text)
   }
 
   def repeat(count: Int)(step: => TestStep): TestStep = new TestStep {

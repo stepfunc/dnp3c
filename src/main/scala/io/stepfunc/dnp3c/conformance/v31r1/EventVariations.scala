@@ -106,9 +106,8 @@ object EventVariations {
             val answer = responses.headOption.filter(_ => responses.size == 1)
             def answers(v: MessageValidation): Boolean =
               answer.exists(m => scala.util.Try(v.validate(driver.reporter, m)).isSuccess)
-            val nullError =
-              ((!supported || !levelThree) && answers(isNullErrorResponse(IIN.OBJECT_UNKNOWN | IIN.PARAM_ERROR))) ||
-                (!has && answers(isNullErrorResponse(IIN.OBJECT_UNKNOWN)))
+            val nullError = ((!supported || !levelThree) && answers(isNullErrorResponse(IIN.objectErrors))) ||
+              (!has && answers(isNullErrorResponse(IIN.OBJECT_UNKNOWN)))
             val plainNull = !has && answers(isNull)
             if (nullError || plainNull) {
               driver.reporter.note(

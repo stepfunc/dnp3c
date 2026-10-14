@@ -7,7 +7,8 @@ import java.nio.file.{ Files, Path }
 
 import io.stepfunc.dnp3c.conformance.api.Options
 import io.stepfunc.dnp3c.conformance.api.options.{ OutstationOptions, TestOptions }
-import io.stepfunc.dnp3c.conformance.application.TestResult
+import io.stepfunc.dnp3c.conformance.api.ProcedureOutcome
+import io.stepfunc.dnp3c.conformance.application.SavedResult
 import io.stepfunc.dnp3c.conformance.application.report.Resources
 import io.stepfunc.dnp3c.dnp3.DefaultIntegrationPlugin
 import org.junit.runner.RunWith
@@ -27,7 +28,7 @@ class HarnessTest extends AnyFunSuite with Matchers {
 
   private def save(folder: Path, revision: Option[String], level: Option[Int] = Some(2)): Unit = {
     Files.createDirectories(folder)
-    TestResult.write(TestResult.Saved(TestResult.Pass, revision, level, None), folder.resolve("results.properties"))
+    SavedResult.write(SavedResult(ProcedureOutcome.Passed, revision, level), folder.resolve("results.properties"))
   }
 
   test("rejects an unknown id before writing anything") {
@@ -87,8 +88,8 @@ class HarnessTest extends AnyFunSuite with Matchers {
     val directory = output
     val folder = directory.resolve("2.7").resolve("L2").resolve("8.1.2")
     Files.createDirectories(folder)
-    TestResult.write(
-      TestResult.Saved(TestResult.Pass, Some("2.7"), Some(2), None, List("compliant with 1815-2012 only")),
+    SavedResult.write(
+      SavedResult(ProcedureOutcome.Passed, Some("2.7"), Some(2), List("compliant with 1815-2012 only")),
       folder.resolve("results.properties"))
     Files.readString(Harness.writeReport(options(directory), revision)) should include(
       "Note: compliant with 1815-2012 only")

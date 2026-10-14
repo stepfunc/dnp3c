@@ -42,7 +42,7 @@ object OutputProcedures {
           3 --> send(function, Sequence.zero, output.primary(options).twoByteHeader(Index.zero)),
           4 --> (
             if (function == AppFunction.directOpNoAck) expectNoAnswer(options)
-            else expectSingleResponse(Sequence.zero, containingAnyOf(IIN.OBJECT_UNKNOWN | IIN.PARAM_ERROR))
+            else expectSingleResponse(Sequence.zero, containingAnyOf(IIN.objectErrors))
           ),
           5 --> operations.expectNoOperation
         ),

@@ -17,6 +17,18 @@ trait TestStep {
 
 object TestStep {
 
+  /** a step that does what act does, and defers no checks */
+  def apply(description: => List[Comment])(act: TestDriver => Unit): TestStep = {
+    def describe = description
+    new TestStep {
+      def description: List[Comment] = describe
+      def run(driver: TestDriver): List[DeferredCheck] = {
+        act(driver)
+        Nil
+      }
+    }
+  }
+
   def combine(steps: TestStep*): TestStep = new TestStep {
     def description: List[Comment] = steps.flatMap(_.description).toList
     def run(driver: TestDriver): List[DeferredCheck] = steps.flatMap(_.run(driver)).toList

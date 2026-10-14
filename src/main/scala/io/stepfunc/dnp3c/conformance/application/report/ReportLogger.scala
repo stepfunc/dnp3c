@@ -7,7 +7,7 @@ import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 
-import io.stepfunc.dnp3c.conformance.application.{ Symbols, TextFile }
+import io.stepfunc.dnp3c.conformance.application.{ ResultFiles, Symbols, TextFile }
 import io.stepfunc.dnp3c.protocol.logging.{ Details, Level, Logger }
 
 import scala.collection.mutable
@@ -23,10 +23,10 @@ class ReportLogger(file: File, title: String, deviceUnderTest: String) extends L
 
     val lines: Iterable[String] = Branding.page(
       title,
-      "../report.css",
+      "../" + ResultFiles.stylesheet,
       deviceUnderTest,
       Tags.h1(List(Tags.escape(title))),
-      Tags.a(Attributes.href("../report.html"))(List("All results"))
+      Tags.a(Attributes.href("../" + ResultFiles.report))(List("All results"))
     ) {
       Tags.table(Attributes.classes(Clazz("log"))) {
         rows.flatMap(g => g(indent))

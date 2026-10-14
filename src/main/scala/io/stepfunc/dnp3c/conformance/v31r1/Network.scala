@@ -124,22 +124,15 @@ object Network {
     allowed,
     responses)
 
-  private def setUp(setup: NetworkSetup): TestStep = new TestStep {
-    def description: List[Comment] = List(s"Set up the DUT's network to ${setup.describe}")
-    def run(driver: TestDriver): List[DeferredCheck] = {
+  private def setUp(setup: NetworkSetup): TestStep =
+    TestStep(List(s"Set up the DUT's network to ${setup.describe}")) { driver =>
       driver.close()
       driver.reporter.plugin.configureNetwork(driver.reporter.pluginReporter(), setup)
-      Nil
     }
-  }
 
-  private val restore: TestStep = new TestStep {
-    def description: List[Comment] = List("Restore the DUT's usual network setup")
-    def run(driver: TestDriver): List[DeferredCheck] = {
-      driver.close()
-      driver.reporter.plugin.restoreNetwork(driver.reporter.pluginReporter())
-      Nil
-    }
+  private val restore: TestStep = TestStep(List("Restore the DUT's usual network setup")) { driver =>
+    driver.close()
+    driver.reporter.plugin.restoreNetwork(driver.reporter.pluginReporter())
   }
 
   private def show(address: InetSocketAddress): String = {
@@ -200,13 +193,10 @@ object Network {
   }
 
   // a REQUEST LINK STATUS that nothing answers within the link timeout
-  private val noLinkStatus: TestStep = sendLinkControl(0xC9.toByte) + new TestStep {
-    def description: List[Comment] = List("Verify that the DUT doesn't answer within the link timeout")
-    def run(driver: TestDriver): List[DeferredCheck] = {
+  private val noLinkStatus: TestStep = sendLinkControl(0xC9.toByte) +
+    TestStep(List("Verify that the DUT doesn't answer within the link timeout")) { driver =>
       driver.readFrame().foreach(f => throw new Exception(s"The DUT answered: $f"))
-      Nil
     }
-  }
 
   private val allStations = UInt16LE(0xFFFF)
 
@@ -233,12 +223,8 @@ object Network {
   private val linkStatus: TestStep =
     sendLinkControl(0xC9.toByte) + expectFrame(withAnyControl(Set(0x0B.toByte, 0x1B.toByte)))
 
-  private val closeGracefully: TestStep = new TestStep {
-    def description: List[Comment] = List("Close the connection gracefully")
-    def run(driver: TestDriver): List[DeferredCheck] = {
-      driver.close()
-      Nil
-    }
+  private val closeGracefully: TestStep = TestStep(List("Close the connection gracefully")) { driver =>
+    driver.close()
   }
 
   private val disconnectNoticed: TestStep = new TestStep {

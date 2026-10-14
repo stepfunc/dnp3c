@@ -62,4 +62,4 @@ class AnalogOutputStatusRead(variations: OptionSource => Set[Variation], without
 
 // 2.7: g40v2; and a Null Response, or an Error Response with IIN2.1 or IIN2.2
 object Procedure8_3_2
-    extends AnalogOutputStatusRead(_ => Set(Group40Var2), isNullOrErrorResponse(IIN.OBJECT_UNKNOWN | IIN.PARAM_ERROR))
+    extends AnalogOutputStatusRead(_ => Set(Group40Var2), isNullOrErrorResponse(IIN.objectErrors))
