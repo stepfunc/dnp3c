@@ -168,6 +168,44 @@ object InputEvents {
   }
 
   /**
+   * Without confirm (8.14.2-6): the response to a read isn't confirmed, so the events stay; read again, the device
+   * answers with the same objects under the new sequence number, and doesn't retransmit either; then new events join
+   * them in the next response, which is confirmed
+   */
+  final class NoConfirm(input: InputType) extends EventTest(input) {
+    import input._
+    override protected def steps(options: OptionSource): Iterable[LabeledStep] = {
+      val retry = options.get(io.stepfunc.dnp3c.conformance.api.options.OutstationOptions.appConfirmTimeout)
+      var first: Option[List[ObjectHeader]] = None
+      val keep = MessageValidation.check("Keep the response's objects, to compare the next read's with") { m =>
+        first = Some(m.headers)
+      }
+      val same = MessageValidation.check("Verify that the response carries the same objects as the previous one") { m =>
+        if (!first.contains(m.headers))
+          throw new Exception("The response doesn't carry the same objects as the response it repeats")
+      }
+      empty(Sequence.one) ++ List(
+        4 --> generateEvents,
+        5 --> send(Requests.readAllObjects(Sequence.two, anyVariation)),
+        (6 to 10) -->
+          expectSingleResponse(Sequence.two, AutoConfirm.No, events(verifyLatestEvents, anyVariation, options) && keep),
+        11 --> describe("Withhold the application layer confirmation for this response"),
+        (12 to 13) --> expectNoRetransmission(retry),
+        14 --> send(Requests.readAllObjects(Sequence.three, anyVariation)),
+        15 --> expectSingleResponse(Sequence.three, AutoConfirm.No, same),
+        16 --> describe("Withhold the application layer confirmation for this response too"),
+        (17 to 18) --> expectNoRetransmission(retry),
+        19 --> generateEvents,
+        20 --> send(Requests.readAllObjects(Sequence.four, anyVariation)),
+        (21 to 23) -->
+          expectSingleResponse(Sequence.four, AutoConfirm.Yes, events(verifyOldAndNewEvents, anyVariation, options)),
+        24 --> send(Requests.readAllObjects(Sequence.five, anyVariation)),
+        25 --> expectNullResponse(Sequence.five)
+      )
+    }
+  }
+
+  /**
    * A device without the input's events (8.14.2-2): as 2.7's, but only for a device whose events can be read, since a
    * subset level 1 device that can't read them answers with an error, which 8.14.2-1 tests
    */
@@ -185,6 +223,7 @@ object InputEvents {
   val binaryAllWithoutTime = new AllQualifierWithoutTime(BinaryInput)
   val binaryCount07WithoutTime = new CountQualifierWithoutTime(BinaryInput, twoByteCount = false)
   val binaryCount08WithoutTime = new CountQualifierWithoutTime(BinaryInput, twoByteCount = true)
+  val binaryNoConfirm = new NoConfirm(BinaryInput)
   val binaryAllWithTime = new AllQualifierWithTime(BinaryInput)
   val binaryCount07WithTime = new CountQualifierWithTime(BinaryInput, twoByteCount = false)
   val binaryCount08WithTime = new CountQualifierWithTime(BinaryInput, twoByteCount = true)
@@ -196,6 +235,7 @@ object InputEvents {
   val doubleBitAllWithoutTime = new AllQualifierWithoutTime(DoubleBitBinaryInput)
   val doubleBitCount07WithoutTime = new CountQualifierWithoutTime(DoubleBitBinaryInput, twoByteCount = false)
   val doubleBitCount08WithoutTime = new CountQualifierWithoutTime(DoubleBitBinaryInput, twoByteCount = true)
+  val doubleBitNoConfirm = new NoConfirm(DoubleBitBinaryInput)
   val doubleBitAllWithTime = new AllQualifierWithTime(DoubleBitBinaryInput)
   val doubleBitCount07WithTime = new CountQualifierWithTime(DoubleBitBinaryInput, twoByteCount = false)
   val doubleBitCount08WithTime = new CountQualifierWithTime(DoubleBitBinaryInput, twoByteCount = true)

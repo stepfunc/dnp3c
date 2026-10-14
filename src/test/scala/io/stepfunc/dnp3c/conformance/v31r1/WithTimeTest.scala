@@ -47,6 +47,12 @@ class WithTimeTest extends AnyFunSuite with Matchers {
     InputEvents.binaryCount07WithTime.disabledBy(Options.from(Map())) should equal(None)
   }
 
+  test("8.14.2-6 re-reads the unconfirmed events, and has 3.1r1's 25 steps") {
+    val labels = InputEvents.binaryNoConfirm.configure(Options.from(Map())).steps.map(_.label).toList
+    labels should contain("step: 15")
+    labels.last should equal("step: 25")
+  }
+
   test("0x08's steps are numbered as 3.1r1 numbers them") {
     val labels = InputEvents.binaryCount08WithTime.configure(Options.from(Map())).steps.map(_.label).toList
     labels should contain("steps: 6 to 11")
