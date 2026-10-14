@@ -11,6 +11,9 @@ import scala.util.Try
 import io.stepfunc.dnp3c.conformance.api.{ Options, ProcedureDefinition, TestProcedure }
 import io.stepfunc.dnp3c.conformance.api.options.NetworkOptions
 import io.stepfunc.dnp3c.dnp3._
+import io.stepfunc.dnp3c.dnp3.app.{ Message, Unsolicited }
+import io.stepfunc.dnp3c.dnp3.link.FrameValidator
+import io.stepfunc.dnp3c.protocol.Hex
 import io.stepfunc.dnp3c.dnp3.link.{ Control, LinkFrame }
 import io.stepfunc.dnp3c.protocol.parsing.UInt16LE
 import org.junit.runner.RunWith
@@ -23,16 +26,22 @@ import org.scalatest.funsuite.AnyFunSuite
 class NetworkTest extends AnyFunSuite with Matchers {
 
   /**
-   * Listens as the plugin sets it up, accepting what its setup allows and answering REQUEST LINK STATUS on its
-   * connection; a DUT that ignoresSetup keeps listening on port 20000 for any master
+   * Listens as the plugin sets it up, accepting what its setup allows: over TCP it accepts connections, and over UDP it
+   * answers datagrams, to the port they came from or to the fixed port its setup gives. It answers REQUEST LINK STATUS
+   * on the harness's connection, and a read with IIN1.0 set after a broadcast to its port 20000 over UDP, or to the
+   * multicast group its setup gives. A DUT that ignoresSetup keeps using TCP on port 20000, for any master.
    */
-  private class Dut(ignoresSetup: Boolean = false) extends StubDriver(StubDriver.reporter()) {
+  private class Dut(ignoresSetup: Boolean = false, ignoresBroadcasts: Boolean = false)
+      extends StubDriver(StubDriver.reporter()) {
     private var setup = NetworkSetup(NetworkMode.Tcp, 20000, AllowedMasters.Any)
     val setups: mutable.ListBuffer[NetworkSetup] = mutable.ListBuffer.empty
     val connections: mutable.ListBuffer[InetSocketAddress] = mutable.ListBuffer.empty
     var restored = 0
-    private var connected = false
+    // the harness's connection, which the real driver opens again on the next write after a close
+    private var current: Option[Connection] = None
     private var pending: Option[LinkFrame] = None
+    private var broadcast = false
+    private val responses = mutable.Queue.empty[Message]
 
     val plugin: DefaultIntegrationPlugin = new DefaultIntegrationPlugin {
       override def configureNetwork(reporter: PluginReporter, s: NetworkSetup): Unit = {
@@ -44,7 +53,10 @@ class NetworkTest extends AnyFunSuite with Matchers {
     }
     override val reporter: ProcedureReporter = StubDriver.reporter(plugin)
 
-    private def accepts(c: TcpConnection): Boolean = {
+    private def bound(c: Connection): InetSocketAddress =
+      new InetSocketAddress(c.local.getAddress, if (c.local.getPort == 0) 50000 else c.local.getPort)
+
+    private def allowed(c: Connection): Boolean = {
       val address = c.local.getAddress.getHostAddress
       c.remote.getPort == setup.port &&
       (setup.allowedMasters match {
@@ -54,20 +66,44 @@ class NetworkTest extends AnyFunSuite with Matchers {
       })
     }
 
-    override def connect(c: TcpConnection): InetSocketAddress =
-      if (accepts(c)) {
-        connected = true
-        val local = new InetSocketAddress(c.local.getAddress, if (c.local.getPort == 0) 50000 else c.local.getPort)
-        connections += local
-        local
-      } else throw new ConnectException("Connection refused")
+    private def answers(c: Connection): Boolean = c match {
+      case _: TcpConnection => setup.mode != NetworkMode.Udp && allowed(c)
+      case _: UdpConnection =>
+        setup.mode != NetworkMode.Tcp && allowed(c) &&
+        (setup.udpResponses match {
+          case UdpDestination.OriginatingPort => true
+          case UdpDestination.Fixed(p) => bound(c).getPort == p
+        })
+    }
 
-    override def probe(c: TcpConnection): ProbeResult = if (accepts(c)) ProbeResult.Answered else ProbeResult.Refused
+    override def connect(c: Connection): InetSocketAddress = {
+      c match {
+        case t: TcpConnection if !answers(t) => throw new ConnectException("Connection refused")
+        case _ =>
+      }
+      current = Some(c)
+      connections += bound(c)
+      bound(c)
+    }
 
-    override def close(): Unit = connected = false
+    override def probe(c: TcpConnection): ProbeResult = if (answers(c)) ProbeResult.Answered else ProbeResult.Refused
+
+    override def sendDatagrams(
+        remote: InetSocketAddress,
+        local: InetSocketAddress,
+        message: Message,
+        options: LinkOverride): Unit = {
+      val address = remote.getAddress
+      val reaches =
+        if (address.isMulticastAddress) setup.multicastGroup.contains(address.getHostAddress) else true
+      if (!ignoresBroadcasts && reaches && remote.getPort == 20000 && options.destination.contains(UInt16LE(0xFFFF)))
+        broadcast = true
+    }
+
+    override def close(): Unit = {}
 
     override def writeFrame(frame: LinkFrame): Unit =
-      if (connected && frame.header.ctrl.toByte == 0xC9.toByte)
+      if (current.exists(answers) && frame.header.ctrl.toByte == 0xC9.toByte)
         pending = Some(LinkFrame.headerOnly(Control(0x0B.toByte), UInt16LE(1), UInt16LE(1024)))
 
     override def readFrame(timeout: Option[Int]): Option[LinkFrame] = {
@@ -75,6 +111,19 @@ class NetworkTest extends AnyFunSuite with Matchers {
       pending = None
       frame.orElse(timedOut(timeout))
     }
+
+    override def writeMessage(message: Message, options: LinkOverride): Unit = {
+      val seq = message.ctrl.seq.value.toInt
+      responses.enqueue(Message.parse(Hex.from("%02X 81 %02X 00".format(0xC0 | seq, if (broadcast) 1 else 0))))
+      broadcast = false
+    }
+
+    override def readMessage(
+        unsolicited: Unsolicited,
+        validator: FrameValidator,
+        linkOverride: LinkOverride,
+        timeoutMs: Option[Int]): Option[Message] =
+      if (responses.isEmpty) timedOut(timeoutMs) else Some(responses.dequeue())
   }
 
   private val bench = Map(
@@ -85,7 +134,16 @@ class NetworkTest extends AnyFunSuite with Matchers {
     NetworkOptions.tcpWildcard.id -> "true",
     NetworkOptions.wildcardRange.id -> "10.0.0.*",
     NetworkOptions.wildcardAddress.id -> "10.0.0.2",
-    NetworkOptions.outsideAddress.id -> "10.0.1.1"
+    NetworkOptions.outsideAddress.id -> "10.0.1.1",
+    NetworkOptions.tcpUdpBroadcast.id -> "true",
+    NetworkOptions.tcpMulticast.id -> "true",
+    NetworkOptions.multicastGroup.id -> "239.0.0.1",
+    NetworkOptions.udp.id -> "true",
+    NetworkOptions.udpOriginatingPort.id -> "true",
+    NetworkOptions.udpRespondTo20000.id -> "true",
+    NetworkOptions.udpConfigurablePort.id -> "true",
+    NetworkOptions.udpSpecificAddress.id -> "true",
+    NetworkOptions.udpWildcard.id -> "true"
   )
 
   // runs the steps, then the cleanup, as the runner does
@@ -144,9 +202,64 @@ class NetworkTest extends AnyFunSuite with Matchers {
     run(Network.tcpWildcard, new Dut(ignoresSetup = true)) should equal(false)
   }
 
-  test("without the options, each test is skipped") {
-    for (p <- List(Network.tcpPort20000, Network.tcpOtherPort, Network.tcpSpecificAddress, Network.tcpWildcard))
-      p.disabledBy(Options.from(Map())) should not equal None
+  test("9.5.1.5: a broadcast over UDP to port 20000 sets IIN1.0 in the next poll over TCP") {
+    run(Network.udpBroadcast, new Dut) should equal(true)
+    run(Network.udpBroadcast, new Dut(ignoresBroadcasts = true)) should equal(false)
+  }
+
+  test("9.5.1.6: a broadcast to the multicast group the DUT joined sets IIN1.0") {
+    val dut = new Dut
+    run(Network.udpMulticast, dut) should equal(true)
+    dut.setups.head.multicastGroup should equal(Some("239.0.0.1"))
+    run(Network.udpMulticast, new Dut(ignoresSetup = true)) should equal(false)
+  }
+
+  test("9.5.2.1: a link status over UDP, alone or with TCP where the DUT can't use UDP alone") {
+    val dut = new Dut
+    run(Network.udpPort20000, dut) should equal(true)
+    dut.setups.toList should
+      equal(List(NetworkSetup(NetworkMode.Udp, 20000, AllowedMasters.Any, UdpDestination.OriginatingPort)))
+    val both = new Dut
+    run(Network.udpPort20000, both, Map(NetworkOptions.udpAlone.id -> "false")) should equal(true)
+    both.setups.head.mode should equal(NetworkMode.Both)
+    run(Network.udpPort20000, new Dut(ignoresSetup = true)) should equal(false)
+  }
+
+  test("9.5.2.2 to 9.5.2.4: the DUT answers where its setup lets it, and only there") {
+    for (p <- List(Network.udpOtherPort, Network.udpSpecificAddress, Network.udpWildcard)) {
+      val dut = new Dut
+      run(p, dut) should equal(true)
+      dut.restored should equal(1)
+      run(p, new Dut(ignoresSetup = true)) should equal(false)
+    }
+  }
+
+  test("9.5.2.5: the harness sends from port 20000, where the DUT's responses go") {
+    val dut = new Dut
+    run(Network.udpResponsesTo20000, dut) should equal(true)
+    dut.connections.map(_.getPort).toList should equal(List(20000))
+    dut.setups.head.udpResponses should equal(UdpDestination.Fixed(20000))
+  }
+
+  test("without the options, each test is skipped; every UDP Solicited test needs responses to the originating port") {
+    val all = List(
+      Network.tcpPort20000,
+      Network.tcpOtherPort,
+      Network.tcpSpecificAddress,
+      Network.tcpWildcard,
+      Network.udpBroadcast,
+      Network.udpMulticast,
+      Network.udpPort20000,
+      Network.udpOtherPort,
+      Network.udpSpecificAddress,
+      Network.udpWildcard,
+      Network.udpResponsesTo20000
+    )
+    for (p <- all) p.disabledBy(Options.from(Map())) should not equal None
+    for (p <- all) p.disabledBy(Options.from(bench)) should equal(None)
+    val noOriginating = Options.from(bench + (NetworkOptions.udpOriginatingPort.id -> "false"))
+    Network.udpPort20000.disabledBy(noOriginating) should not equal None
+    Network.udpResponsesTo20000.disabledBy(noOriginating) should not equal None
   }
 
   private def problems(settings: Map[String, String], procedures: ProcedureDefinition*): List[String] =
@@ -167,6 +280,12 @@ class NetworkTest extends AnyFunSuite with Matchers {
       equal(List(NetworkOptions.wildcardAddress.id))
     problems(bench + (NetworkOptions.tcpOtherPort.id -> "20000"), Network.tcpOtherPort) should
       equal(List(NetworkOptions.tcpOtherPort.id))
+    problems(bench + (NetworkOptions.udpOtherPort.id -> "20000"), Network.udpOtherPort) should
+      equal(List(NetworkOptions.udpOtherPort.id))
+    problems(bench + (NetworkOptions.multicastGroup.id -> "10.0.0.9"), Network.udpMulticast) should
+      equal(List(NetworkOptions.multicastGroup.id))
+    problems(bench - NetworkOptions.wildcardRange.id, Network.udpWildcard) should
+      equal(List(NetworkOptions.wildcardRange.id))
     // tests that won't run need nothing
     problems(Map(), Network.tcpPort20000, Network.tcpWildcard) should equal(Nil)
   }

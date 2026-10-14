@@ -77,7 +77,8 @@ final case class UdpUnsolicited(address: String, nullPort: Int, data: UdpDestina
  * The network setup a test of 3.1r1's section 9 asks of a DUT, in full: anything a test doesn't care about has its usual
  * value, e.g. a TCP test's udpResponses
  *
- * @param port the port the DUT listens on, for TCP connections and UDP requests
+ * @param port the port the DUT listens on, for TCP connections and UDP requests, including the broadcasts over UDP that
+ *   it accepts while using TCP
  * @param udpResponses where the DUT sends responses to UDP requests
  * @param unsolicited where the DUT sends unsolicited responses over UDP, if it does
  * @param multicastGroup a multicast group whose UDP messages the DUT accepts, if any

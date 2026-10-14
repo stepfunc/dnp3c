@@ -75,11 +75,18 @@ object LinkOverride {
 }
 
 /**
- * A TCP connection from the harness to the DUT
- *
- * @param local the address and port to connect from: port 0 lets the system choose
+ * A way for the harness to talk to the DUT, from a local address and port: port 0 lets the system choose
  */
-final case class TcpConnection(remote: InetSocketAddress, local: InetSocketAddress)
+sealed trait Connection {
+  def remote: InetSocketAddress
+  def local: InetSocketAddress
+}
+
+/** a TCP connection to the DUT */
+final case class TcpConnection(remote: InetSocketAddress, local: InetSocketAddress) extends Connection
+
+/** datagrams to the DUT, sent from the local address and port, where the DUT's datagrams are received */
+final case class UdpConnection(remote: InetSocketAddress, local: InetSocketAddress) extends Connection
 
 /** What became of a connection the DUT shouldn't accept */
 enum ProbeResult {
@@ -120,10 +127,19 @@ trait TestDriver {
   // ---- network (3.1r1's section 9) ----
 
   // Closes the connection and connects to the DUT as given, now; what follows uses the new connection, as does a
-  // reconnection after close(). Returns the local address it's from. Throws if the DUT doesn't accept it, and
-  // LocalBindException if the harness can't use the local address.
-  def connect(connection: TcpConnection): InetSocketAddress =
+  // reconnection after close(). Returns the local address it's from. Throws if the DUT doesn't accept a TCP
+  // connection, and LocalBindException if the harness can't use the local address.
+  def connect(connection: Connection): InetSocketAddress =
     throw new UnsupportedOperationException("this driver can't make its own connections")
+
+  // Sends the message as datagrams, one per link frame, from the local address to the remote one (which may be a
+  // multicast group), alongside the driver's connection, which it leaves as it is
+  def sendDatagrams(
+      remote: InetSocketAddress,
+      local: InetSocketAddress,
+      message: Message,
+      options: LinkOverride): Unit =
+    throw new UnsupportedOperationException("this driver can't send datagrams")
 
   // Tries a connection the DUT shouldn't accept, alongside the driver's own: if the DUT accepts it, sends a REQUEST LINK
   // STATUS and waits the link timeout for an answer. Then closes it.

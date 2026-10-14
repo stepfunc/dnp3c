@@ -7,8 +7,9 @@ import io.stepfunc.dnp3c.dnp3.link.FrameValidator
 import io.stepfunc.dnp3c.dnp3.app.{ Message, Unsolicited }
 import io.stepfunc.dnp3c.dnp3.link._
 import io.stepfunc.dnp3c.dnp3.transport.{ SegmentWriter, TransportReader }
+import io.stepfunc.dnp3c.dnp3
 import io.stepfunc.dnp3c.protocol.channel.{
-  ChannelFactory, ReadableWritableChannel, SocketReadWriteChannel, TcpClientChannelFactory
+  ChannelFactory, ReadableWritableChannel, SocketReadWriteChannel, TcpClientChannelFactory, UdpChannel
 }
 import io.stepfunc.dnp3c.protocol.Clock
 import io.stepfunc.dnp3c.protocol.parsing.UInt16LE
@@ -71,13 +72,41 @@ class DefaultTestDriver(
     }
   }
 
-  override def connect(c: TcpConnection): InetSocketAddress = {
+  override def connect(c: dnp3.Connection): InetSocketAddress = {
     close()
-    val tcp = new TcpClientChannelFactory(c.remote, Some(c.local), Some(appTimeoutMs))
-    val channel = tcp.open()
-    factory = tcp
-    connection = Some(Connection(channel))
-    channel.localAddress
+    val (opened, local) = c match {
+      case tcp: TcpConnection =>
+        val f = new TcpClientChannelFactory(tcp.remote, Some(tcp.local), Some(appTimeoutMs))
+        val channel = f.open()
+        factory = f
+        (channel, channel.localAddress)
+      case udp: UdpConnection =>
+        val channel = UdpChannel.open(udp.remote, udp.local)
+        // a reconnection binds the same port again
+        val bound = channel.localAddress
+        factory = () => UdpChannel.open(udp.remote, bound)
+        (channel, bound)
+    }
+    connection = Some(Connection(opened))
+    local
+  }
+
+  override def sendDatagrams(
+      remote: InetSocketAddress,
+      local: InetSocketAddress,
+      message: Message,
+      options: LinkOverride): Unit = {
+    val channel = UdpChannel.open(remote, local)
+    try {
+      reporter.transmit(message)
+      SegmentWriter.write(message.toBytes, 0, reporter) { segment =>
+        LinkWriter.write(this.local, options.destination.getOrElse(this.remote), true, options.controlBlock, reporter)(
+          segment) { bytes =>
+          reporter.transmit(bytes)
+          channel.write(ByteBuffer.wrap(bytes.toArray))
+        }
+      }
+    } finally channel.close()
   }
 
   override def probe(c: TcpConnection): ProbeResult = {

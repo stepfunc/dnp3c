@@ -3,10 +3,12 @@
 
 package io.stepfunc.dnp3c.dnp3
 
-import java.net.{ ConnectException, InetAddress, InetSocketAddress, ServerSocket, Socket }
+import java.net.{
+  ConnectException, DatagramPacket, DatagramSocket, InetAddress, InetSocketAddress, ServerSocket, Socket
+}
 import java.util.concurrent.{ CompletableFuture, TimeUnit }
 
-import io.stepfunc.dnp3c.dnp3.link.{ Control, LinkFrame }
+import io.stepfunc.dnp3c.dnp3.link.{ Control, LinkFrame, LinkFrameParser }
 import io.stepfunc.dnp3c.protocol.channel.{ LocalBindException, TcpClientChannelFactory }
 import io.stepfunc.dnp3c.protocol.parsing.UInt16LE
 import org.junit.runner.RunWith
@@ -96,5 +98,105 @@ class NetworkDriverTest extends AnyFunSuite with Matchers {
     }
     driver().probe(TcpConnection(address, anyPort)) should equal(ProbeResult.Answered)
     waitFor(done)
+  }
+
+  // a UDP server on the loopback address that handles what it receives in the background
+  private def serveUdp[A](handle: DatagramSocket => A): (InetSocketAddress, CompletableFuture[A]) = {
+    val socket = new DatagramSocket(new InetSocketAddress(loopback, 0))
+    socket.setSoTimeout(5000)
+    val result = CompletableFuture.supplyAsync[A] { () =>
+      try handle(socket)
+      finally socket.close()
+    }
+    (new InetSocketAddress(loopback, socket.getLocalPort), result)
+  }
+
+  private def receive(socket: DatagramSocket): DatagramPacket = {
+    val packet = new DatagramPacket(new Array[Byte](65535), 65535)
+    socket.receive(packet)
+    packet
+  }
+
+  private val linkStatus = LinkFrame.headerOnly(Control(0x0B.toByte), UInt16LE(1), UInt16LE(1024)).toBytes.toArray
+
+  test("over UDP, the DUT's datagram back to the port the harness sends from is read") {
+    val (address, done) = serveUdp { s =>
+      val request = receive(s)
+      s.send(new DatagramPacket(linkStatus, linkStatus.length, request.getSocketAddress))
+      request.getPort
+    }
+    val dut = driver()
+    val local = dut.connect(UdpConnection(address, anyPort))
+    dut.writeFrame(LinkFrame.headerOnly(Control(0xC9.toByte), UInt16LE(1024), UInt16LE(1)))
+    dut.readFrame().map(_.header.ctrl.toByte) should equal(Some(0x0B.toByte))
+    waitFor(done) should equal(local.getPort)
+  }
+
+  test("over UDP, a link frame that doesn't end in its datagram fails") {
+    val (address, done) = serveUdp { s =>
+      val request = receive(s)
+      s.send(new DatagramPacket(linkStatus, 6, request.getSocketAddress))
+      s.send(new DatagramPacket(linkStatus.drop(6), linkStatus.length - 6, request.getSocketAddress))
+    }
+    val dut = driver()
+    dut.connect(UdpConnection(address, anyPort))
+    dut.writeFrame(LinkFrame.headerOnly(Control(0xC9.toByte), UInt16LE(1024), UInt16LE(1)))
+    an[Exception] should be thrownBy dut.readFrame()
+    waitFor(done)
+  }
+
+  test("over UDP, every frame of a datagram is read, and a broken one at its end fails before any is") {
+    val (address, done) = serveUdp { s =>
+      val request = receive(s)
+      val two = linkStatus ++ linkStatus
+      s.send(new DatagramPacket(two, two.length, request.getSocketAddress))
+      val broken = linkStatus :+ 0x05.toByte
+      s.send(new DatagramPacket(broken, broken.length, request.getSocketAddress))
+    }
+    val dut = driver()
+    dut.connect(UdpConnection(address, anyPort))
+    dut.writeFrame(LinkFrame.headerOnly(Control(0xC9.toByte), UInt16LE(1024), UInt16LE(1)))
+    dut.readFrame() should not be empty
+    dut.readFrame() should not be empty
+    an[Exception] should be thrownBy dut.readFrame()
+    waitFor(done)
+  }
+
+  test("over UDP, an empty datagram is ignored, and the frame after it read") {
+    val (address, done) = serveUdp { s =>
+      val request = receive(s)
+      s.send(new DatagramPacket(new Array[Byte](0), 0, request.getSocketAddress))
+      s.send(new DatagramPacket(linkStatus, linkStatus.length, request.getSocketAddress))
+    }
+    val dut = driver()
+    dut.connect(UdpConnection(address, anyPort))
+    dut.writeFrame(LinkFrame.headerOnly(Control(0xC9.toByte), UInt16LE(1024), UInt16LE(1)))
+    dut.readFrame() should not be empty
+    waitFor(done)
+  }
+
+  test("over UDP, a reconnection after a close sends from the same port") {
+    val (address, done) = serveUdp(s => (receive(s).getPort, receive(s).getPort))
+    val dut = driver()
+    val local = dut.connect(UdpConnection(address, anyPort))
+    val request = LinkFrame.headerOnly(Control(0xC9.toByte), UInt16LE(1024), UInt16LE(1))
+    dut.writeFrame(request)
+    dut.close()
+    dut.writeFrame(request)
+    waitFor(done) should equal((local.getPort, local.getPort))
+  }
+
+  test("datagrams sent alongside the connection go one frame each, to the destination given") {
+    val (address, done) = serveUdp(s => (receive(s), receive(s)))
+    // a read of 90 headers, 272 bytes, takes two frames
+    val message = Requests.readAllObjects(app.Sequence.one, List.fill(90)(app.objects.Group60Var1)*)
+    driver().sendDatagrams(address, anyPort, message, LinkOverride.destination(UInt16LE(0xFFFF)))
+    val (first, second) = waitFor(done)
+    for (p <- List(first, second)) {
+      val bytes = p.getData.take(p.getLength)
+      bytes.take(2).toList should equal(List(0x05.toByte, 0x64.toByte))
+      ((bytes(4) & 0xFF) | ((bytes(5) & 0xFF) << 8)) should equal(0xFFFF)
+      bytes.length should equal(10 + LinkFrameParser.calcTotalSize((bytes(2) & 0xFF) - 5))
+    }
   }
 }
