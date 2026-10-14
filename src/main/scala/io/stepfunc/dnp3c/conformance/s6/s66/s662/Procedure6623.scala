@@ -25,7 +25,7 @@ object Procedure6623 extends ProcedureDefinition {
     }
   }
 
-  def steps(options: OptionSource): Iterable[LabeledStep] = {
+  override def steps(options: OptionSource): Iterable[LabeledStep] = {
 
     def steps(offset: Int) = List(
       1 --> readWrongAddress(offset),

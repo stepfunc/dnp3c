@@ -74,11 +74,10 @@ object StaticVariations {
   def test(t: StaticType): ProcedureDefinition = new ProcedureDefinition {
     override protected def requiredOptions: List[OptionCondition] = t.requirement
 
-    override protected def steps(options: OptionSource): Iterable[LabeledStep] = {
+    override protected def plan(options: OptionSource): Plan = {
       val only16 = t.only16.map(o => options.get(o).map(_.value).toSet).getOrElse(Set.empty[Int])
       val only32 = t.only32.map(o => options.get(o).map(_.value).toSet).getOrElse(Set.empty[Int])
       val levelThree = options.get(OutstationOptions.subsetLevel).contains(3)
-      var skipped = false
       // the indices of the points the first answered read reports, which every read must report
       var points: Option[Set[Int]] = None
       // the point whose flag the plugin sets abnormal, and the flags it should then report, if the plugin knows them
@@ -93,6 +92,7 @@ object StaticVariations {
         def description: List[Comment] = List(s"Set every ${t.kind.name} point's flags normal")
         def run(driver: TestDriver): List[DeferredCheck] = {
           driver.reporter.plugin.setFlagsNormal(driver.reporter.pluginReporter(), t.kind)
+          abnormal = false
           Nil
         }
       }
@@ -167,32 +167,17 @@ object StaticVariations {
         }
       }
 
-      val skip = "the DUT answered the first read as a level 1 or 2 device may"
+      // once a flag is abnormal, the cleanup sets the flags back to normal
       val restore = new TestStep {
         def description: List[Comment] = normal.description
         def run(driver: TestDriver): List[DeferredCheck] = if (abnormal) normal.run(driver) else Nil
       }
-      // once a flag is abnormal, a step that fails sets the flags back to normal before the failure goes on
-      def guarded(step: TestStep): TestStep = new TestStep {
-        def description: List[Comment] = step.description
-        def run(driver: TestDriver): List[DeferredCheck] =
-          if (skipped) {
-            driver.reporter.info(s"Skipped: $skip")
-            Nil
-          } else
-            try step.run(driver)
-            catch {
-              case ex: Throwable =>
-                if (abnormal) restore.run(driver)
-                throw ex
-            }
-      }
 
       val seqs = Iterator.iterate(Sequence.zero)(_.next)
       val labeled = t.specs.flatMap {
-        case Spec.Normal(step) => List(step --> guarded(normal))
+        case Spec.Normal(step) => List(step --> normal)
         case Spec.Abnormal(step) =>
-          List(step --> guarded(new TestStep {
+          List(step --> new TestStep {
             def description: List[Comment] =
               List(s"Set one of the flags abnormal of the first ${t.kind.name} where that's allowed")
             def run(driver: TestDriver): List[DeferredCheck] = {
@@ -207,7 +192,7 @@ object StaticVariations {
               expectedFlags = set.flags
               Nil
             }
-          }))
+          })
         case read: Spec.Read =>
           val seq = seqs.next()
           val expect =
@@ -223,15 +208,14 @@ object StaticVariations {
                     scala.util.Try(nullError.validate(driver.reporter, responses.head)).isSuccess) {
                     driver.reporter.note(s"the DUT answers a read of ${read.variation} with IIN2.1 or IIN2.2, as a " +
                       "subset level 1 or 2 device may")
-                    skipped = true
-                    Nil
+                    throw new EndProcedure("the DUT answered the first read as a level 1 or 2 device may")
                   } else check(read).acrossFragments.validate(driver.reporter, responses)
                 }
               }
             else expectAtLeastOneResponse(seq, check(read).acrossFragments)
           List(
-            read.step --> guarded(send(Requests.readAllObjects(seq, read.variation))),
-            read.checks --> guarded(new TestStep {
+            read.step --> send(Requests.readAllObjects(seq, read.variation)),
+            read.checks --> new TestStep {
               def description: List[Comment] = expect.description
               def run(driver: TestDriver): List[DeferredCheck] = {
                 val noted = reported.isDefined
@@ -247,10 +231,10 @@ object StaticVariations {
                       s"with one of its flags set abnormal, ${t.kind.name} $f came back with flags 0x${"%02X".format(flags)}")
                 checks
               }
-            })
+            }
           )
       }
-      labeled :+ (Label("restore") --> restore)
+      Plan(labeled, List(Label("restore") --> restore))
     }
   }
 

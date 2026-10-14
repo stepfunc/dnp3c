@@ -14,7 +14,7 @@ object Procedure82522 extends ProcedureDefinition {
 
   override protected def requiredOptions = List(SupportOptions.Outputs.binary.commands)
 
-  def steps(options: OptionSource): Iterable[LabeledStep] = {
+  override def steps(options: OptionSource): Iterable[LabeledStep] = {
     val operations = new OperationSteps(OperationType.BinaryOutput)
     // each request gets its own sequence number, so a repeated control isn't taken for a retry
     val seq = MutableSequence.zero

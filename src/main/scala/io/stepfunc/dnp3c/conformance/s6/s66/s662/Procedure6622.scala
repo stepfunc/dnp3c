@@ -33,7 +33,7 @@ object Procedure6622 extends ProcedureDefinition {
     }
   }
 
-  def steps(options: OptionSource): Iterable[LabeledStep] = s662.Section.prologue ++
+  override def steps(options: OptionSource): Iterable[LabeledStep] = s662.Section.prologue ++
     stepsWithInvalidCode(0x05, options) ++
     List(7 --> describe("Run the checks above again with another invalid function code")) ++
     stepsWithInvalidCode(0x0A, options)

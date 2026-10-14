@@ -22,28 +22,30 @@ object Section extends TestSection {
     TestProcedure("6.6.3.4", "Invalid CRC", Procedure6634)
   )
 
-  def prologue(options: OptionSource): Iterable[LabeledStep] = {
+  def prologue(options: OptionSource, confirms: Undoable): Iterable[LabeledStep] = {
 
     val postfix = " - (6.6.3 prologue)"
 
     List(
-      (1 to 2) --> PluginSteps.setLinkLayerConfirm(true) + PluginSteps.cyclePower,
+      (1 to 2) --> confirms.apply + PluginSteps.cyclePower,
       3 --> readClass0(Sequence.zero, LinkOverride.control(0xC4.toByte)),
       4 --> (expectLinkReset(responseTimeoutMs(options)) + sendLinkConfirm),
       (5 to 6) --> expectAtLeastOneResponse(Sequence.zero, withFunction(LinkFunction.CONFIRMED_USER_DATA))
     ).map(x => x.appendLabel(postfix))
   }
 
-  // a procedure's checks, then its repeat step and the checks again with other values, each after the prologue
+  // a procedure's checks, then its repeat step and the checks again with other values, each after the prologue; the
+  // cleanup turns link layer confirms back off, so later procedures run without them
   def twice(
       options: OptionSource,
       first: Iterable[LabeledStep],
       repeat: LabeledStep,
-      second: Iterable[LabeledStep]): Iterable[LabeledStep] =
-    prologue(options) ++ first ++ List(repeat) ++ prologue(options) ++ second ++ epilogue
-
-  // turn link layer confirms back off, so later procedures run without them
-  def epilogue: Iterable[LabeledStep] =
-    List(Label("6.6.3 epilogue") --> PluginSteps.setLinkLayerConfirm(false) + PluginSteps.cyclePower)
+      second: Iterable[LabeledStep]): Plan = {
+    val confirms =
+      Undoable(PluginSteps.setLinkLayerConfirm(true), PluginSteps.setLinkLayerConfirm(false) + PluginSteps.cyclePower)
+    Plan(
+      prologue(options, confirms) ++ first ++ List(repeat) ++ prologue(options, confirms) ++ second,
+      List(Label("6.6.3 epilogue") --> confirms.restore))
+  }
 
 }

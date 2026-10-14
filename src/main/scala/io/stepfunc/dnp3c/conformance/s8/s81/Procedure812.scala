@@ -15,7 +15,7 @@ import io.stepfunc.dnp3c.dnp3.{ MessageValidation, Requests }
 // is what changed in 3.1r1
 class BinaryOutputStatusRead(withoutOutputs: MessageValidation) extends ProcedureDefinition {
 
-  def steps(options: OptionSource): List[LabeledStep] = {
+  override def steps(options: OptionSource): List[LabeledStep] = {
 
     def step1: LabeledStep = 1 --> send(Requests.readAllObjects(Sequence.zero, Group10Var0))
 

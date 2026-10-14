@@ -8,7 +8,7 @@ import io.stepfunc.dnp3c.conformance.s6._
 
 object Procedure632 extends ProcedureDefinition {
 
-  def steps(options: OptionSource): List[LabeledStep] = {
+  override def steps(options: OptionSource): List[LabeledStep] = {
     List(
       1 --> PluginSteps.cyclePower,
       2 --> sendLinkControl(0xC9.toByte),

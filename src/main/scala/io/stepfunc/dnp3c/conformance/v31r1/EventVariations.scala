@@ -52,7 +52,6 @@ object EventVariations {
       val levelThree = options.get(OutstationOptions.subsetLevel).contains(3)
       val only16 = options.get(t.only16).map(_.value).toSet
       val only32 = options.get(t.only32).map(_.value).toSet
-      var skipped = false
       var first: List[(Int, Variation, String)] = Nil
 
       def events(message: Message): List[(Int, Variation, String)] =
@@ -115,19 +114,9 @@ object EventVariations {
               driver.reporter.note(
                 s"the DUT answers a read of ${t.wide} with ${if (nullError) "IIN2.1 or IIN2.2" else "a Null Response"}" +
                   (if (has && supported) ", as a subset level 1 or 2 device may" else ", having no such events"))
-              skipped = true
-              Nil
+              throw new EndProcedure("the DUT answered the first read as the test allows, without events")
             } else (check(t.wide) && response).toResponseValidation.validate(driver.reporter, responses)
           }
-      }
-
-      def unlessSkipped(step: TestStep): TestStep = new TestStep {
-        def description: List[Comment] = step.description
-        def run(driver: TestDriver): List[DeferredCheck] =
-          if (skipped) {
-            driver.reporter.info("Skipped: the DUT answered the first read as the test allows, without events")
-            Nil
-          } else step.run(driver)
       }
 
       val recordFirst = MessageValidation.check("Record the events") { m => first = events(m) }
@@ -141,15 +130,14 @@ object EventVariations {
            else describe(s"The DUT has no ${t.name}")),
         2 --> send(Requests.readAllObjects(Sequence.one, t.wide)),
         (3 to 6) --> firstResponse,
-        7 --> unlessSkipped(t.generateSmall),
-        8 --> unlessSkipped(send(Requests.readAllObjects(Sequence.two, t.narrow))),
-        (9 to 10) --> unlessSkipped(
-          expectSingleResponse(Sequence.two, AutoConfirm.No, check(t.narrow) && response && recordFirst)),
+        7 --> t.generateSmall,
+        8 --> send(Requests.readAllObjects(Sequence.two, t.narrow)),
+        (9 to 10) --> expectSingleResponse(Sequence.two, AutoConfirm.No, check(t.narrow) && response && recordFirst),
         Label("step: 10.5") -->
-          unlessSkipped(expectNoRetransmission(options.get(OutstationOptions.appConfirmTimeout))),
-        Label("step: 10.6") --> unlessSkipped(send(Requests.readAllObjects(Sequence.three, t.narrow))),
-        Label("steps: 10.7 to 10.8") --> unlessSkipped(
-          expectSingleResponse(Sequence.three, AutoConfirm.Yes, check(t.narrow) && verifyConfirmRequested && same))
+          expectNoRetransmission(options.get(OutstationOptions.appConfirmTimeout)),
+        Label("step: 10.6") --> send(Requests.readAllObjects(Sequence.three, t.narrow)),
+        Label("steps: 10.7 to 10.8") -->
+          expectSingleResponse(Sequence.three, AutoConfirm.Yes, check(t.narrow) && verifyConfirmRequested && same)
       )
     }
   }

@@ -32,6 +32,25 @@ object AnalogValueReturn {
     override protected def requiredOptions: List[OptionCondition] =
       Inputs.analog.withEvents ++ List(OptionCondition(Inputs.analog.reads), OptionCondition(Inputs.analog.eventReads))
 
+    // the deadband, which only the device's configuration says, and a tolerance that tells the changed value from the
+    // first
+    override def configurationProblems(options: OptionSource): List[ConfigProblem] =
+      options.get(AnalogInputOptions.valueReturnDeadband) match {
+        case None =>
+          List(ConfigProblem(
+            AnalogInputOptions.valueReturnDeadband.id,
+            "",
+            "required by 3.1r1's 8.19.2.4, which changes the analog input by 150% of its deadband"))
+        case Some(d) =>
+          Option.when(2 * options.get(AnalogInputOptions.valueTolerance) >= change(d))(
+            ConfigProblem(
+              AnalogInputOptions.valueTolerance.id,
+              options.get(AnalogInputOptions.valueTolerance).toString,
+              s"too wide for 3.1r1's 8.19.2.4 to tell the value it applies, ${change(d)} (150% of the deadband) above " +
+                "the first, from the first"
+            )).toList
+      }
+
     override protected def steps(options: OptionSource): Iterable[LabeledStep] = {
       val index = options.get(AnalogInputOptions.valueReturnIndex).value
       val deadband = options.get(AnalogInputOptions.valueReturnDeadband).getOrElse(

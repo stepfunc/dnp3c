@@ -34,7 +34,7 @@ object Procedure6631 extends ProcedureDefinition {
     }
   }
 
-  override protected def steps(options: OptionSource): Iterable[LabeledStep] = {
+  override protected def plan(options: OptionSource): Plan = {
 
     val timeout = options.get(LinkOptions.timeout)
     val responseTimeout = Some(responseTimeoutMs(options))

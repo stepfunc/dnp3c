@@ -18,12 +18,13 @@ import io.stepfunc.dnp3c.dnp3.{ Comment, DeferredCheck, MessageValidation, Reque
  */
 final class DisableDoubleBit(read: Variation, answer: MessageValidation) extends ProcedureDefinition {
 
-  override protected def steps(options: OptionSource): Iterable[LabeledStep] = {
+  override protected def plan(options: OptionSource): Plan = {
     val points = options.get(Inputs.doubleBit.points)
     val disabling = options.get(Inputs.doubleBit.disabling)
+    val removal = Undoable(PluginSteps.uninstallDoubleBitBinaryInputs, PluginSteps.reinstallPoints)
     val disable: TestStep =
       if (!points) describe("The DUT has no double-bit inputs: there's nothing to disable")
-      else if (disabling) PluginSteps.uninstallDoubleBitBinaryInputs
+      else if (disabling) removal.apply
       else
         new TestStep {
           def description: List[Comment] = List(Comment("The DUT must be able to disable its double-bit inputs"))
@@ -31,11 +32,14 @@ final class DisableDoubleBit(read: Variation, answer: MessageValidation) extends
             s"The DUT has double-bit inputs it can't be configured to disable (${Inputs.doubleBit.disabling.id} is " +
               "false), which 3.1r1 counts as a failure")
         }
-    List(
-      1 --> disable,
-      2 --> send(Requests.readAllObjects(Sequence.one, read)),
-      3 --> expectSingleResponse(Sequence.one, answer)
-    ) ++ (if (points && disabling) List(Label("restore") --> PluginSteps.reinstallPoints) else Nil)
+    Plan(
+      List(
+        1 --> disable,
+        2 --> send(Requests.readAllObjects(Sequence.one, read)),
+        3 --> expectSingleResponse(Sequence.one, answer)
+      ),
+      if (points && disabling) List(Label("restore") --> removal.restore) else Nil
+    )
   }
 }
 

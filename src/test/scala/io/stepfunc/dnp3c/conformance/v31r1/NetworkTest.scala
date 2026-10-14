@@ -8,7 +8,7 @@ import java.net.{ ConnectException, InetSocketAddress }
 import scala.collection.mutable
 
 import io.stepfunc.dnp3c.conformance.Run
-import io.stepfunc.dnp3c.conformance.api.{ Options, ProcedureDefinition, TestProcedure }
+import io.stepfunc.dnp3c.conformance.api.{ Options, ProcedureDefinition }
 import io.stepfunc.dnp3c.conformance.api.options.NetworkOptions
 import io.stepfunc.dnp3c.dnp3._
 import io.stepfunc.dnp3c.dnp3.app.Message
@@ -245,10 +245,12 @@ class NetworkTest extends AnyFunSuite with Matchers {
     Network.udpResponsesTo20000.disabledBy(noOriginating) should not equal None
   }
 
-  private def problems(settings: Map[String, String], procedures: ProcedureDefinition*): List[String] =
-    Network.configurationProblems(
-      Options.from(settings),
-      procedures.map(p => TestProcedure("id", "title", p))).map(_.key)
+  // what the procedures need, of those that would run, each problem once
+  private def problems(settings: Map[String, String], procedures: ProcedureDefinition*): List[String] = {
+    val options = Options.from(settings)
+    procedures.toList.filter(_.disabledBy(options).isEmpty).flatMap(_.configurationProblems(options)).distinct
+      .map(_.key)
+  }
 
   test("a network test that runs needs an address of this host, and the wildcard test its addresses and range") {
     problems(bench, Network.tcpPort20000, Network.tcpWildcard) should equal(Nil)

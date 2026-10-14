@@ -56,5 +56,5 @@ object CommonTime {
 
   /** 8.15.3 */
   val relativeTimeSupported: ProcedureDefinition =
-    new StaticInputs.Requiring(new RelativeTimeSupported(conditionStep = false, reportsRelativeTime), eventReads)
+    new RelativeTimeSupported(conditionStep = false, reportsRelativeTime).requiring(eventReads)
 }

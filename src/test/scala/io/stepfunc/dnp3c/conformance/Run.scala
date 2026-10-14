@@ -39,11 +39,13 @@ object Run {
     passing(definition, driver, Options.from(settings))
 
   /**
-   * Runs every step whatever happens, without their deferred checks or the cleanup, for tests that look at all that a
-   * procedure sends, or count the steps that fail, rather than at its outcome; the number of steps that failed
+   * Runs every step whatever happens, then the cleanup's, without their deferred checks, for tests that look at all
+   * that a procedure sends, or count the steps that fail, rather than at its outcome; the number of steps that failed
    */
-  def everyStep(definition: ProcedureDefinition, driver: TestDriver, options: OptionSource): Int =
-    definition.configure(options).steps.count(s => Try(s.step.run(driver)).isFailure)
+  def everyStep(definition: ProcedureDefinition, driver: TestDriver, options: OptionSource): Int = {
+    val config = definition.configure(options)
+    (config.steps ++ config.cleanup).count(s => Try(s.step.run(driver)).isFailure)
+  }
 
   def everyStep(definition: ProcedureDefinition, driver: TestDriver, settings: Map[String, String] = Map()): Int =
     everyStep(definition, driver, Options.from(settings))

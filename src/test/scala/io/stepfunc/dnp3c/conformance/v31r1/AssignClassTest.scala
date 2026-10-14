@@ -112,4 +112,20 @@ class AssignClassTest extends AnyFunSuite with Matchers {
     notes.exists(_.contains("IIN2.0")) should equal(true)
     run(new Dut(notImplemented = true), level = 3)._1 should equal(false)
   }
+
+  test("8.26.2 needs a class 1 binary input and two class 2 ones, and 8.26.3 two in each class") {
+    val classes = Map(
+      ClassOptions.supportClass1.id -> "true",
+      ClassOptions.supportClass2.id -> "true",
+      ClassOptions.supportClass3.id -> "true")
+    def problems(test: io.stepfunc.dnp3c.conformance.api.ProcedureDefinition, points: (String, String)*) =
+      test.configurationProblems(Options.from(classes ++ points)).map(_.key)
+    val class1 = ClassOptions.class1BinaryInputs.id
+    val class2 = ClassOptions.class2BinaryInputs.id
+    val class3 = ClassOptions.class3BinaryInputs.id
+    problems(AssignClass.assignClass, class1 -> "0", class2 -> "1, 2") should equal(Nil)
+    problems(AssignClass.assignClass, class1 -> "0", class2 -> "1") should equal(List(class2))
+    problems(AssignClass.noClass, class1 -> "0, 1", class2 -> "2, 3", class3 -> "4, 5") should equal(Nil)
+    problems(AssignClass.noClass, class1 -> "0", class2 -> "2, 3", class3 -> "4, 5") should equal(List(class1))
+  }
 }

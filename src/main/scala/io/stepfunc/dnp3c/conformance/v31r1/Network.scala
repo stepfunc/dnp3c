@@ -34,21 +34,16 @@ object Network {
 
   private val port = 20000
 
-  /**
-   * What the selected network tests that will run need configured: an address of this host to connect from, and those
-   * of the test that uses them
-   */
-  def configurationProblems(options: OptionSource, selected: Iterable[TestProcedure]): List[ConfigProblem] = {
-    val running = selected.map(_.definition).filter(_.disabledBy(options).isEmpty).toSet
+  // what a network test needs configured: an address of this host to connect from, and those the test uses
+  private def problems(options: OptionSource, test: Test): List[ConfigProblem] = {
     def address(option: StringOption, why: String): Option[ConfigProblem] = {
       val value = options.get(option)
       Option.when(!isAddress(value))(ConfigProblem(option.id, value, s"needs an IP address of this host, $why"))
     }
-    val any = running.exists(_.isInstanceOf[Test])
-    val wildcard = running.contains(tcpWildcard) || running.contains(udpWildcard)
+    val wildcard = test == tcpWildcard || test == udpWildcard
     val group = options.get(NetworkOptions.multicastGroup)
     List(
-      Option.when(any)(address(NetworkOptions.masterAddress, "which 3.1r1's network tests connect from")).flatten,
+      address(NetworkOptions.masterAddress, "which 3.1r1's network tests connect from"),
       Option.when(wildcard)(address(NetworkOptions.wildcardAddress, "in network.wildcardRange")).flatten,
       Option.when(wildcard)(address(NetworkOptions.outsideAddress, "outside network.wildcardRange")).flatten,
       Option.when(wildcard && distinct(options).nonEmpty)(
@@ -60,15 +55,15 @@ object Network {
         )),
       Option.when(wildcard && options.get(NetworkOptions.wildcardRange).isEmpty)(
         ConfigProblem(NetworkOptions.wildcardRange.id, "", "required by 3.1r1's Wildcard IP Address tests")),
-      Option.when(running.contains(tcpOtherPort) && options.get(NetworkOptions.tcpOtherPort) == port)(
+      Option.when(test == tcpOtherPort && options.get(NetworkOptions.tcpOtherPort) == port)(
         ConfigProblem(NetworkOptions.tcpOtherPort.id, port.toString, "must be a port other than 20000")),
       Option.when(
-        (running.contains(udpOtherPort) || running.contains(unsolicitedDataFixedPort)) &&
+        (test == udpOtherPort || test == unsolicitedDataFixedPort) &&
           options.get(NetworkOptions.udpOtherPort) == port)(
         ConfigProblem(NetworkOptions.udpOtherPort.id, port.toString, "must be a port other than 20000")),
-      Option.when(running.contains(unsolicitedNullOtherPort) && options.get(NetworkOptions.udpUnsolicitedPort) == port)(
+      Option.when(test == unsolicitedNullOtherPort && options.get(NetworkOptions.udpUnsolicitedPort) == port)(
         ConfigProblem(NetworkOptions.udpUnsolicitedPort.id, port.toString, "must be a port other than 20000")),
-      Option.when(running.contains(udpMulticast) && !isMulticast(group))(
+      Option.when(test == udpMulticast && !isMulticast(group))(
         ConfigProblem(NetworkOptions.multicastGroup.id, group, "needs a multicast group's IP address, e.g. 239.0.0.1"))
     ).flatten
   }
@@ -98,6 +93,7 @@ object Network {
   abstract class Test extends ProcedureDefinition {
     override protected def cleanup(options: OptionSource): Iterable[LabeledStep] =
       List(Label("cleanup") --> restore)
+    override def configurationProblems(options: OptionSource): List[ConfigProblem] = problems(options, this)
   }
 
   private def dut(options: OptionSource, port: Int = port): InetSocketAddress =

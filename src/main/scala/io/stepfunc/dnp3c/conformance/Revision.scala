@@ -27,7 +27,8 @@ import io.stepfunc.dnp3c.dnp3.MessagePolicy
  * @param date its publication date, as yyyy-mm-dd
  * @param subsetLevels the DNP3 subset levels it tests, and that its elements apply to unless they say otherwise
  * @param policies rules every message a procedure receives must follow, unless a step exempts one
- * @param configurationProblems what the revision needs configured beyond the options' own checks
+ * @param configurationProblems what the revision needs configured beyond the options' own checks, whatever procedures
+ *   a run selects; each procedure adds its own
  */
 final class Revision private[conformance] (
     val id: String,
@@ -36,7 +37,7 @@ final class Revision private[conformance] (
     val subsetLevels: List[Int],
     val sections: List[TestSection],
     val policies: List[MessagePolicy] = Nil,
-    configurationProblems: (OptionSource, Iterable[TestProcedure]) => List[ConfigProblem] = (_, _) => Nil) {
+    configurationProblems: OptionSource => List[ConfigProblem] = _ => Nil) {
 
   /** every procedure, for running or describing everything with "all" */
   val all: TestSection = new TestSection {
@@ -90,7 +91,10 @@ final class Revision private[conformance] (
    */
   def validate(options: OptionSource, selected: Iterable[TestProcedure] = flatMapProcedures(Some(_))): Int = {
     val level = subsetLevel(options)
-    val problems = configurationProblems(options, selected) ++ unmetMandatory(options, level).map { (p, unmet) =>
+    // what the procedures that will run need, each problem once
+    val procedures = selected.filter(p => !p.incomplete && p.disabledBy(options).isEmpty)
+    val problems = (configurationProblems(options) ++ procedures.flatMap(_.definition.configurationProblems(options)))
+      .distinct ++ unmetMandatory(options, level).map { (p, unmet) =>
       // the options involved, with what the configuration gives them; a requirement may involve none
       val values = unmet.values.map((o, v) => s"${o.id} == $v").mkString(", ")
       ConfigProblem(
@@ -159,11 +163,7 @@ object Revisions {
     List(1, 2, 3),
     v31r1.Tree.sections,
     v31r1.Rules.all,
-    (options, selected) =>
-      v31r1.EventRules.configurationProblems(options, selected) ++
-        v31r1.Network.configurationProblems(options, selected) ++
-        v31r1.MultiDrop.configurationProblems(options, selected) ++
-        v31r1.CollisionAvoidance.configurationProblems(options, selected)
+    v31r1.EventRules.configurationProblems
   )
 
   /** every revision, oldest first */

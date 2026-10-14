@@ -31,7 +31,7 @@ object CounterAnalogEvents {
   }
 
   val counterLevelOne = new StaticInputs.LevelOneWithoutReads(Inputs.counter, List(Group22Var0), events = true)
-  val counterWithout = new StaticInputs.Requiring(s8.s817.Procedure81721, counterEventReads)
+  val counterWithout = s8.s817.Procedure81721.requiring(counterEventReads)
   val counterAll: ProcedureDefinition = counterTest(_ => CounterEventSteps.AllQualifierSteps(unconfirmed = true))
   val counterOneByteCount: ProcedureDefinition = counterTest(options =>
     CounterEventSteps.CountQualifierSteps(
@@ -43,9 +43,9 @@ object CounterAnalogEvents {
       options.get(CounterOptions.numCounterEventsGenerated),
       twoBytesQualifier = true,
       confirmSteps = true))
-  val counterWithoutConfirm = new StaticInputs.Requiring(s8.s817.Procedure81725, counterEventReads)
+  val counterWithoutConfirm = s8.s817.Procedure81725.requiring(counterEventReads)
 
   val analogLevelOne = new StaticInputs.LevelOneWithoutReads(Inputs.analog, List(Group32Var0), events = true)
-  val analogChange = new StaticInputs.Requiring(new AnalogInputChange(confirmStep = true), analogEventReads)
-  val analogWithoutConfirm = new StaticInputs.Requiring(s8.s819.Procedure81922, analogEventReads)
+  val analogChange = new AnalogInputChange(confirmStep = true).requiring(analogEventReads)
+  val analogWithoutConfirm = s8.s819.Procedure81922.requiring(analogEventReads)
 }

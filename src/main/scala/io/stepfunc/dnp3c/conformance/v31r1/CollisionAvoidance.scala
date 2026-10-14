@@ -28,33 +28,31 @@ object CollisionAvoidance {
 
   private val reserved = UInt16LE(0xFFF0)
 
-  /** What 8.12.2 needs configured where it runs: delays to test, and other ones to change them to */
-  def configurationProblems(options: OptionSource, selected: Iterable[TestProcedure]): List[ConfigProblem] =
-    if (!selected.exists(p => p.definition == collisionAvoidance && p.disabledBy(options).isEmpty)) Nil
-    else {
-      val first = delays(options)
-      val second = otherDelays(options)
-      // steps 8 and 9 need a gap shorter than the fixed delay, and step 10 changes both delays
-      List(
-        Option.when(first.fixedMs == 0)(
-          ConfigProblem(
-            SerialOptions.fixedDelayMs.id,
-            "0",
-            "3.1r1's 8.12.2 needs the DUT's fixed delay, above 0, to make a gap shorter than it")),
-        Option.when(second.fixedMs == 0 || second.fixedMs == first.fixedMs)(
-          ConfigProblem(
-            SerialOptions.otherFixedDelayMs.id,
-            second.fixedMs.toString,
-            s"3.1r1's 8.12.2 needs another fixed delay to set the DUT to, above 0, other than ${first.fixedMs}"
-          )),
-        Option.when(second.maxRandomMs == first.maxRandomMs)(
-          ConfigProblem(
-            SerialOptions.otherMaxRandomDelayMs.id,
-            second.maxRandomMs.toString,
-            s"3.1r1's 8.12.2 needs another maximum random delay to set the DUT to, other than ${first.maxRandomMs}"
-          ))
-      ).flatten
-    }
+  // what 8.12.2 needs configured: delays to test, and other ones to change them to
+  private def problems(options: OptionSource): List[ConfigProblem] = {
+    val first = delays(options)
+    val second = otherDelays(options)
+    // steps 8 and 9 need a gap shorter than the fixed delay, and step 10 changes both delays
+    List(
+      Option.when(first.fixedMs == 0)(
+        ConfigProblem(
+          SerialOptions.fixedDelayMs.id,
+          "0",
+          "3.1r1's 8.12.2 needs the DUT's fixed delay, above 0, to make a gap shorter than it")),
+      Option.when(second.fixedMs == 0 || second.fixedMs == first.fixedMs)(
+        ConfigProblem(
+          SerialOptions.otherFixedDelayMs.id,
+          second.fixedMs.toString,
+          s"3.1r1's 8.12.2 needs another fixed delay to set the DUT to, above 0, other than ${first.fixedMs}"
+        )),
+      Option.when(second.maxRandomMs == first.maxRandomMs)(
+        ConfigProblem(
+          SerialOptions.otherMaxRandomDelayMs.id,
+          second.maxRandomMs.toString,
+          s"3.1r1's 8.12.2 needs another maximum random delay to set the DUT to, other than ${first.maxRandomMs}"
+        ))
+    ).flatten
+  }
 
   private def delays(options: OptionSource) =
     CollisionDelays(options.get(SerialOptions.fixedDelayMs), options.get(SerialOptions.maxRandomDelayMs))
@@ -280,6 +278,8 @@ object CollisionAvoidance {
   val collisionAvoidance: ProcedureDefinition = new ProcedureDefinition {
     override protected def requiredOptions: List[OptionCondition] =
       List(SerialOptions.enabled, SerialOptions.collisionAvoidance)
+
+    override def configurationProblems(options: OptionSource): List[ConfigProblem] = problems(options)
 
     override protected def steps(options: OptionSource): Iterable[LabeledStep] = {
       val settings = SerialOptions(options)

@@ -14,7 +14,7 @@ import io.stepfunc.dnp3c.protocol.Hex
 
 object Procedure6625 extends ProcedureDefinition {
 
-  def steps(options: OptionSource): Iterable[LabeledStep] = {
+  override def steps(options: OptionSource): Iterable[LabeledStep] = {
 
     val integrity = Requests.readClass0(Sequence.zero)
     val expectedTimeoutOrNotSupported =

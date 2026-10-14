@@ -6,7 +6,7 @@ package io.stepfunc.dnp3c.conformance.v31r1
 import scala.collection.mutable
 
 import io.stepfunc.dnp3c.conformance.Run
-import io.stepfunc.dnp3c.conformance.api.{ Options, TestProcedure }
+import io.stepfunc.dnp3c.conformance.api.Options
 import io.stepfunc.dnp3c.conformance.api.options.SerialOptions
 import io.stepfunc.dnp3c.dnp3._
 import io.stepfunc.dnp3c.dnp3.app.{ Message, Unsolicited }
@@ -106,9 +106,8 @@ class MultiDropTest extends AnyFunSuite with Matchers {
   test("8.10.2 needs serial, a multi-drop DUT, two other devices and readable delays") {
     MultiDrop.multiDrop.disabledBy(Options.from(bench - SerialOptions.enabled.id)) should not equal None
     MultiDrop.multiDrop.disabledBy(Options.from(bench - SerialOptions.multiDrop.id)) should not equal None
-    def problems(settings: Map[String, String]) = MultiDrop
-      .configurationProblems(Options.from(bench ++ settings), List(TestProcedure("8.10.2", "t", MultiDrop.multiDrop)))
-      .map(_.key)
+    def problems(settings: Map[String, String]) =
+      MultiDrop.multiDrop.configurationProblems(Options.from(bench ++ settings)).map(_.key)
     problems(Map()) should equal(Nil)
     problems(Map(SerialOptions.otherDevices.id -> "5")) should equal(List(SerialOptions.otherDevices.id))
     problems(Map(SerialOptions.otherDevices.id -> "5, 1024")) should equal(List(SerialOptions.otherDevices.id))

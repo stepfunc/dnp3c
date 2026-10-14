@@ -116,23 +116,15 @@ object StaticInputs {
     override protected def requiredOptions: List[OptionCondition] = input.withDisabling :+ OptionCondition(input.reads)
   }
 
-  /** a 2.7 definition that 3.1r1 runs only where `extra` also holds, e.g. only for a device whose points can be read */
-  final class Requiring(inner: ProcedureDefinition, extra: OptionCondition*) extends ProcedureDefinition {
-    override def incomplete: Boolean = inner.incomplete
-    override def disabledBy(options: OptionSource): Option[Unmet] =
-      Requirement.all(extra*).unmet(options).orElse(inner.disabledBy(options))
-    override protected def steps(options: OptionSource): Iterable[LabeledStep] = inner.configure(options).steps
-  }
-
   val binaryLevelOne = new LevelOneWithoutReads(Inputs.binary, List(Group1Var0))
   val binaryWithout = new WithoutInputs(Inputs.binary, Group1Var0)
-  val binaryHas = new Requiring(s8.s813.Procedure81322, OptionCondition(Inputs.binary.reads))
+  val binaryHas = s8.s813.Procedure81322.requiring(OptionCondition(Inputs.binary.reads))
   val binaryConfigurable =
     new Configurable(Inputs.binary, "binary inputs", PluginSteps.uninstallBinaryInputs, Group1Var0, Sequence.one)
 
   val doubleBitLevelOne = new LevelOneWithoutReads(Inputs.doubleBit, List(Group3Var0))
   val doubleBitWithout = new WithoutInputs(Inputs.doubleBit, Group3Var0)
-  val doubleBitHas = new Requiring(s8.s821.Procedure82121, OptionCondition(Inputs.doubleBit.reads))
+  val doubleBitHas = s8.s821.Procedure82121.requiring(OptionCondition(Inputs.doubleBit.reads))
   val doubleBitConfigurable = new Configurable(
     Inputs.doubleBit,
     "double-bit inputs",
@@ -142,7 +134,7 @@ object StaticInputs {
 
   val counterLevelOne = new LevelOneWithoutReads(Inputs.counter, List(Group20Var0, Group20Var1), condition = true)
   val counterWithout = new WithoutPoints(Inputs.counter, Group20Var0)
-  val counterHas = new Requiring(s8.s816.Procedure816122, OptionCondition(Inputs.counter.reads))
+  val counterHas = s8.s816.Procedure816122.requiring(OptionCondition(Inputs.counter.reads))
   val counterConfigurable =
     new Configurable(Inputs.counter, "counters", PluginSteps.uninstallCounterInputs, Group20Var0, Sequence.one)
 
@@ -151,5 +143,5 @@ object StaticInputs {
 
   val analogLevelOne = new LevelOneWithoutReads(Inputs.analog, List(Group30Var0))
   val analogWithout = new WithoutPoints(Inputs.analog, Group30Var0)
-  val analogHas = new Requiring(s8.s818.Procedure81822, OptionCondition(Inputs.analog.reads))
+  val analogHas = s8.s818.Procedure81822.requiring(OptionCondition(Inputs.analog.reads))
 }

@@ -18,11 +18,16 @@ abstract class ConfigurableInputProcedure(
     seq: Sequence,
     withoutPoints: MessageValidation = Validations.isNullOrErrorResponse(IIN.OBJECT_UNKNOWN))
     extends ProcedureDefinition {
-  override protected def steps(options: OptionSource): Iterable[LabeledStep] = List(
-    1 --> describe(s"The DUT's $points can be uninstalled or disabled through its configuration"),
-    2 --> uninstall,
-    3 --> send(Requests.readAllObjects(seq, variation)),
-    4 --> expectSingleResponse(seq, withoutPoints),
-    Label("restore") --> PluginSteps.reinstallPoints
-  )
+  override protected def plan(options: OptionSource): Plan = {
+    val removal = Undoable(uninstall, PluginSteps.reinstallPoints)
+    Plan(
+      List(
+        1 --> describe(s"The DUT's $points can be uninstalled or disabled through its configuration"),
+        2 --> removal.apply,
+        3 --> send(Requests.readAllObjects(seq, variation)),
+        4 --> expectSingleResponse(seq, withoutPoints)
+      ),
+      List(Label("restore") --> removal.restore)
+    )
+  }
 }

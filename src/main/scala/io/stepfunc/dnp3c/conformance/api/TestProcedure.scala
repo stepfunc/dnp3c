@@ -5,6 +5,8 @@ package io.stepfunc.dnp3c.conformance.api
 
 import io.stepfunc.dnp3c.dnp3.Comment
 
+import scala.util.control.ControlThrowable
+
 sealed trait TestElement {
 
   def id: String
@@ -84,7 +86,10 @@ object Requirement {
   val none: Requirement = all()
 
   /** every one of them; the first that isn't met is the reason */
-  def all(requirements: Requirement*): Requirement = All(requirements.toList)
+  def all(requirements: Requirement*): Requirement = All(requirements.toList.flatMap {
+    case All(nested) => nested
+    case r => List(r)
+  })
 
   /** at least one of them, of which there must be some */
   def anyOf(requirements: Requirement*): Requirement = {
@@ -123,15 +128,26 @@ object Requirement {
 }
 
 /**
+ * A procedure's steps, and the cleanup that restores the DUT once it ends, however it ends: the runner runs the cleanup
+ * after the steps and their deferred checks, or after a failure. A definition whose cleanup depends on what its steps
+ * did builds both together, sharing that state; see [[ProcedureDefinition.plan]].
+ */
+final case class Plan(steps: Iterable[LabeledStep], cleanup: Iterable[LabeledStep] = Nil)
+
+/**
+ * Thrown by a step once the DUT has answered as the procedure allows it to end early, e.g. as a subset level 1 or 2
+ * device may: the runner runs no more steps, then the deferred checks so far, then the cleanup. It isn't a failure, and
+ * `Try` doesn't catch it. Throw it from a step of its own, not from one combined with others, whose checks it would
+ * lose.
+ */
+final class EndProcedure(val reason: String) extends ControlThrowable(reason)
+
+/**
  * What a procedure does: its steps, and the options it needs to run. It has no number or title: those depend on where
  * a revision's tree places it, see [[TestProcedure]]. A definition placed in several trees is shared by them.
  */
 trait ProcedureDefinition {
 
-  /**
-   * @param cleanup steps that restore the DUT once the procedure ends, however it ends: the runner runs them after the
-   *   steps and their deferred checks, or after a failure
-   */
   case class Configuration(
       disabledBy: Option[Unmet],
       steps: Iterable[LabeledStep],
@@ -145,26 +161,41 @@ trait ProcedureDefinition {
   // what the procedure needs to run; override it for anything other than all of requiredOptions
   protected def requirement: Requirement = Requirement.all(requiredOptions*)
 
-  protected def steps(options: OptionSource): Iterable[LabeledStep]
+  // the steps: a definition overrides this, or plan
+  protected def steps(options: OptionSource): Iterable[LabeledStep] =
+    throw new IllegalStateException("a procedure definition overrides steps or plan")
 
-  // steps that restore the DUT once the procedure ends, even if it fails: see Configuration.cleanup
+  // steps that restore the DUT once the procedure ends, even if it fails, and don't depend on what the steps did
   protected def cleanup(options: OptionSource): Iterable[LabeledStep] = Nil
+
+  // the steps and the cleanup, built once for each run; override it where the cleanup depends on what the steps did
+  protected def plan(options: OptionSource): Plan = Plan(steps(options), cleanup(options))
+
+  /**
+   * Problems with the configuration that stop the procedure from running, when it's enabled: e.g. a value it needs that
+   * isn't set. A run checks them for the procedures it selects, before it starts.
+   */
+  def configurationProblems(options: OptionSource): List[ConfigProblem] = Nil
 
   // why the procedure won't run, if it won't; doesn't build the steps
   def disabledBy(options: OptionSource): Option[Unmet] = requirement.unmet(options)
 
-  def configure(options: OptionSource): Configuration = {
-
-    val disabledOption = disabledBy(options)
-
-    disabledOption match {
-      case Some(x) =>
-        Configuration(disabledOption, TestProcedure.disabledBy(x))
-      case None =>
-        Configuration(disabledOption, TestProcedure.enabledBy(requirement) ++ steps(options), cleanup(options))
-    }
+  def configure(options: OptionSource): Configuration = disabledBy(options) match {
+    case Some(x) => Configuration(Some(x), TestProcedure.disabledBy(x))
+    case None =>
+      val p = plan(options)
+      Configuration(None, TestProcedure.enabledBy(requirement) ++ p.steps, p.cleanup)
   }
 
+  /** the definition, run only where `extra` also holds, e.g. only for a device whose points can be read */
+  def requiring(extra: OptionCondition*): ProcedureDefinition = new ProcedureDefinition {
+    override def incomplete: Boolean = ProcedureDefinition.this.incomplete
+    override protected def requirement: Requirement =
+      Requirement.all((extra.map(c => c: Requirement) :+ ProcedureDefinition.this.requirement)*)
+    override protected def plan(options: OptionSource): Plan = ProcedureDefinition.this.plan(options)
+    override def configurationProblems(options: OptionSource): List[ConfigProblem] =
+      ProcedureDefinition.this.configurationProblems(options)
+  }
 }
 
 /**

@@ -39,34 +39,32 @@ object MultiDrop {
   // the addresses of ordinary devices, as the link addresses allow: not broadcast, self or reserved ones
   private val maxAddress = 0xFFEF
 
-  /** What 8.10.2 needs configured where it runs: two or more other devices, and RTS delays that can be read */
-  def configurationProblems(options: OptionSource, selected: Iterable[TestProcedure]): List[ConfigProblem] =
-    if (!selected.exists(p => p.definition == multiDrop && p.disabledBy(options).isEmpty)) Nil
-    else {
-      val others = options.get(SerialOptions.otherDevices).map(_.value)
-      val own = Set(options.get(LinkOptions.destination), options.get(LinkOptions.source))
-      List(
-        Option.when(others.distinct.size < 2)(
-          ConfigProblem(
-            SerialOptions.otherDevices.id,
-            others.mkString(", "),
-            "3.1r1's 8.10.2 needs the addresses of at least two other devices on the drop")),
-        Option.when(others.exists(_ > maxAddress))(
-          ConfigProblem(
-            SerialOptions.otherDevices.id,
-            others.mkString(", "),
-            s"must be ordinary devices' addresses, at most $maxAddress: not broadcast, self or reserved ones"
-          )),
-        Option.when(others.exists(own.contains))(
-          ConfigProblem(
-            SerialOptions.otherDevices.id,
-            others.mkString(", "),
-            s"mustn't hold the DUT's address (${LinkOptions.destination.id}) or the master's (${LinkOptions.source.id})"
-          )),
-        rtsDelays(options).left.toOption.map(why =>
-          ConfigProblem(SerialOptions.rtsDelays.id, options.get(SerialOptions.rtsDelays), why))
-      ).flatten
-    }
+  // what 8.10.2 needs configured: two or more other devices, and RTS delays that can be read
+  private def problems(options: OptionSource): List[ConfigProblem] = {
+    val others = options.get(SerialOptions.otherDevices).map(_.value)
+    val own = Set(options.get(LinkOptions.destination), options.get(LinkOptions.source))
+    List(
+      Option.when(others.distinct.size < 2)(
+        ConfigProblem(
+          SerialOptions.otherDevices.id,
+          others.mkString(", "),
+          "3.1r1's 8.10.2 needs the addresses of at least two other devices on the drop")),
+      Option.when(others.exists(_ > maxAddress))(
+        ConfigProblem(
+          SerialOptions.otherDevices.id,
+          others.mkString(", "),
+          s"must be ordinary devices' addresses, at most $maxAddress: not broadcast, self or reserved ones"
+        )),
+      Option.when(others.exists(own.contains))(
+        ConfigProblem(
+          SerialOptions.otherDevices.id,
+          others.mkString(", "),
+          s"mustn't hold the DUT's address (${LinkOptions.destination.id}) or the master's (${LinkOptions.source.id})"
+        )),
+      rtsDelays(options).left.toOption.map(why =>
+        ConfigProblem(SerialOptions.rtsDelays.id, options.get(SerialOptions.rtsDelays), why))
+    ).flatten
+  }
 
   private def read(seq: Sequence): Message = Requests.readAllObjects(seq, Group60Var2, Group60Var3, Group60Var4)
 
@@ -133,6 +131,8 @@ object MultiDrop {
 
   val multiDrop: ProcedureDefinition = new ProcedureDefinition {
     override protected def requiredOptions: List[OptionCondition] = List(SerialOptions.enabled, SerialOptions.multiDrop)
+
+    override def configurationProblems(options: OptionSource): List[ConfigProblem] = problems(options)
 
     override protected def steps(options: OptionSource): Iterable[LabeledStep] = {
       val others = options.get(SerialOptions.otherDevices).map(_.value)

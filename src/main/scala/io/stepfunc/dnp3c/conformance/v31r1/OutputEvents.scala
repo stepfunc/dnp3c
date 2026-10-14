@@ -127,23 +127,6 @@ object OutputEvents {
       check(point)
     } && verifyConfirmRequested
 
-  // the steps, each of which restores what the test changed before a failure goes on
-  private def restoring(restore: TestStep, steps: List[LabeledStep]): List[LabeledStep] = steps.map { s =>
-    LabeledStep(
-      s.label,
-      new TestStep {
-        def description: List[Comment] = s.step.description
-        def run(driver: TestDriver): List[DeferredCheck] =
-          try s.step.run(driver)
-          catch {
-            case ex: Throwable =>
-              scala.util.Try(restore.run(driver))
-              throw ex
-          }
-      }
-    )
-  }
-
   private def flagsOf(p: MeasurementPoint): Int = p.flags.map(_ & 0xFF).getOrElse(throw new Exception("No flags"))
 
   /** 10.3.3 */
@@ -151,7 +134,7 @@ object OutputEvents {
     override protected def requiredOptions: List[OptionCondition] =
       List(Outputs.binary.statusPoints, Outputs.binary.events)
 
-    override protected def steps(options: OptionSource): Iterable[LabeledStep] = {
+    override protected def plan(options: OptionSource): Plan = {
       val seq = sequences
       val drain = new Drain(seq, Group10)
       val flags = options.get(ControlOptions.statusFlags).map(_.value)
@@ -219,13 +202,13 @@ object OutputEvents {
         }
       }
 
-      List((1 to 2) --> drain, 3 --> record) ++
-        restoring(
-          restore.step,
+      Plan(
+        List((1 to 2) --> drain, 3 --> record) ++
           (if (flags.isEmpty) List((4 to 11) --> describe("The plugin can't change any binary output status flag"))
            else flags.flatMap(flagSteps) :+ (11 --> describe("Each flag the plugin can change has been changed"))) ++
-            stateSteps
-        ) :+ restore
+          stateSteps,
+        List(restore)
+      )
     }
   }
 
@@ -234,7 +217,7 @@ object OutputEvents {
     override protected def requiredOptions: List[OptionCondition] =
       List(Outputs.analog.statusPoints, Outputs.analog.events)
 
-    override protected def steps(options: OptionSource): Iterable[LabeledStep] = {
+    override protected def plan(options: OptionSource): Plan = {
       val seq = sequences
       val drain = new Drain(seq, Group40)
       val flags = options.get(AnalogOutputOptions.statusFlags).map(_.value)
@@ -358,13 +341,13 @@ object OutputEvents {
         }
       }
 
-      List((1 to 3) --> drain, 4 --> record) ++
-        restoring(
-          restore.step,
+      Plan(
+        List((1 to 3) --> drain, 4 --> record) ++
           (if (flags.isEmpty) List((5 to 13) --> describe("The plugin can't change any analog output status flag"))
            else flags.flatMap(flagSteps) :+ (13 --> describe("Each flag the plugin can change has been changed"))) ++
-            valueSteps
-        ) :+ restore
+          valueSteps,
+        List(restore)
+      )
     }
   }
 
