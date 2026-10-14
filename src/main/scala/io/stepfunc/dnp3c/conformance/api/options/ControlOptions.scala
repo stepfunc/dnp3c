@@ -15,6 +15,18 @@ object ControlOptions extends OptionGroup {
   val alternate = Options(this, "alternate", Index.one)
   val installedPoints: IndexListOption =
     OptionTypes.indexList(this, "installedPoints", "List of all installed BO indices")
+  val statusFlags: IndexListOption = OptionTypes.indexList(
+    this,
+    "status.changeableFlags",
+    "The binary output status flags, by bit number (0 ONLINE to 4 LOCAL_FORCED), that the plugin can change, which " +
+      "3.1r1's 10.3.3 changes one at a time. Empty for none",
+    Nil
+  )
+  val statusStateEvents: BooleanOption = OptionTypes.boolean(
+    this,
+    "status.stateChangeEvents",
+    false,
+    "Does the DUT generate binary output status events on a change of state (3.1r1's 10.3.3)?")
   val uninstalledIndex: IndexOption =
     OptionTypes.index(this, "uninstalled.index", Index.max, "Index not assigned to any control point")
   val maxControlPointsInSingleRequest: IntegerOption = OptionTypes.integer(
@@ -68,6 +80,7 @@ object ControlOptions extends OptionGroup {
   def prefix: String = "control"
   def description: String = "Options related to controls (g12v1)"
   def options: List[TestOption] = uninstalledIndex :: maxControlPointsInSingleRequest :: installedPoints ::
+    statusFlags :: statusStateEvents ::
     primary.options ::: alternate.options :::
     latchOnOffPoint.options ::: pulseOnOffPoint.options ::: latchAndPulsePoint.options :::
     singleFunctionPulseOnPoint.options ::: singleFunctionLatchOnPoint.options :::

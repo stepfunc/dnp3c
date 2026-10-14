@@ -134,6 +134,27 @@ class DefaultIntegrationPlugin extends IntegrationPlugin {
       s"Generate exactly $numEvents analog input events, with values whose magnitudes are below 32768")
   }
 
+  override def changeOutputFlag(reporter: PluginReporter, kind: PointKind, index: Int, flag: Int): Unit = {
+    ManualSteps.UserAction(reporter, s"Change flag bit $flag of ${kind.name} $index")
+  }
+
+  override def changeBinaryOutputState(reporter: PluginReporter, index: Int): Unit = {
+    ManualSteps.UserAction(reporter, s"Change the state of binary output $index, by other means than a command")
+  }
+
+  override def setAnalogOutputValue(reporter: PluginReporter, index: Int, value: Double): Unit = {
+    ManualSteps.UserAction(reporter, s"Set analog output $index to $value, by other means than a command")
+  }
+
+  override def verifyCommandEventTime(reporter: CheckReporter, sentMs: Long, eventMs: Long): Option[DeferredCheck] =
+    ManualSteps.verification(
+      reporter,
+      "Verify that the command event's time is reasonable",
+      List(
+        s"Command sent at ${java.time.Instant.ofEpochMilli(sentMs)}",
+        s"Event time ${java.time.Instant.ofEpochMilli(eventMs)}")
+    )
+
   override def generateEventOn(reporter: PluginReporter, kind: PointKind, index: Int): Unit = {
     ManualSteps.UserAction(reporter, s"Change ${kind.name} $index as would generate an event for it")
   }
