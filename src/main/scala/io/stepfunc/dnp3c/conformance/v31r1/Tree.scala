@@ -67,7 +67,7 @@ object Tree {
           test("6.6.2-1", "Invalid Start Octets", s6.s66.s662.Procedure6621),
           test("6.6.2-2", "Invalid Primary Function Code", s6.s66.s662.Procedure6622),
           test("6.6.2-3", "Invalid Destination Address", s6.s66.s662.Procedure6623),
-          notYet("6.6.2-4", "No Inter-frame Gap"),
+          test("6.6.2-4", "No Inter-frame Gap", NoInterFrameGap.noInterFrameGap),
           test("6.6.2-5", "Invalid CRC", s6.s66.s662.Procedure6624),
           test("6.6.2-6", "Invalid FCV", s6.s66.s662.Procedure6625)
         ),
