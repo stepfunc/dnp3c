@@ -3,7 +3,9 @@
 
 package io.stepfunc.dnp3c.conformance.api.options
 
-import io.stepfunc.dnp3c.conformance.api.{ BooleanOption, IntegerOption, OptionGroup, OptionTypes, TestOption }
+import io.stepfunc.dnp3c.conformance.api.{
+  BooleanOption, IndexListOption, IntegerOption, OptionGroup, OptionTypes, TestOption
+}
 
 object ClassOptions extends OptionGroup {
 
@@ -38,9 +40,22 @@ object ClassOptions extends OptionGroup {
     Some(255)
   )
 
+  private def startup(n: Int): IndexListOption = OptionTypes.indexList(
+    this,
+    s"assign.class${n}BinaryInputs",
+    s"Binary inputs in class $n at startup, whose class 3.1r1's 8.26 assigns. Empty for none",
+    Nil
+  )
+  val class1BinaryInputs: IndexListOption = startup(1)
+  val class2BinaryInputs: IndexListOption = startup(2)
+  val class3BinaryInputs: IndexListOption = startup(3)
+
   override def prefix: String = "class"
   override def description: String = "Class options"
   override def options: List[TestOption] = List(
+    class1BinaryInputs,
+    class2BinaryInputs,
+    class3BinaryInputs,
     supportClass1,
     numClass1EventsGenerated,
     supportClass2,

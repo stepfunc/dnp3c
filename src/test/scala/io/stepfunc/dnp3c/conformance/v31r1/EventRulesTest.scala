@@ -86,7 +86,9 @@ class EventRulesTest extends AnyFunSuite with Matchers {
       BinaryInputOptions.defaultEventVariation.id -> "1",
       io.stepfunc.dnp3c.conformance.api.options.DoubleBitInputOptions.defaultEventVariation.id -> "1",
       TimeSyncOptions.timeToUnsynchronizedMs.id -> "0",
-      io.stepfunc.dnp3c.conformance.api.options.AnalogInputOptions.valueReturnDeadband.id -> "10"
+      io.stepfunc.dnp3c.conformance.api.options.AnalogInputOptions.valueReturnDeadband.id -> "10",
+      io.stepfunc.dnp3c.conformance.api.options.ClassOptions.class1BinaryInputs.id -> "0",
+      io.stepfunc.dnp3c.conformance.api.options.ClassOptions.class2BinaryInputs.id -> "1, 2"
     )
     Revisions.v3_1r1.validate(Options.from(set)) should equal(2)
   }
@@ -111,7 +113,10 @@ class EventRulesTest extends AnyFunSuite with Matchers {
     an[ConfigurationException] should be thrownBy Revisions.v3_1r1.validate(Options.from(base), test)
     Revisions.v3_1r1.validate(
       Options.from(base + (TimeSyncOptions.timeToUnsynchronizedMs.id -> "0") +
-        (io.stepfunc.dnp3c.conformance.api.options.AnalogInputOptions.valueReturnDeadband.id -> "10")),
+        (
+          io.stepfunc.dnp3c.conformance.api.options.AnalogInputOptions.valueReturnDeadband.id -> "10",
+          io.stepfunc.dnp3c.conformance.api.options.ClassOptions.class1BinaryInputs.id -> "0",
+          io.stepfunc.dnp3c.conformance.api.options.ClassOptions.class2BinaryInputs.id -> "1, 2")),
       test
     ) should
       equal(2)
@@ -128,7 +133,9 @@ class EventRulesTest extends AnyFunSuite with Matchers {
       BinaryInputOptions.defaultEventVariation.id -> "1",
       io.stepfunc.dnp3c.conformance.api.options.DoubleBitInputOptions.defaultEventVariation.id -> "1",
       TimeSyncOptions.timeToUnsynchronizedMs.id -> "0",
-      io.stepfunc.dnp3c.conformance.api.options.AnalogInputOptions.valueReturnDeadband.id -> "10"
+      io.stepfunc.dnp3c.conformance.api.options.AnalogInputOptions.valueReturnDeadband.id -> "10",
+      io.stepfunc.dnp3c.conformance.api.options.ClassOptions.class1BinaryInputs.id -> "0",
+      io.stepfunc.dnp3c.conformance.api.options.ClassOptions.class2BinaryInputs.id -> "1, 2"
     ))
     Revisions.v3_1r1.validate(withoutReads("1")) should equal(1)
     an[ConfigurationException] should be thrownBy Revisions.v3_1r1.validate(withoutReads("2"))
@@ -143,7 +150,9 @@ class EventRulesTest extends AnyFunSuite with Matchers {
         BinaryInputOptions.defaultEventVariation.id -> "1",
         io.stepfunc.dnp3c.conformance.api.options.DoubleBitInputOptions.defaultEventVariation.id -> "1",
         TimeSyncOptions.timeToUnsynchronizedMs.id -> "0",
-        io.stepfunc.dnp3c.conformance.api.options.AnalogInputOptions.valueReturnDeadband.id -> "10"
+        io.stepfunc.dnp3c.conformance.api.options.AnalogInputOptions.valueReturnDeadband.id -> "10",
+        io.stepfunc.dnp3c.conformance.api.options.ClassOptions.class1BinaryInputs.id -> "0",
+        io.stepfunc.dnp3c.conformance.api.options.ClassOptions.class2BinaryInputs.id -> "1, 2"
       ))
       Revisions.v3_1r1.validate(withoutReads("1")) should equal(1)
       an[ConfigurationException] should be thrownBy Revisions.v3_1r1.validate(withoutReads("3"))
@@ -158,7 +167,9 @@ class EventRulesTest extends AnyFunSuite with Matchers {
       BinaryInputOptions.defaultEventVariation.id -> "1",
       io.stepfunc.dnp3c.conformance.api.options.DoubleBitInputOptions.defaultEventVariation.id -> "1",
       TimeSyncOptions.timeToUnsynchronizedMs.id -> "0",
-      io.stepfunc.dnp3c.conformance.api.options.AnalogInputOptions.valueReturnDeadband.id -> "10"
+      io.stepfunc.dnp3c.conformance.api.options.AnalogInputOptions.valueReturnDeadband.id -> "10",
+      io.stepfunc.dnp3c.conformance.api.options.ClassOptions.class1BinaryInputs.id -> "0",
+      io.stepfunc.dnp3c.conformance.api.options.ClassOptions.class2BinaryInputs.id -> "1, 2"
     ))
     Revisions.v3_1r1.validate(withoutEvents("2")) should equal(2)
     an[ConfigurationException] should be thrownBy Revisions.v3_1r1.validate(withoutEvents("3"))
@@ -171,7 +182,9 @@ class EventRulesTest extends AnyFunSuite with Matchers {
       OutstationOptions.subsetLevel.id -> "2",
       BinaryInputOptions.defaultEventVariation.id -> "1",
       io.stepfunc.dnp3c.conformance.api.options.DoubleBitInputOptions.defaultEventVariation.id -> "1",
-      TimeSyncOptions.timeToUnsynchronizedMs.id -> "0"
+      TimeSyncOptions.timeToUnsynchronizedMs.id -> "0",
+      io.stepfunc.dnp3c.conformance.api.options.ClassOptions.class1BinaryInputs.id -> "0",
+      io.stepfunc.dnp3c.conformance.api.options.ClassOptions.class2BinaryInputs.id -> "1, 2"
     )
     def valid(settings: (String, String)*) =
       scala.util.Try(Revisions.v3_1r1.validate(Options.from(base ++ settings))).isSuccess

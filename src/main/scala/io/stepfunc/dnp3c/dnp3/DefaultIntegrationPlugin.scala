@@ -134,6 +134,10 @@ class DefaultIntegrationPlugin extends IntegrationPlugin {
       s"Generate exactly $numEvents analog input events, with values whose magnitudes are below 32768")
   }
 
+  override def generateEventOn(reporter: PluginReporter, kind: PointKind, index: Int): Unit = {
+    ManualSteps.UserAction(reporter, s"Change ${kind.name} $index as would generate an event for it")
+  }
+
   override def setFlagsNormal(reporter: PluginReporter, kind: PointKind): Unit = {
     ManualSteps.UserAction(reporter, s"Set every ${kind.name} point's flags normal: ONLINE set, all others clear")
   }

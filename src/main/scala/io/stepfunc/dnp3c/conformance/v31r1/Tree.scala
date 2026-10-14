@@ -612,8 +612,8 @@ object Tree {
         )
       ),
       section("8.26", "Assign Class")(
-        notYet("8.26.2", "Test Procedures"),
-        notYet("8.26.3", "No-Class Assignment Test Procedures", levels = Some(Set(3)))
+        test("8.26.2", "Test Procedures", AssignClass.assignClass),
+        test("8.26.3", "No-Class Assignment Test Procedures", AssignClass.noClass, levels = Some(Set(3)))
       )
     ),
     section("9", "Network")(
