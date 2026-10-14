@@ -9,6 +9,7 @@ import io.stepfunc.dnp3c.dnp3.link._
 import io.stepfunc.dnp3c.protocol.{ Clock, Hex }
 import io.stepfunc.dnp3c.protocol.parsing.UInt16LE
 
+import java.net.InetSocketAddress
 import scala.annotation.tailrec
 
 sealed trait AutoConfirm {
@@ -73,6 +74,27 @@ object LinkOverride {
   def destination(value: UInt16LE): LinkOverride = default.withDestination(value)
 }
 
+/**
+ * A TCP connection from the harness to the DUT
+ *
+ * @param local the address and port to connect from: port 0 lets the system choose
+ */
+final case class TcpConnection(remote: InetSocketAddress, local: InetSocketAddress)
+
+/** What became of a connection the DUT shouldn't accept */
+enum ProbeResult {
+  // the DUT refused it
+  case Refused
+  // it wasn't accepted within the response timeout
+  case TimedOut
+  // the DUT accepted it, then closed or reset it without answering a REQUEST LINK STATUS
+  case Closed
+  // the DUT accepted it and kept it open, without answering a REQUEST LINK STATUS
+  case Silent
+  // the DUT accepted it and answered a REQUEST LINK STATUS
+  case Answered
+}
+
 trait TestDriver {
 
   // configuration
@@ -94,6 +116,19 @@ trait TestDriver {
 
   // the time and waits of the run: every timed read and wait goes through it, so tests can use virtual time
   def clock: Clock
+
+  // ---- network (3.1r1's section 9) ----
+
+  // Closes the connection and connects to the DUT as given, now; what follows uses the new connection, as does a
+  // reconnection after close(). Returns the local address it's from. Throws if the DUT doesn't accept it, and
+  // LocalBindException if the harness can't use the local address.
+  def connect(connection: TcpConnection): InetSocketAddress =
+    throw new UnsupportedOperationException("this driver can't make its own connections")
+
+  // Tries a connection the DUT shouldn't accept, alongside the driver's own: if the DUT accepts it, sends a REQUEST LINK
+  // STATUS and waits the link timeout for an answer. Then closes it.
+  def probe(connection: TcpConnection): ProbeResult =
+    throw new UnsupportedOperationException("this driver can't make its own connections")
 
   // ---- link layer ----
 

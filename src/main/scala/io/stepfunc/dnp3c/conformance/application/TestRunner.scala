@@ -14,6 +14,7 @@ import io.stepfunc.dnp3c.conformance.api.options.{
 }
 import io.stepfunc.dnp3c.conformance.application.report.ReportLogger
 import io.stepfunc.dnp3c.dnp3.{ DefaultTestDriver, IntegrationPlugin, Policies, ProcedureReporter, TestDriver }
+import io.stepfunc.dnp3c.protocol.channel.LocalBindException
 import io.stepfunc.dnp3c.protocol.logging.Logger
 import io.stepfunc.dnp3c.protocol.parsing.UInt16LE
 
@@ -35,7 +36,7 @@ private[application] object ProcedureEnvironment {
 
     def openCapture(options: OptionSource, path: Path): Option[Closeable] = {
       val channel = ChannelOptions(options)
-      channel.captureNIC.map(nic => PacketCapture.create(nic, channel.port).open(path.toString))
+      channel.captureNIC.map(nic => PacketCapture.create(nic, channel.host).open(path.toString))
     }
 
     def openDriver(reporter: ProcedureReporter, options: OptionSource, policies: Policies): TestDriver =
@@ -264,10 +265,12 @@ object TestRunner {
     // checks returned by completed steps, to run once every step has
     val pending = mutable.ListBuffer[Pending]()
     var started = 0
+    var cleanup: Iterable[LabeledStep] = Nil
 
-    try {
+    val outcome = try {
 
       val config = procedure.configure(options)
+      cleanup = config.cleanup
 
       var heading: Option[String] = None
       for ((x, ordinal) <- config.steps.iterator.zipWithIndex) {
@@ -294,6 +297,10 @@ object TestRunner {
       }
 
     } catch {
+      case ex: LocalBindException =>
+        // the test bench can't do what the procedure needs, which says nothing of the DUT
+        cleanUpDevice(cleanup, driver)
+        throw ex
       case NonFatal(ex) =>
         driver.reporter.error(ErrorText.of(ex))
         // the checks after the one that failed, or all of them if a step failed
@@ -306,8 +313,35 @@ object TestRunner {
         } else {
           ProcedureOutcome.Skipped(s"incomplete procedure: ${ErrorText.of(ex)}")
         }
+      case ex: Throwable =>
+        // an interruption, or a fatal error: restore the DUT if it can be, then let it propagate
+        try cleanUpDevice(cleanup, driver)
+        catch { case other: Throwable => if (other ne ex) ex.addSuppressed(other) }
+        throw ex
     }
 
+    // a DUT that can't be restored fails a procedure it otherwise passed
+    cleanUpDevice(cleanup, driver) match {
+      case Some(ex) if outcome == ProcedureOutcome.Passed =>
+        driver.reporter.error("Failed procedure: " + procedure.id)
+        ProcedureOutcome.Failed(s"restoring the DUT failed: ${ErrorText.of(ex)}")
+      case _ => outcome
+    }
   }
+
+  // runs the procedure's cleanup steps, each with its checks, however the procedure ended; the first failure is returned
+  // once all have run
+  private def cleanUpDevice(steps: Iterable[LabeledStep], driver: TestDriver): Option[Throwable] =
+    steps.foldLeft(Option.empty[Throwable]) { (first, x) =>
+      driver.reporter.note(x.label, x.step.description.map(_.toString))
+      try {
+        x.step.run(driver).foreach(_.check())
+        first
+      } catch {
+        case NonFatal(ex) =>
+          driver.reporter.error(s"Cleanup failed: ${ErrorText.of(ex)}")
+          first.orElse(Some(ex))
+      }
+    }
 
 }

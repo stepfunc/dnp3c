@@ -4,6 +4,7 @@
 package io.stepfunc.dnp3c.conformance.application
 
 import java.io.Closeable
+import java.net.InetSocketAddress
 import java.nio.file.{ Files, Path }
 
 import io.stepfunc.dnp3c.conformance.{ Revision, Revisions }
@@ -12,6 +13,7 @@ import io.stepfunc.dnp3c.conformance.api.ProcedureOutcome.{ Failed, Passed, Skip
 import io.stepfunc.dnp3c.conformance.api.options.{ OutstationOptions, SupportOptions, TestOptions }
 import io.stepfunc.dnp3c.dnp3._
 import io.stepfunc.dnp3c.dnp3.app.Message
+import io.stepfunc.dnp3c.protocol.channel.LocalBindException
 import org.junit.runner.RunWith
 import org.scalatestplus.junit.JUnitRunner
 import org.scalatest.matchers.should.Matchers
@@ -103,6 +105,37 @@ class TestRunnerTest extends AnyFunSuite with Matchers {
       }
     )
 
+  // a procedure with a step and a cleanup step, which returns a check; the step can throw LocalBindException instead
+  private def restoring(name: String, fail: Failures, bindFails: Boolean = false): TestProcedure =
+    TestProcedure(
+      name,
+      name,
+      new ProcedureDefinition {
+        protected def steps(options: OptionSource): Iterable[LabeledStep] = List(LabeledStep(
+          "step",
+          new TestStep {
+            def description: List[Comment] = Nil
+            def run(driver: TestDriver): List[DeferredCheck] = {
+              fail(s"step $name")
+              if (bindFails)
+                throw new LocalBindException(new InetSocketAddress("192.0.2.1", 20000), new Exception("not here"))
+              Nil
+            }
+          }
+        ))
+        override protected def cleanup(options: OptionSource): Iterable[LabeledStep] = List(LabeledStep(
+          "cleanup",
+          new TestStep {
+            def description: List[Comment] = Nil
+            def run(driver: TestDriver): List[DeferredCheck] = {
+              fail(s"cleanup $name")
+              List(DeferredCheck("restored", Nil, () => fail(s"check cleanup $name")))
+            }
+          }
+        ))
+      }
+    )
+
   private def section(elements: TestProcedure*): TestSection = section(None, elements*)
 
   private def section(levels: Option[Set[Int]], elements: TestProcedure*): TestSection = {
@@ -170,6 +203,45 @@ class TestRunnerTest extends AnyFunSuite with Matchers {
     run(procedure("a", run.fail)) should
       equal(RunSummary(List(ProcedureResult("a", Failed("java.lang.Exception"))), Nil))
     run.result("a") should equal(Some(TestResult.Fail))
+  }
+
+  test("a procedure's cleanup runs after its steps, with its checks, and after a step that fails") {
+    val run = new Run()
+    run(restoring("a", run.fail)) should equal(RunSummary(List(ProcedureResult("a", Passed)), Nil))
+    run.events.list should equal(List(
+      "capture open",
+      "driver open",
+      "start",
+      "step a",
+      "cleanup a",
+      "check cleanup a",
+      "end",
+      "driver close",
+      "capture close"))
+
+    val failing = new Run("step a")
+    failing(restoring("a", failing.fail)) should
+      equal(RunSummary(List(ProcedureResult("a", Failed("step a failed"))), Nil))
+    failing.events.list should contain inOrder ("step a", "cleanup a", "check cleanup a")
+  }
+
+  test("a cleanup that fails fails a procedure that otherwise passed") {
+    val run = new Run("check cleanup a")
+    run(restoring("a", run.fail)).results.map(_.outcome) should
+      equal(List(Failed("restoring the DUT failed: check cleanup a failed")))
+  }
+
+  test("a local address the harness can't use aborts the run, once the DUT is restored") {
+    val run = new Run()
+    val ex = the[HarnessExecutionException] thrownBy run(restoring("a", run.fail, bindFails = true))
+    ex.procedureId should equal("a")
+    run.events.list should contain allOf ("cleanup a", "check cleanup a", "driver close")
+  }
+
+  test("an interrupted procedure restores the DUT before the interruption propagates") {
+    val run = new Run("interrupt step a")
+    an[InterruptedException] should be thrownBy run(restoring("a", run.fail))
+    run.events.list should contain inOrder ("step a", "cleanup a", "check cleanup a", "driver close")
   }
 
   test("skips a procedure that's disabled by an option") {

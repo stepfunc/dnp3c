@@ -57,7 +57,7 @@ The plugin runs in the same JVM as dnp3c. It can control a device elsewhere, e.g
 ### When things fail
 
 - **A procedure fails** when one of its steps or validations does, including a plugin method called during a step that throws. Its outcome is `Failed(message)`, and the run stops there.
-- **The harness or the plugin fails around a procedure**, e.g. `startProcedure` or `endProcedure` throws, the capture can't be opened, or the log can't be written. `run` throws a `HarnessExecutionException` naming the procedure, with the results so far in `partial`. The procedure gets no result file.
+- **The harness or the plugin fails around a procedure**, e.g. `startProcedure` or `endProcedure` throws, the capture can't be opened, the log can't be written, or a network test can't use a local address it's configured with (`network.master.*`). `run` throws a `HarnessExecutionException` naming the procedure, with the results so far in `partial`. The procedure gets no result file.
 - **An interruption** propagates as it is, after the procedure's cleanup.
 - **Writing the report** can fail on its own; `writeReport` throws.
 
@@ -107,6 +107,8 @@ Verifications return `Option[DeferredCheck]`, and `generateUnsolicitedEvents` re
 To fail a step, throw an exception with a message saying what went wrong. The procedure fails, and the message goes into its log. The same goes for actions the device can't perform; but if the device doesn't support a feature, turn it off with its `supports.*` option instead, so the procedures that need it are skipped.
 
 A few actions are used only by 3.1r1's tests, e.g. `setColdRestartSupport` (8.8.2). They have a default that throws `UnsupportedOperationException`, so a plugin written before them keeps compiling; override one if the device runs a test that uses it. `DefaultIntegrationPlugin` prompts for them like any other.
+
+3.1r1's network tests (section 9) set up the device's network with `configureNetwork`, which gives the whole setup: TCP or UDP, the port to listen on, the masters to accept. Each test ends with `restoreNetwork`, which puts back the setup the device had before, even when the test fails.
 
 Every method gets a `PluginReporter` (verifications get a `CheckReporter`, which extends it). Anything you pass to its `log` method appears in the procedure's log, e.g. what the plugin did, or the values it compared.
 

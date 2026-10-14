@@ -28,6 +28,7 @@ object OptionGroups {
     AnalogInputOptions,
     UnsolicitedOptions,
     AttributeOptions,
+    NetworkOptions,
     SupportOptions
   )
 }

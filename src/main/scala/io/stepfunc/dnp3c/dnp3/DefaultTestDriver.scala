@@ -7,15 +7,20 @@ import io.stepfunc.dnp3c.dnp3.link.FrameValidator
 import io.stepfunc.dnp3c.dnp3.app.{ Message, Unsolicited }
 import io.stepfunc.dnp3c.dnp3.link._
 import io.stepfunc.dnp3c.dnp3.transport.{ SegmentWriter, TransportReader }
-import io.stepfunc.dnp3c.protocol.channel.{ ChannelFactory, ReadableWritableChannel }
+import io.stepfunc.dnp3c.protocol.channel.{
+  ChannelFactory, ReadableWritableChannel, SocketReadWriteChannel, TcpClientChannelFactory
+}
 import io.stepfunc.dnp3c.protocol.Clock
 import io.stepfunc.dnp3c.protocol.parsing.UInt16LE
 
+import java.io.IOException
+import java.net.{ ConnectException, InetSocketAddress, SocketTimeoutException }
 import java.nio.ByteBuffer
+import java.nio.channels.SocketChannel
 
 class DefaultTestDriver(
     val reporter: ProcedureReporter,
-    factory: ChannelFactory,
+    private var factory: ChannelFactory,
     localAddr: UInt16LE,
     remoteAddr: UInt16LE,
     defaultLinkTimeoutMs: Int,
@@ -31,8 +36,9 @@ class DefaultTestDriver(
 
   private object Connection {
 
-    def apply(factory: ChannelFactory): Connection = {
-      val channel = factory.open()
+    def apply(factory: ChannelFactory): Connection = apply(factory.open())
+
+    def apply(channel: ReadableWritableChannel): Connection = {
       val parser = new LinkFrameParser(channel, clock)
       val frameReader = new ValidatingLinkFrameReader(reporter, parser, local, remote, clock)(writeFrame)
       val fragmentReader = new TransportReader(frameReader, reporter, clock)
@@ -63,6 +69,44 @@ class DefaultTestDriver(
       conn.channel.close()
       this.connection = None
     }
+  }
+
+  override def connect(c: TcpConnection): InetSocketAddress = {
+    close()
+    val tcp = new TcpClientChannelFactory(c.remote, Some(c.local), Some(appTimeoutMs))
+    val channel = tcp.open()
+    factory = tcp
+    connection = Some(Connection(channel))
+    channel.localAddress
+  }
+
+  override def probe(c: TcpConnection): ProbeResult = {
+    val socket = SocketChannel.open()
+    try {
+      TcpClientChannelFactory.bind(socket, c.local)
+      val accepted =
+        try {
+          TcpClientChannelFactory.connect(socket, c.remote, Some(c.local), appTimeoutMs)
+          None
+        } catch {
+          case _: ConnectException => Some(ProbeResult.Refused)
+          case _: SocketTimeoutException => Some(ProbeResult.TimedOut)
+        }
+      accepted.getOrElse {
+        val channel = new SocketReadWriteChannel(socket)
+        val request = LinkFrame.headerOnly(Control(0xC9.toByte), remote, local)
+        try {
+          reporter.transmit(request)
+          channel.write(ByteBuffer.wrap(request.toBytes.toArray))
+          new LinkFrameParser(channel, clock).read(reporter)(defaultLinkTimeoutMs) match {
+            case Some(_) => ProbeResult.Answered
+            case None => ProbeResult.Silent
+          }
+        } catch {
+          case _: IOException => ProbeResult.Closed
+        }
+      }
+    } finally socket.close()
   }
 
   def local: UInt16LE = localAddr
