@@ -367,15 +367,16 @@ object Tree {
       ),
       section("8.17", "Binary Counters, Event")(
         section("8.17.2", "Test Procedure")(
-          notYet(
+          test(
             "8.17.2-1",
             "Subset Level 1 device that does not support a Read for Binary Counter Events",
+            CounterAnalogEvents.counterLevelOne,
             levels = Some(Set(1))),
-          test("8.17.2-2", "Device does not support Binary Counter Events", s8.s817.Procedure81721),
-          notYet("8.17.2-3", "Binary Counters, Event, 0x06"),
-          notYet("8.17.2-4", "Binary Counters, Event, 0x07"),
-          notYet("8.17.2-5", "Binary Counters, Event, 0x08"),
-          notYet("8.17.2-6", "Binary Counters, Event Without Confirm")
+          test("8.17.2-2", "Device does not support Binary Counter Events", CounterAnalogEvents.counterWithout),
+          test("8.17.2-3", "Binary Counters, Event, 0x06", CounterAnalogEvents.counterAll),
+          test("8.17.2-4", "Binary Counters, Event, 0x07", CounterAnalogEvents.counterOneByteCount),
+          test("8.17.2-5", "Binary Counters, Event, 0x08", CounterAnalogEvents.counterTwoByteCount),
+          test("8.17.2-6", "Binary Counters, Event Without Confirm", CounterAnalogEvents.counterWithoutConfirm)
         )
       ),
       section("8.18", "Analog Input")(
@@ -391,12 +392,13 @@ object Tree {
       ),
       section("8.19", "Analog Change Event")(
         section("8.19.2", "Test Procedure")(
-          notYet(
+          test(
             "8.19.2-1",
             "Subset Level 1 Device that does not support a Read for Analog Input Events",
+            CounterAnalogEvents.analogLevelOne,
             levels = Some(Set(1))),
-          notYet("8.19.2-2", "Analog Input Change"),
-          test("8.19.2-3", "Analog Input Change, Without Confirm", s8.s819.Procedure81922),
+          test("8.19.2-2", "Analog Input Change", CounterAnalogEvents.analogChange),
+          test("8.19.2-3", "Analog Input Change, Without Confirm", CounterAnalogEvents.analogWithoutConfirm),
           notYet("8.19.2.4", "Analog Input Change, Value Return")
         )
       ),

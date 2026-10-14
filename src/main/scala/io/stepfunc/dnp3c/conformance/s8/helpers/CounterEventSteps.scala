@@ -10,7 +10,13 @@ import io.stepfunc.dnp3c.dnp3.app.objects.{ Group22Var0, Group22Var1, Group22Var
 import io.stepfunc.dnp3c.dnp3._
 
 object CounterEventSteps {
-  def AllQualifierSteps: List[LabeledStep] = {
+
+  /**
+   * @param unconfirmed whether the response to the first read of the generated events is left unconfirmed (step 10),
+   *   as in 3.1r1, so that the next read reports them again with the new ones; 2.7 confirms it
+   */
+  def AllQualifierSteps(unconfirmed: Boolean = false): List[LabeledStep] = {
+    val n = if (unconfirmed) 1 else 0
     List(
       1 --> send(Requests.readAllObjects(Sequence.one, Group22Var0)),
       (2 to 3) --> expectEventsEmptied(Sequence.one),
@@ -18,16 +24,17 @@ object CounterEventSteps {
       5 --> expectNullResponse(Sequence.two),
       6 --> PluginSteps.generateCounterInputData(),
       7 --> send(Requests.readAllObjects(Sequence.three, Group22Var0)),
-      (8 to 12) --> expectSingleResponse(
+      (8 to 12 + n) --> expectSingleResponse(
         Sequence.three,
-        AutoConfirm.Yes,
+        if (unconfirmed) AutoConfirm.No else AutoConfirm.Yes,
         verifyGroup22AndQualifiers && Validations.verifyConfirmRequested && Validations.verifyFlagsComplyWithFlagNote &&
           verifyProperEvents
       ),
-      13 --> PluginSteps.recordCurrentCounterValues(),
-      14 --> PluginSteps.generateCounterInputData(),
-      15 --> send(Requests.readAllObjects(Sequence.four, Group22Var0)),
-      16 --> describe("Each counter's value is the value recorded at step 13 plus the increments made at step 14") +
+      13 + n --> PluginSteps.recordCurrentCounterValues(),
+      14 + n --> PluginSteps.generateCounterInputData(),
+      15 + n --> send(Requests.readAllObjects(Sequence.four, Group22Var0)),
+      16 + n --> describe(
+        s"Each counter's value is the value recorded at step ${13 + n} plus the increments made at step ${14 + n}") +
         expectSingleResponse(
           Sequence.four,
           AutoConfirm.Yes,
@@ -38,25 +45,34 @@ object CounterEventSteps {
     )
   }
 
-  def CountQualifierSteps(numEvents: Int, twoBytesQualifier: Boolean): List[LabeledStep] = {
+  /**
+   * @param confirmSteps whether the confirmation of each response is a step of its own, as in 3.1r1 (steps 8 and 15);
+   *   2.7 numbers neither, though the master confirms both
+   */
+  def CountQualifierSteps(
+      numEvents: Int,
+      twoBytesQualifier: Boolean,
+      confirmSteps: Boolean = false): List[LabeledStep] = {
+    val a = if (confirmSteps) 1 else 0
+    val b = 2 * a
     List(
       1 --> send(Requests.readAllObjects(Sequence.one, Group22Var0)),
       (2 to 3) --> expectEventsEmptied(Sequence.one),
       4 --> PluginSteps.generateExactCounterChangeEvents(numEvents),
       5 --> send(Requests.readCount(Sequence.two, Group22Var0, 1, twoBytesQualifier)),
-      (6 to 10) --> expectSingleResponse(
+      (6 to 10 + a) --> expectSingleResponse(
         Sequence.two,
         AutoConfirm.Yes,
         Validations.eventResponse(verifyFirstEvent, verifyGroup22AndQualifiers)
       ),
-      11 --> send(Requests.readCount(Sequence.three, Group22Var0, numEvents - 1, twoBytesQualifier)),
-      (12 to 13) --> expectSingleResponse(
+      11 + a --> send(Requests.readCount(Sequence.three, Group22Var0, numEvents - 1, twoBytesQualifier)),
+      (12 + a to 13 + b) --> expectSingleResponse(
         Sequence.three,
         AutoConfirm.Yes,
         Validations.eventResponse(verifyRestEvents, verifyGroup22AndQualifiers)
       ),
-      14 --> send(Requests.readAllObjects(Sequence.four, Group22Var0)),
-      15 --> expectNullResponse(Sequence.four)
+      14 + b --> send(Requests.readAllObjects(Sequence.four, Group22Var0)),
+      15 + b --> expectNullResponse(Sequence.four)
     )
   }
 

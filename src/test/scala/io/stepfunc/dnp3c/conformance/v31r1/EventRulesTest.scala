@@ -127,4 +127,19 @@ class EventRulesTest extends AnyFunSuite with Matchers {
     Revisions.v3_1r1.validate(withoutReads("1")) should equal(1)
     an[ConfigurationException] should be thrownBy Revisions.v3_1r1.validate(withoutReads("2"))
   }
+
+  test("only a subset level 1 device may lack reads of counter, frozen counter or analog input events") {
+    import io.stepfunc.dnp3c.conformance.api.options.SupportOptions.Inputs
+    for (input <- List(Inputs.counter, Inputs.frozenCounter, Inputs.analog)) {
+      def withoutReads(level: String) = Options.from(Map(
+        OutstationOptions.subsetLevel.id -> level,
+        input.eventReads.id -> "false",
+        BinaryInputOptions.defaultEventVariation.id -> "1",
+        io.stepfunc.dnp3c.conformance.api.options.DoubleBitInputOptions.defaultEventVariation.id -> "1",
+        TimeSyncOptions.timeToUnsynchronizedMs.id -> "0"
+      ))
+      Revisions.v3_1r1.validate(withoutReads("1")) should equal(1)
+      an[ConfigurationException] should be thrownBy Revisions.v3_1r1.validate(withoutReads("3"))
+    }
+  }
 }

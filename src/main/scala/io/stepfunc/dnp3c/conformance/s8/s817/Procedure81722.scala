@@ -12,6 +12,6 @@ object Procedure81722 extends ProcedureDefinition {
   override def requiredOptions: List[OptionCondition] = Inputs.counter.withEvents
 
   override protected def steps(options: OptionSource): Iterable[LabeledStep] = {
-    CounterEventSteps.AllQualifierSteps
+    CounterEventSteps.AllQualifierSteps()
   }
 }
