@@ -27,6 +27,7 @@ import io.stepfunc.dnp3c.dnp3.MessagePolicy
  * @param date its publication date, as yyyy-mm-dd
  * @param subsetLevels the DNP3 subset levels it tests, and that its elements apply to unless they say otherwise
  * @param policies rules every message a procedure receives must follow, unless a step exempts one
+ * @param configurationProblems what the revision needs configured beyond the options' own checks
  */
 final class Revision private[conformance] (
     val id: String,
@@ -34,7 +35,8 @@ final class Revision private[conformance] (
     val date: String,
     val subsetLevels: List[Int],
     val sections: List[TestSection],
-    val policies: List[MessagePolicy] = Nil) {
+    val policies: List[MessagePolicy] = Nil,
+    configurationProblems: (OptionSource, Iterable[TestProcedure]) => List[ConfigProblem] = (_, _) => Nil) {
 
   /** every procedure, for running or describing everything with "all" */
   val all: TestSection = new TestSection {
@@ -78,15 +80,17 @@ final class Revision private[conformance] (
   }
 
   /**
-   * Check that the configuration is one this revision can test: it gives a subset level the revision tests, and the
-   * device meets the requirement of every procedure that's mandatory at that level.
+   * Check that the configuration is one this revision can test: it gives a subset level the revision tests, the device
+   * meets the requirement of every procedure that's mandatory at that level, and it has what the procedures selected
+   * need configured.
    *
+   * @param selected the procedures a run will run; all of them unless given
    * @return the subset level
    * @throws ConfigurationException listing every problem
    */
-  def validate(options: OptionSource): Int = {
+  def validate(options: OptionSource, selected: Iterable[TestProcedure] = flatMapProcedures(Some(_))): Int = {
     val level = subsetLevel(options)
-    val problems = unmetMandatory(options, level).map { (p, unmet) =>
+    val problems = configurationProblems(options, selected) ++ unmetMandatory(options, level).map { (p, unmet) =>
       // the options involved, with what the configuration gives them; a requirement may involve none
       val values = unmet.values.map((o, v) => s"${o.id} == $v").mkString(", ")
       ConfigProblem(
@@ -154,7 +158,9 @@ object Revisions {
     "2022-09-13",
     List(1, 2, 3),
     v31r1.Tree.sections,
-    v31r1.Rules.all)
+    v31r1.Rules.all,
+    v31r1.EventRules.configurationProblems
+  )
 
   /** every revision, oldest first */
   val list: List[Revision] = List(v2_7, v3_1r1)

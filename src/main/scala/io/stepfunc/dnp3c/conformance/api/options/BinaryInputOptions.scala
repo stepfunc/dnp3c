@@ -3,7 +3,7 @@
 
 package io.stepfunc.dnp3c.conformance.api.options
 
-import io.stepfunc.dnp3c.conformance.api.{ IntegerOption, OptionGroup, OptionTypes, TestOption }
+import io.stepfunc.dnp3c.conformance.api.{ IntegerOption, OptionGroup, OptionTypes, TestOption, RequiredIntegerOption }
 
 object BinaryInputOptions extends OptionGroup {
 
@@ -20,6 +20,14 @@ object BinaryInputOptions extends OptionGroup {
 
   def prefix: String = "binaryInput"
   def description: String = "Options related to binary inputs (g1 and g2)"
-  def options: List[TestOption] = List(numBinaryEventsGenerated, binaryEventsClass)
+  val defaultEventVariation: RequiredIntegerOption = OptionTypes.requiredInteger(
+    this,
+    "defaultEventVariation",
+    "The Device Profile's default variation for binary input change events (g2): what 3.1r1 checks a read of g2 variation " +
+      "0, or of a class, against",
+    List(1, 2, 3)
+  )
+
+  def options: List[TestOption] = List(numBinaryEventsGenerated, binaryEventsClass, defaultEventVariation)
 
 }

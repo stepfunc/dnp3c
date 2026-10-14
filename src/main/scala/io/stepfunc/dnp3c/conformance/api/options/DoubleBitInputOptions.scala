@@ -3,7 +3,7 @@
 
 package io.stepfunc.dnp3c.conformance.api.options
 
-import io.stepfunc.dnp3c.conformance.api.{ IntegerOption, OptionGroup, OptionTypes, TestOption }
+import io.stepfunc.dnp3c.conformance.api.{ IntegerOption, OptionGroup, OptionTypes, TestOption, RequiredIntegerOption }
 
 object DoubleBitInputOptions extends OptionGroup {
   val numDoubleBitEventsGenerated: IntegerOption = OptionTypes.integer(
@@ -19,5 +19,13 @@ object DoubleBitInputOptions extends OptionGroup {
 
   def prefix: String = "doubleBitInput"
   def description: String = "Options related to Double-bit inputs (g3 and g4)"
-  def options: List[TestOption] = List(numDoubleBitEventsGenerated, doubleBitEventsClass)
+  val defaultEventVariation: RequiredIntegerOption = OptionTypes.requiredInteger(
+    this,
+    "defaultEventVariation",
+    "The Device Profile's default variation for double-bit input change events (g4): what 3.1r1 checks a read of g4 variation " +
+      "0, or of a class, against",
+    List(1, 2, 3)
+  )
+
+  def options: List[TestOption] = List(numDoubleBitEventsGenerated, doubleBitEventsClass, defaultEventVariation)
 }

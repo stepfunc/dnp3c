@@ -73,9 +73,6 @@ object TestRunner {
       integrationPlugin: IntegrationPlugin,
       environment: ProcedureEnvironment): RunSummary = {
 
-    // the configuration must be one the revision can test, before anything runs
-    val level = revision.validate(options)
-
     // the sections and procedures in the order they run: a section's subsections, then its procedures
     def walk(e: TestElement): List[TestElement] = e match {
       case s: TestSection => s :: (s.sections.toList ++ s.procedures.toList).flatMap(walk)
@@ -84,6 +81,9 @@ object TestRunner {
 
     val elements = walk(element)
     val procedures = elements.collect { case p: TestProcedure => p }
+
+    // the configuration must be one the revision can test, for the procedures selected, before anything runs
+    val level = revision.validate(options, procedures)
     val results = mutable.ListBuffer[ProcedureResult]()
 
     def failed: Boolean = results.exists(_.outcome.isInstanceOf[ProcedureOutcome.Failed])
