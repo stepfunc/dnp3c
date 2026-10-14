@@ -185,6 +185,12 @@ object PluginValidations {
     "The DUT may also report the state applied in the first step before reporting the present state."
   )
 
+  def verifyFrozenCounterEvents(): PluginValidation =
+    PluginValidation("Verify that the response holds the frozen counter events just generated, with their values") {
+      (plugin, reporter, message) =>
+        plugin.verifyFrozenCounterEvents(reporter, getPointsByType[CounterPoint](message, PointType.Event))
+    }
+
   def verifyLatestAnalogInputChangeEvents(): PluginValidation = inputEvents(
     InputKind.AnalogInput,
     EventExpectation.LatestBatch,

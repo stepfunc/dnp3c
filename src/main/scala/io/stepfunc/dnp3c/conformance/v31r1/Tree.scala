@@ -74,6 +74,13 @@ object Tree {
     val analogOutputStatus: ProcedureDefinition = StaticVariations.test(StaticVariations.analogOutputStatus)
   }
 
+  // 8.25's tests of counter, frozen counter and analog input events
+  private object eventVariations {
+    val counters: ProcedureDefinition = EventVariations.test(EventVariations.counters)
+    val frozenCounters: ProcedureDefinition = EventVariations.test(EventVariations.frozenCounters)
+    val analogInputs: ProcedureDefinition = EventVariations.test(EventVariations.analogInputs)
+  }
+
   val sections: List[TestSection] = List(
     section("6", "Link Layer")(
       section("6.1", "Reset Link and Passive Confirm support")(
@@ -590,11 +597,18 @@ object Tree {
       ),
       section("8.25", "Specific Variations for Events")(
         section("8.25.2", "Test Procedure")(
-          notYet("8.25.2-1", "Binary Input Events", levels = Some(Set(2, 3))),
-          notYet("8.25.2-2", "Double-Bit Binary Input Events"),
-          notYet("8.25.2-3", "Counter Events"),
-          notYet("8.25.2-4", "Frozen Counters"),
-          notYet("8.25.2-5", "Analog Input Events")
+          test(
+            "8.25.2-1",
+            "Binary Input Events",
+            EventVariations.coveredBy("8.14, which reads binary input events in each variation"),
+            levels = Some(Set(2, 3))),
+          test(
+            "8.25.2-2",
+            "Double-Bit Binary Input Events",
+            EventVariations.coveredBy("8.22, which reads double-bit input events in each variation")),
+          test("8.25.2-3", "Counter Events", eventVariations.counters),
+          test("8.25.2-4", "Frozen Counters", eventVariations.frozenCounters),
+          test("8.25.2-5", "Analog Input Events", eventVariations.analogInputs)
         )
       ),
       section("8.26", "Assign Class")(

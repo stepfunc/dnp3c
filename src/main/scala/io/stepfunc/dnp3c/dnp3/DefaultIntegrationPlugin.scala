@@ -124,6 +124,16 @@ class DefaultIntegrationPlugin extends IntegrationPlugin {
     ManualSteps.UserAction(reporter, "Uninstall or disable every analog input on the DUT")
   }
 
+  override def generateExactFrozenCounterEvents(reporter: PluginReporter, numEvents: Int): Unit = {
+    ManualSteps.UserAction(reporter, s"Generate exactly $numEvents frozen counter events")
+  }
+
+  override def generateExactSmallAnalogInputEvents(reporter: PluginReporter, numEvents: Int): Unit = {
+    ManualSteps.UserAction(
+      reporter,
+      s"Generate exactly $numEvents analog input events, with values whose magnitudes are below 32768")
+  }
+
   override def setFlagsNormal(reporter: PluginReporter, kind: PointKind): Unit = {
     ManualSteps.UserAction(reporter, s"Set every ${kind.name} point's flags normal: ONLINE set, all others clear")
   }
@@ -244,6 +254,14 @@ class DefaultIntegrationPlugin extends IntegrationPlugin {
     }
     ManualSteps.verification(reporter, withTimestamps(question), ManualSteps.points("Points in the response", points))
   }
+  override def verifyFrozenCounterEvents(
+      reporter: CheckReporter,
+      points: Seq[GenIndexedPoint[CounterPoint]]): Option[DeferredCheck] =
+    ManualSteps.verification(
+      reporter,
+      withTimestamps("Verify that the response holds the frozen counter events just generated, with their values"),
+      ManualSteps.points("Points in the response", points)
+    )
   override def verifyFirstInputEvent[P <: MeasurementPoint](
       reporter: CheckReporter,
       kind: InputKind[P],
