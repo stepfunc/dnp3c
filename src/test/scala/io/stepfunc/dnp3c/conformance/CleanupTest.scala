@@ -169,4 +169,21 @@ class CleanupTest extends AnyFunSuite with Matchers {
     problems(Map(), needing(required = false), needing(required = false)) should equal(List(problem))
     problems(Map(Inputs.binary.points.id -> "false"), needing(required = true)) should equal(Nil)
   }
+
+  test("a run doesn't check the configuration problems of a procedure that doesn't apply at its level") {
+    val problem = ConfigProblem("some.option", "", "needed")
+    val levelTwo = TestProcedure(
+      "a",
+      "a",
+      new ProcedureDefinition {
+        override protected def steps(options: OptionSource): Iterable[LabeledStep] = Nil
+        override def configurationProblems(options: OptionSource): List[ConfigProblem] = List(problem)
+      },
+      levels = Some(Set(2))
+    )
+    val revision = new Revision("t", "t", "2000-01-01", List(1, 2), List(section("s", "s")(levelTwo)))
+    def at(level: Int) = Options.from(Map(OutstationOptions.subsetLevel.id -> level.toString))
+    revision.validate(at(1)) should equal(1)
+    intercept[ConfigurationException](revision.validate(at(2))).problems should equal(List(problem))
+  }
 }
