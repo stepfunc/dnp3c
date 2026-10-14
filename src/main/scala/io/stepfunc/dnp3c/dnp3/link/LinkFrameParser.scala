@@ -214,7 +214,7 @@ class LinkFrameParser(channel: ReadableChannel, clock: Clock) {
       catch { case _: SocketTimeoutException => 0 }
     if (num < 0) throw new EOFException("The DUT closed the connection")
     buffer.flip()
-    if (buffer.hasRemaining) arrivals.enqueue((buffer.remaining(), clock.nanoTime()))
+    if (buffer.hasRemaining) arrivals.enqueue((buffer.remaining(), channel.lastReadAt.getOrElse(clock.nanoTime())))
     while (buffer.hasRemaining) received += buffer.get()
     num > 0
   }

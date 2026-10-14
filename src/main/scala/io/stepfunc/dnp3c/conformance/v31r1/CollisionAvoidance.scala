@@ -8,7 +8,7 @@ import io.stepfunc.dnp3c.conformance.api.options.{ OutstationOptions, SerialOpti
 import io.stepfunc.dnp3c.dnp3._
 import io.stepfunc.dnp3c.dnp3.app.{ EventClass, Sequence }
 import io.stepfunc.dnp3c.dnp3.link.{ Control, LinkFrame }
-import io.stepfunc.dnp3c.protocol.channel.SerialSettings
+import io.stepfunc.dnp3c.protocol.channel.{ BenchException, SerialSettings }
 import io.stepfunc.dnp3c.protocol.parsing.UInt16LE
 
 /**
@@ -34,17 +34,25 @@ object CollisionAvoidance {
     else {
       val first = delays(options)
       val second = otherDelays(options)
+      // steps 8 and 9 need a gap shorter than the fixed delay, and step 10 changes both delays
       List(
-        Option.when(first == CollisionDelays(0, 0))(
+        Option.when(first.fixedMs == 0)(
           ConfigProblem(
             SerialOptions.fixedDelayMs.id,
             "0",
-            "3.1r1's 8.12.2 needs the DUT's collision avoidance delays, with serial.maxRandomDelayMs")),
-        Option.when(second == CollisionDelays(0, 0) || second == first)(
+            "3.1r1's 8.12.2 needs the DUT's fixed delay, above 0, to make a gap shorter than it")),
+        Option.when(second.fixedMs == 0 || second.fixedMs == first.fixedMs)(
           ConfigProblem(
             SerialOptions.otherFixedDelayMs.id,
             second.fixedMs.toString,
-            "3.1r1's 8.12.2 needs other delays to set the DUT to, with serial.otherMaxRandomDelayMs"))
+            s"3.1r1's 8.12.2 needs another fixed delay to set the DUT to, above 0, other than ${first.fixedMs}"
+          )),
+        Option.when(second.maxRandomMs == first.maxRandomMs)(
+          ConfigProblem(
+            SerialOptions.otherMaxRandomDelayMs.id,
+            second.maxRandomMs.toString,
+            s"3.1r1's 8.12.2 needs another maximum random delay to set the DUT to, other than ${first.maxRandomMs}"
+          ))
       ).flatten
     }
 
@@ -74,6 +82,19 @@ object CollisionAvoidance {
     var turnaroundMs: Option[Double] = None
     var noiseFrames = 1
     val measured = scala.collection.mutable.ListBuffer.empty[Double]
+    // of ten random delays, within a quarter of the tolerance of each other: a random delay at least four times the
+    // tolerance puts each in a range an eighth of its own, so more than four that close is no chance
+    private val maxSame = 4
+
+    // the DUT's answer to the read: a response to the master, with the read's sequence number, not unsolicited
+    private def answers(driver: TestDriver, frame: LinkFrame): Boolean = {
+      val d = frame.data
+      frame.header.src == driver.remote && frame.header.dest == driver.local && d.size >= 5 &&
+      (d(0) & 0x40) != 0 &&
+      (d(2) & 0xFF) == 0x81 &&
+      (d(1) & 0x0F) == seq.value &&
+      (d(1) & 0x10) == 0
+    }
 
     private def noise(driver: TestDriver, frames: Int): List[Byte] =
       List.fill(frames)(LinkFrame.headerOnly(Control(0xC9.toByte), reserved, driver.local).toBytes).flatten
@@ -95,21 +116,30 @@ object CollisionAvoidance {
       seq = seq.next
       val request = driver.frameBytes(Requests.readClass1(seq), LinkOverride.control(0xC4.toByte))
       val clock = driver.clock
-      val start = clock.nanoTime()
-      if (carrier) driver.setRts(true)
       val first = request ++ noise(driver, blocks.head)
+      if (carrier) driver.setRts(true)
+      val start = clock.nanoTime()
+      // a write returns once its bytes are sent, which they can't be before their time on the line
       driver.write(first)
       val requestEnd = start + ns(settings.transmitMs(request.size))
-      var end = start + ns(settings.transmitMs(first.size))
+      var end = math.max(start + ns(settings.transmitMs(first.size)), clock.nanoTime())
       for (frames <- blocks.tail) {
-        sleepUntil(driver, end)
-        if (carrier) driver.setRts(false)
+        val bytes = noise(driver, frames)
+        if (carrier) {
+          sleepUntil(driver, end)
+          driver.setRts(false)
+        }
         sleepUntil(driver, end + ns(gapMs))
         if (carrier) driver.setRts(true)
         val at = clock.nanoTime()
-        val bytes = noise(driver, frames)
+        val gap = ms(at - end)
+        if (gap >= delays.fixedMs)
+          throw new BenchException(
+            s"The harness couldn't make a gap shorter than the fixed delay, ${delays.fixedMs} ms: it made ${show(gap)}",
+            null)
+        driver.reporter.info(s"Gap: ${show(gap)}")
         driver.write(bytes)
-        end = at + ns(settings.transmitMs(bytes.size))
+        end = math.max(at + ns(settings.transmitMs(bytes.size)), clock.nanoTime())
       }
       if (carrier) {
         sleepUntil(driver, end)
@@ -119,11 +149,14 @@ object CollisionAvoidance {
       var answer: Option[(LinkFrame, Long)] = None
       while (answer.isEmpty && clock.msLeft(deadline) > 0) {
         driver.readFrameTimed(Some(clock.msLeft(deadline).toInt)).foreach { (frame, at) =>
-          // the harness's own frames come back where the adapter echoes them
-          if (frame.header.src == driver.remote) answer = Some((frame, at))
+          // the harness's own frames come back where the adapter echoes them; anything else from the DUT is noted
+          if (answers(driver, frame)) answer = Some((frame, at))
+          else if (frame.header.src == driver.remote) driver.reporter.info(s"Another frame from the DUT: $frame")
         }
       }
       val (frame, at) = answer.getOrElse(throw new Exception("The DUT didn't answer the read"))
+      // a transport header, then an application header of 4 bytes, then the objects
+      if (frame.data.size <= 5) throw new Exception("The DUT's answer carries no data")
       Attempt(requestEnd, end, at, frame)
     }
 
@@ -149,8 +182,6 @@ object CollisionAvoidance {
       def run(driver: TestDriver): List[DeferredCheck] = {
         driver.reporter.plugin.generateClassEvents(driver.reporter.pluginReporter(), EventClass.Class1)
         val a = attempt(driver, List(0))
-        // a transport header, then an application header of 4 bytes, then the objects
-        if (a.response.data.size <= 5) throw new Exception("The DUT's answer carries no data")
         turnaroundMs = Some(a.turnaroundMs)
         driver.reporter.info(s"Turnaround: ${show(a.turnaroundMs)}")
         Nil
@@ -171,7 +202,11 @@ object CollisionAvoidance {
         driver.reporter.info(s"Noise: $noiseFrames frames, ${show(noiseMs)}, for a window of ${show(lower)} to " +
           show(upper))
         if (noiseMs <= lower || noiseMs >= upper)
-          driver.reporter.info(s"The window is too short for whole frames of ${show(frameMs)}: the noise misses it")
+          throw new BenchException(
+            s"Noise of whole frames of ${show(frameMs)} can't end within the window of ${show(lower)} to " +
+              s"${show(upper)}: the DUT's delays are too short for the port's speed",
+            null
+          )
         Nil
       }
     }
@@ -191,18 +226,22 @@ object CollisionAvoidance {
     val repeated: TestStep = new TestStep {
       def description: List[Comment] = List(
         "Repeat steps 4 to 6 nine more times, for ten in all",
-        s"Verify that the delays vary, by more than $toleranceMs ms, where the maximum random delay is long enough to " +
-          "tell"
+        s"Verify that the delays vary: they spread over more than $toleranceMs ms, and, where the maximum random delay " +
+          s"is at least four times that, no more than $maxSame of them are within ${show(toleranceMs / 4.0)} of any " +
+          "one"
       )
       def run(driver: TestDriver): List[DeferredCheck] = {
         for (_ <- 1 to 9) check(driver, attempt(driver, List(noiseFrames)))
-        val spread = measured.max - measured.min
         driver.reporter.info(s"Delays: ${measured.map(show).mkString(", ")}")
+        val spread = measured.max - measured.min
+        val same = measured.map(d => measured.count(o => math.abs(o - d) <= toleranceMs / 4.0)).max
         if (delays.maxRandomMs <= 2 * toleranceMs)
           driver.reporter.note(
-            s"the maximum random delay, ${delays.maxRandomMs} ms, is too short to tell its delays apart at a " +
-              s"tolerance of $toleranceMs ms")
+            s"step 7 couldn't verify that the delays vary: the maximum random delay, ${delays.maxRandomMs} ms, is too " +
+              s"short beside a timing tolerance of $toleranceMs ms")
         else if (spread <= toleranceMs) throw new Exception(s"The delays vary by only ${show(spread)}")
+        else if (delays.maxRandomMs >= 4 * toleranceMs && same > maxSame)
+          throw new Exception(s"$same of the delays are the same, within ${show(toleranceMs / 4.0)}")
         Nil
       }
     }
@@ -216,10 +255,6 @@ object CollisionAvoidance {
       def run(driver: TestDriver): List[DeferredCheck] = {
         val block = math.max(1, math.ceil(3.0 * (delays.fixedMs + delays.maxRandomMs) / frameMs).toInt)
         val gapMs = delays.fixedMs / 2.0
-        if (gapMs <= toleranceMs)
-          driver.reporter.note(
-            s"the gap, ${show(gapMs)}, is within the timing tolerance of $toleranceMs ms, so it may not be what the " +
-              "DUT sees")
         check(driver, attempt(driver, List(block, block), gapMs))
         Nil
       }
