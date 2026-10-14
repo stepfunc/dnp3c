@@ -10,11 +10,11 @@ import io.stepfunc.dnp3c.conformance.Revision
 import io.stepfunc.dnp3c.conformance.application.pcap.PacketCapture
 import io.stepfunc.dnp3c.conformance.api._
 import io.stepfunc.dnp3c.conformance.api.options.{
-  ChannelOptions, LinkOptions, OutstationOptions, TestOptions, UnsolicitedOptions
+  ChannelOptions, LinkOptions, OutstationOptions, SerialOptions, TestOptions, UnsolicitedOptions
 }
 import io.stepfunc.dnp3c.conformance.application.report.ReportLogger
 import io.stepfunc.dnp3c.dnp3.{ DefaultTestDriver, IntegrationPlugin, Policies, ProcedureReporter, TestDriver }
-import io.stepfunc.dnp3c.protocol.channel.LocalBindException
+import io.stepfunc.dnp3c.protocol.channel.{ BenchException, SerialChannelFactory }
 import io.stepfunc.dnp3c.protocol.logging.Logger
 import io.stepfunc.dnp3c.protocol.parsing.UInt16LE
 
@@ -34,15 +34,18 @@ private[application] object ProcedureEnvironment {
 
   val default: ProcedureEnvironment = new ProcedureEnvironment {
 
+    // there's nothing to capture on a serial line
     def openCapture(options: OptionSource, path: Path): Option[Closeable] = {
       val channel = ChannelOptions(options)
-      channel.captureNIC.map(nic => PacketCapture.create(nic, channel.host).open(path.toString))
+      if (options.get(SerialOptions.enabled)) None
+      else channel.captureNIC.map(nic => PacketCapture.create(nic, channel.host).open(path.toString))
     }
 
     def openDriver(reporter: ProcedureReporter, options: OptionSource, policies: Policies): TestDriver =
       new DefaultTestDriver(
         reporter,
-        ChannelOptions(options).factory(),
+        if (options.get(SerialOptions.enabled)) new SerialChannelFactory(SerialOptions(options))
+        else ChannelOptions(options).factory(),
         UInt16LE(options.get(LinkOptions.source)),
         UInt16LE(options.get(LinkOptions.destination)),
         options.get(LinkOptions.timeout),
@@ -297,7 +300,7 @@ object TestRunner {
       }
 
     } catch {
-      case ex: LocalBindException =>
+      case ex: BenchException =>
         // the test bench can't do what the procedure needs, which says nothing of the DUT
         cleanUpDevice(cleanup, driver)
         throw ex

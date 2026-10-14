@@ -92,10 +92,27 @@ object OptionTypes {
     RequiredMinimumOptionImpl(group, name, desc, min)
   def hexByteInSet(group: OptionGroup, name: String, default: Byte, desc: String, allowed: Set[Byte]): HexByteOption =
     HexByteInSetImpl(group, name, default, desc, allowed)
+  // one of the allowed words, in any case
+  def choice(group: OptionGroup, name: String, default: String, desc: String, allowed: List[String]): StringOption =
+    ChoiceOptionImpl(group, name, default, desc, allowed)
 
   private case class StringOptionImpl(group: OptionGroup, name: String, default: String, description: String)
       extends StringOption {
     override def parse(s: String): String = s.trim
+  }
+
+  private case class ChoiceOptionImpl(
+      group: OptionGroup,
+      name: String,
+      default: String,
+      desc: String,
+      allowed: List[String]) extends StringOption {
+
+    override def description: String = s"$desc (${allowed.mkString(", ")})"
+
+    override def parse(s: String): String =
+      allowed.find(_.equalsIgnoreCase(s.trim)).getOrElse(throw new Exception(s"'${s.trim}' isn't one of ${allowed
+          .mkString(", ")}"))
   }
 
   private case class BooleanOptionImpl(group: OptionGroup, name: String, default: Boolean, description: String)

@@ -56,8 +56,11 @@ object TcpClientChannelFactory {
 }
 
 /**
- * The harness can't use a local address: it isn't one of this host's, or the port is in use. A problem with the test
- * bench or its configuration, not the DUT.
+ * The test bench can't do what a procedure needs of it, e.g. use a local address or open a serial port: a problem with
+ * the bench or its configuration, not the DUT
  */
+class BenchException(message: String, cause: Throwable) extends IOException(message, cause)
+
+/** The harness can't use a local address: it isn't one of this host's, or the port is in use */
 class LocalBindException(val local: InetSocketAddress, cause: Throwable)
-    extends IOException(s"Can't use local address $local: ${cause.getMessage}", cause)
+    extends BenchException(s"Can't use local address $local: ${cause.getMessage}", cause)

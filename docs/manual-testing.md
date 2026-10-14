@@ -1,6 +1,6 @@
 # Testing a device by hand
 
-The dnp3c command-line tool runs the DNP3 IED Level 2 outstation test procedures against a device, the device under test (DUT), and records the results in an HTML report. dnp3c acts as the master and connects to the DUT over TCP.
+The dnp3c command-line tool runs the DNP3 IED Level 2 outstation test procedures against a device, the device under test (DUT), and records the results in an HTML report. dnp3c acts as the master and connects to the DUT over TCP, or over a serial port.
 
 Most steps are performed by dnp3c itself. Some can't be done over DNP3, such as cycling the DUT's power, generating events on its inputs, or checking that an output operated. For those, dnp3c tells you what to do and waits for you.
 
@@ -9,7 +9,7 @@ You don't have to run every procedure in one sitting. Run any procedure or secti
 ## Before you start
 
 - Java 17 or newer, and the CLI from the [releases](https://github.com/stepfunc/dnp3c/releases). See the [README](../README.md).
-- The DUT, reachable from your machine over TCP.
+- The DUT, reachable from your machine over TCP or a serial port.
 - The DUT's Device Profile. The configuration describes what the DUT supports, and the profile is where those answers come from.
 - If the DUT sends DNP3 keep-alives (link status requests) and closes the connection when one goes unanswered, turn them off for testing. dnp3c answers them only while it's waiting for the DUT, not during its own waits (70.5 s in 8.14.2.15 and 8.22.2.15, longer for some timeouts you configure) or while it waits for you.
 
@@ -31,6 +31,7 @@ Each option has a comment explaining it. The ones to set first:
 | `test.deviceUnderTest` | The DUT's name in the report, e.g. its vendor, model and firmware version |
 | `test.output.directory` | Where results and the report are written |
 | `tcp.device.address`, `tcp.device.port` | Where the DUT listens |
+| `serial.enabled`, `serial.port`, `serial.baudRate`, ... | A serial port to use instead of TCP, and its settings. There's no packet capture over serial. |
 | `link.source`, `link.destination` | The link addresses of dnp3c (the master) and of the DUT |
 | `supports.*` | Which optional features the DUT supports |
 
