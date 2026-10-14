@@ -53,7 +53,8 @@ The library jar, `io.stepfunc:dnp3c`, is published to Maven Central. See [Automa
 
 ## Known limitations
 
-- **Not implemented:** 8.10.2 (multi-drop support) and 8.12.2 (collision avoidance). The report shows them struck through.
+- **Not implemented:** 8.12.2 (collision avoidance), and in 2.7, 8.10.2 (multi-drop support). The report shows them struck through.
+- **3.1r1's 8.10.2** (multi-drop support) runs over serial, with the DUT on a drop with other devices (`serial.otherDevices`). The tool checks what the DUT sends; whether it raised carrier or asserted RTS, and when, the plugin checks on the line, e.g. by asking the tester to read an oscilloscope.
 - **Report by exception** isn't verified: where a procedure requires a device whose class 0 response spans several link frames to also report by exception, the log notes it but the tool doesn't check it.
 - **8.11.2.5.8** covers a device that holds unsolicited responses until it has a minimum number of events, not one that holds them for a time.
 - **8.11.2.1 step 24:** the procedure expects a READ to be answered while the device's startup unsolicited response is still unconfirmed, while IEEE 1815's outstation state table would let the device defer it. The tool follows the procedure.

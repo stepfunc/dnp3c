@@ -4,7 +4,7 @@
 package io.stepfunc.dnp3c.conformance.api.options
 
 import io.stepfunc.dnp3c.conformance.api.{
-  BooleanOption, IntegerOption, OptionGroup, OptionSource, OptionTypes, StringOption, TestOption
+  BooleanOption, IndexListOption, IntegerOption, OptionGroup, OptionSource, OptionTypes, StringOption, TestOption
 }
 import io.stepfunc.dnp3c.protocol.channel.SerialSettings
 
@@ -35,7 +35,31 @@ object SerialOptions extends OptionGroup {
   val stopBits: IntegerOption =
     OptionTypes.integer(this, "stopBits", 1, "The number of stop bits", Some(1), Some(2))
 
-  def options: List[TestOption] = List(enabled, port, baudRate, dataBits, parity, stopBits)
+  val multiDrop: BooleanOption = OptionTypes.boolean(
+    this,
+    "multiDrop",
+    false,
+    "Does the DUT support a multi-drop physical layer, e.g. RS-485? 3.1r1's 8.10.2 tests it over serial, with the " +
+      "devices at serial.otherDevices on the same drop"
+  )
+
+  val otherDevices: IndexListOption = OptionTypes.indexList(
+    this,
+    "otherDevices",
+    "The DNP3 addresses of the other devices on the DUT's drop, at least two, for 3.1r1's 8.10.2",
+    Nil)
+
+  val rtsDelays: StringOption = OptionTypes.string(
+    this,
+    "rtsDelays",
+    "",
+    "The DUT's settings of the delays between raising carrier (RTS) and transmitting, and between transmitting and " +
+      "dropping it, that 3.1r1's 8.10.2 step 9c tests, as before/after pairs in ms, e.g. 0/0, 10/5, 50/20; empty " +
+      "where they aren't configurable"
+  )
+
+  def options: List[TestOption] =
+    List(enabled, port, baudRate, dataBits, parity, stopBits, multiDrop, otherDevices, rtsDelays)
 
   def settings(source: OptionSource): SerialSettings = SerialSettings(
     source.get(port),

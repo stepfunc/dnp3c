@@ -165,6 +165,30 @@ class DefaultIntegrationPlugin extends IntegrationPlugin {
     ManualSteps.UserAction(reporter, "Restore the DUT's usual network setup, the one it had before this procedure")
   }
 
+  override def setRtsDelays(reporter: PluginReporter, delays: Option[RtsDelays]): Unit = {
+    val what = delays match {
+      case Some(d) =>
+        s"Set the DUT to raise carrier (RTS) ${d.beforeMs} ms before transmitting, and drop it ${d.afterMs} ms after"
+      case None => "Restore the DUT's usual RTS delays"
+    }
+    ManualSteps.UserAction(reporter, what)
+  }
+
+  override def verifyNoCarrier(reporter: CheckReporter): Option[DeferredCheck] =
+    ManualSteps.verification(
+      reporter,
+      "On the oscilloscope or analyzer, verify that the DUT didn't transmit, raise carrier or assert RTS since the " +
+        "last request",
+      Nil)
+
+  override def verifyCarrierTiming(reporter: CheckReporter, delays: Option[RtsDelays]): Option[DeferredCheck] =
+    ManualSteps.verification(
+      reporter,
+      "On the oscilloscope or analyzer, verify that the DUT raised carrier (RTS) an appropriate time before the first " +
+        "bit of its response, and dropped it an appropriate time after the last",
+      delays.toList.map(d => s"The DUT is set to ${d.beforeMs} ms before and ${d.afterMs} ms after")
+    )
+
   override def verifyDisconnectNoticed(reporter: CheckReporter): Option[DeferredCheck] =
     ManualSteps.verification(reporter, "Verify that the DUT noticed that the master closed its TCP connection", Nil)
 
