@@ -48,7 +48,6 @@ trait OptionalIndexOption extends TypedTestOption[Option[Index]]
 trait IndexListOption extends TypedTestOption[List[Index]]
 // an integer that has no default, so None until a configuration sets it
 trait RequiredIntegerOption extends TypedTestOption[Option[Int]] {
-  def allowed: List[Int]
   final override def required: Boolean = true
 }
 
@@ -88,6 +87,9 @@ object OptionTypes {
   // one of the allowed values, which a configuration must set: there's no default
   def requiredInteger(group: OptionGroup, name: String, desc: String, allowed: List[Int]): RequiredIntegerOption =
     RequiredIntegerOptionImpl(group, name, desc, allowed)
+  // an integer of at least min, which a configuration must set: there's no default
+  def requiredIntegerAtLeast(group: OptionGroup, name: String, desc: String, min: Int): RequiredIntegerOption =
+    RequiredMinimumOptionImpl(group, name, desc, min)
   def hexByteInSet(group: OptionGroup, name: String, default: Byte, desc: String, allowed: Set[Byte]): HexByteOption =
     HexByteInSetImpl(group, name, default, desc, allowed)
 
@@ -160,6 +162,22 @@ object OptionTypes {
     override def parse(s: String): Option[Int] = {
       val value = Parse.integer(s)
       if (!allowed.contains(value)) throw new Exception(s"$value isn't one of ${allowed.mkString(", ")}")
+      Some(value)
+    }
+
+    override def defaultAsString: String = ""
+  }
+
+  private case class RequiredMinimumOptionImpl(group: OptionGroup, name: String, desc: String, min: Int)
+      extends RequiredIntegerOption {
+
+    override def default: Option[Int] = None
+
+    override def description: String = s"$desc. Required, with no default, where it's used: at least $min"
+
+    override def parse(s: String): Option[Int] = {
+      val value = Parse.integer(s)
+      if (value < min) throw new Exception(s"$value is less than the minimum, $min")
       Some(value)
     }
 

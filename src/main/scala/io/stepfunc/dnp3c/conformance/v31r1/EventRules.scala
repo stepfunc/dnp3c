@@ -6,7 +6,7 @@ package io.stepfunc.dnp3c.conformance.v31r1
 import scala.util.Try
 
 import io.stepfunc.dnp3c.conformance.api.{ ConfigProblem, OptionSource, TestProcedure }
-import io.stepfunc.dnp3c.conformance.api.options.OutstationOptions
+import io.stepfunc.dnp3c.conformance.api.options.{ OutstationOptions, TimeSyncOptions }
 import io.stepfunc.dnp3c.conformance.s8.helpers.{ InputType, Validations }
 import io.stepfunc.dnp3c.dnp3.{ Comment, DeferredCheck, MessageValidation, ProcedureReporter }
 import io.stepfunc.dnp3c.dnp3.app.{ Message, Variation }
@@ -76,7 +76,29 @@ object EventRules {
             s"${input.withTime.id} is true"
         ))
     }
-    unreadable ++ defaults ++ rejected
+    val relativeRejected = inputs.flatMap { input =>
+      Option.when(options.get(input.withRelativeTimeRejected) && options.get(input.withRelativeTime))(
+        ConfigProblem(
+          input.withRelativeTimeRejected.id,
+          "true",
+          s"only a device without ${input.name} events with relative time answers a read of them with IIN2.1, but " +
+            s"${input.withRelativeTime.id} is true"
+        ))
+    }
+    // 8.14.2-13 waits for the clock to go unsynchronized: how long is the manufacturer's to say
+    val expiry = selected.map(_.definition).collect { case t: InputEvents.AllQualifierWithRelativeTime => t.input }
+      .filter(input =>
+        options.get(input.withRelativeTime) && options.get(TimeSyncOptions.supportSynchronizingTimeFromMaster))
+      .take(1)
+      .flatMap { input =>
+        Option.when(options.get(TimeSyncOptions.timeToUnsynchronizedMs).isEmpty)(
+          ConfigProblem(
+            TimeSyncOptions.timeToUnsynchronizedMs.id,
+            "",
+            s"required by 3.1r1's ${input.name} relative time test, which waits for the clock to go unsynchronized"
+          ))
+      }
+    unreadable ++ defaults ++ rejected ++ relativeRejected ++ expiry
   }
 
   /** the preferred variation for a read of `requested`: itself, or for variation 0 the Device Profile's default */
@@ -100,7 +122,7 @@ object EventRules {
       input: InputType,
       requested: Variation,
       options: OptionSource,
-      clock: Clock = Clock.Unknown): MessageValidation = new MessageValidation {
+      clock: => Clock = Clock.Unknown): MessageValidation = new MessageValidation {
 
     private def forms: List[Form] = {
       val preferredVariation = preferred(input, requested, options)
