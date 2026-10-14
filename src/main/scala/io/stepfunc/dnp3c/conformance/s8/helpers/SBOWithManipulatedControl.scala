@@ -14,7 +14,7 @@ trait SBOWithManipulatedControl extends ProcedureDefinition {
 
   override def requiredOptions = List(output.support.commands)
 
-  final def steps(options: OptionSource): Iterable[LabeledStep] = {
+  final override def steps(options: OptionSource): Iterable[LabeledStep] = {
 
     val primary = output.primary(options)
 

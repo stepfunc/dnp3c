@@ -16,7 +16,7 @@ import io.stepfunc.dnp3c.dnp3.{ MessageValidation, ResponseValidation }
 class AnalogOutputStatusRead(variations: OptionSource => Set[Variation], withoutOutputs: MessageValidation)
     extends ProcedureDefinition {
 
-  def steps(options: OptionSource): List[LabeledStep] = {
+  override def steps(options: OptionSource): List[LabeledStep] = {
 
     val header = AnalogOutputOptions.primary.getConfig(options).twoByteHeader
     val idx = options.get(AnalogOutputOptions.primary.index)

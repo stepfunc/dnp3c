@@ -12,7 +12,7 @@ object Procedure82125 extends ProcedureDefinition {
 
   override def requiredOptions = List(SupportOptions.Outputs.binary.commands)
 
-  def steps(options: OptionSource): Iterable[LabeledStep] = {
+  override def steps(options: OptionSource): Iterable[LabeledStep] = {
 
     val primary = ControlOptions.primary.getConfig(options)
     val alternate = ControlOptions.alternate.getConfig(options)

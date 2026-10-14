@@ -23,6 +23,16 @@ object InputEvents {
   sealed abstract class EventTest(val input: InputType) extends ProcedureDefinition {
     override protected def requiredOptions: List[OptionCondition] = readable(input)
 
+    // the Device Profile's default variation, which reads of variation 0 are checked against
+    override def configurationProblems(options: OptionSource): List[ConfigProblem] =
+      Option.when(options.get(input.defaultEventVariation).isEmpty)(
+        ConfigProblem(
+          input.defaultEventVariation.id,
+          "",
+          s"required by 3.1r1's ${input.name} event tests, to check reads of ${input.anyVariation} against the Device " +
+            "Profile's default"
+        )).toList
+
     import input._
 
     // an event response: the events the plugin generated, a request for confirmation, the rules, and the flags
@@ -232,6 +242,16 @@ object InputEvents {
     import input._
     import io.stepfunc.dnp3c.conformance.api.options.TimeSyncOptions
     import EventRules.Clock
+
+    // 8.14.2-13 waits for the clock to go unsynchronized: how long is the manufacturer's to say
+    override def configurationProblems(options: OptionSource): List[ConfigProblem] =
+      super.configurationProblems(options) ++ Option.when(
+        options.get(withRelativeTime) && options.get(TimeSyncOptions.supportSynchronizingTimeFromMaster) &&
+          options.get(TimeSyncOptions.timeToUnsynchronizedMs).isEmpty)(
+        ConfigProblem(
+          TimeSyncOptions.timeToUnsynchronizedMs.id,
+          "",
+          "required by 3.1r1's relative time tests, which wait for the clock to go unsynchronized"))
 
     override protected def steps(options: OptionSource): Iterable[LabeledStep] = {
       val start = List(

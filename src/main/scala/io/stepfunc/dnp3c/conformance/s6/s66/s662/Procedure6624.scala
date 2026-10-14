@@ -51,7 +51,7 @@ object Procedure6624 extends ProcedureDefinition {
     )
   }
 
-  def steps(options: OptionSource): Iterable[LabeledStep] = {
+  override def steps(options: OptionSource): Iterable[LabeledStep] = {
 
     val step10 = 10 --> describe("Run the checks above again with other corrupt CRC values")
 

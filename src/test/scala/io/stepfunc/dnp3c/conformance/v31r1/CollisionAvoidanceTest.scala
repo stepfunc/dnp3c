@@ -6,7 +6,7 @@ package io.stepfunc.dnp3c.conformance.v31r1
 import scala.collection.mutable
 
 import io.stepfunc.dnp3c.conformance.Run
-import io.stepfunc.dnp3c.conformance.api.{ Options, ProcedureOutcome, TestProcedure }
+import io.stepfunc.dnp3c.conformance.api.{ Options, ProcedureOutcome }
 import io.stepfunc.dnp3c.conformance.api.options.SerialOptions
 import io.stepfunc.dnp3c.dnp3._
 import io.stepfunc.dnp3c.dnp3.app.EventClass
@@ -171,11 +171,8 @@ class CollisionAvoidanceTest extends AnyFunSuite with Matchers {
   test("8.12.2 needs serial, collision avoidance, its delays and other ones") {
     CollisionAvoidance.collisionAvoidance.disabledBy(Options.from(bench - SerialOptions.enabled.id)) should
       not equal None
-    def problems(s: Map[String, String]) = CollisionAvoidance
-      .configurationProblems(
-        Options.from(bench ++ s),
-        List(TestProcedure("8.12.2", "t", CollisionAvoidance.collisionAvoidance)))
-      .map(_.key)
+    def problems(s: Map[String, String]) =
+      CollisionAvoidance.collisionAvoidance.configurationProblems(Options.from(bench ++ s)).map(_.key)
     problems(Map()) should equal(Nil)
     problems(Map(SerialOptions.fixedDelayMs.id -> "0")) should equal(List(SerialOptions.fixedDelayMs.id))
     problems(Map(SerialOptions.otherFixedDelayMs.id -> "100")) should equal(List(SerialOptions.otherFixedDelayMs.id))

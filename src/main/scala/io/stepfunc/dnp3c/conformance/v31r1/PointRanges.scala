@@ -96,7 +96,7 @@ object PointRanges {
     override protected def requirement: Requirement =
       Requirement.anyOf(!t.points, Requirement.all(OptionCondition(t.points), OptionCondition(t.disabling)))
 
-    override protected def steps(options: OptionSource): Iterable[LabeledStep] = {
+    override protected def plan(options: OptionSource): Plan = {
       val has = options.get(t.points)
       // frozen counters, analog inputs and analog output status: a level 1 or 2 device without range reads leaves the
       // type's tests at step 3
@@ -106,43 +106,33 @@ object PointRanges {
         message =>
           if (message.iin.forall(i => (i & IIN.errors) == IIN.empty)) throw new Exception("Expected an error IIN bit")
       }
-      val restore = PluginSteps.reinstallPoints
-      // once step 1 has uninstalled the points, they're reinstalled after the last step, or after one that fails
-      def guarded(step: TestStep, last: Boolean = false): TestStep = new TestStep {
-        def description: List[Comment] = step.description ++ (if (has && last) restore.description else Nil)
-        def run(driver: TestDriver): List[DeferredCheck] =
-          if (!has) step.run(driver)
-          else if (last)
-            try step.run(driver)
-            finally restore.run(driver)
-          else
-            try step.run(driver)
-            catch {
-              case ex: Throwable =>
-                restore.run(driver)
-                throw ex
-            }
-      }
+      // step 1 uninstalls the points, which come back after the last check, or in the cleanup if a step fails
+      val removal = Undoable(t.uninstall, PluginSteps.reinstallPoints)
       def read(seq: Sequence, twoByte: Boolean): TestStep =
         describedRead(seq, t.anyVariation, twoByte, "0 to 0") + send(rangeRead(seq, t.anyVariation, twoByte, 0, 0))
-      val first = 1 --> (if (has) t.uninstall else describe(s"The DUT has no ${t.name}"))
-      if (leaves)
-        List(
-          first,
-          2 --> guarded(read(Sequence.one, twoByte = false)),
-          3 --> guarded(expectSingleResponse(Sequence.one, unsupported), last = true),
-          (4 to 7) --> describe(
-            s"The DUT doesn't read with start/stop ranges: no further steps, or tests of ${t.name}, apply")
-        )
-      else
-        List(
-          first,
-          2 --> guarded(read(Sequence.one, twoByte = false)),
-          (if (t.escapeStep) Label(3, 4) else Label(3)) --> guarded(expectSingleResponse(Sequence.one, error)),
-          4 + e --> guarded(read(Sequence.two, twoByte = true)),
-          5 + e --> guarded(expectSingleResponse(Sequence.two, error), last = true),
-          6 + e --> describe(s"The ${t.name} are back, if they were uninstalled")
-        )
+      val first = 1 --> (if (has) removal.apply else describe(s"The DUT has no ${t.name}"))
+      // the points back, where the procedure says they are
+      val restore: TestStep = if (has) removal.restore else describe("Nothing was uninstalled")
+      val back = describe(s"The ${t.name} are back, if they were uninstalled") + restore
+      val steps =
+        if (leaves)
+          List(
+            first,
+            2 --> read(Sequence.one, twoByte = false),
+            3 --> (expectSingleResponse(Sequence.one, unsupported) + restore),
+            (4 to 7) --> describe(
+              s"The DUT doesn't read with start/stop ranges: no further steps, or tests of ${t.name}, apply")
+          )
+        else
+          List(
+            first,
+            2 --> read(Sequence.one, twoByte = false),
+            (if (t.escapeStep) Label(3, 4) else Label(3)) --> expectSingleResponse(Sequence.one, error),
+            4 + e --> read(Sequence.two, twoByte = true),
+            5 + e --> expectSingleResponse(Sequence.two, error),
+            6 + e --> back
+          )
+      Plan(steps, if (has) List(Label("restore") --> removal.restore) else Nil)
     }
   }
 

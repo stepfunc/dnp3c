@@ -33,17 +33,22 @@ object OutputProcedures {
     override protected def requiredOptions: List[OptionCondition] =
       List(output.support.commands, output.support.disabling)
 
-    override protected def steps(options: OptionSource): Iterable[LabeledStep] = List(
-      1 --> describe(s"The DUT's ${output.name}s can be uninstalled or disabled through its configuration"),
-      2 --> output.uninstall,
-      3 --> send(function, Sequence.zero, output.primary(options).twoByteHeader(Index.zero)),
-      4 --> (
-        if (function == AppFunction.directOpNoAck) expectNoAnswer(options)
-        else expectSingleResponse(Sequence.zero, containingAnyOf(IIN.OBJECT_UNKNOWN | IIN.PARAM_ERROR))
-      ),
-      5 --> operations.expectNoOperation,
-      Label("restore") --> PluginSteps.reinstallPoints
-    )
+    override protected def plan(options: OptionSource): Plan = {
+      val outputs = Undoable(output.uninstall, PluginSteps.reinstallPoints)
+      Plan(
+        List(
+          1 --> describe(s"The DUT's ${output.name}s can be uninstalled or disabled through its configuration"),
+          2 --> outputs.apply,
+          3 --> send(function, Sequence.zero, output.primary(options).twoByteHeader(Index.zero)),
+          4 --> (
+            if (function == AppFunction.directOpNoAck) expectNoAnswer(options)
+            else expectSingleResponse(Sequence.zero, containingAnyOf(IIN.OBJECT_UNKNOWN | IIN.PARAM_ERROR))
+          ),
+          5 --> operations.expectNoOperation
+        ),
+        List(Label("restore") --> outputs.restore)
+      )
+    }
   }
 
   // SBO with 2-byte indexes; a DUT without the commands must reject them

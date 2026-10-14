@@ -8,7 +8,7 @@ import java.net.InetSocketAddress
 import scala.collection.mutable
 
 import io.stepfunc.dnp3c.conformance.Run
-import io.stepfunc.dnp3c.conformance.api.{ Options, ProcedureDefinition, TestProcedure }
+import io.stepfunc.dnp3c.conformance.api.{ Options, ProcedureDefinition }
 import io.stepfunc.dnp3c.conformance.api.options.NetworkOptions
 import io.stepfunc.dnp3c.dnp3._
 import io.stepfunc.dnp3c.dnp3.app.{ AppFunction, Message, Unsolicited }
@@ -192,7 +192,7 @@ class UnsolicitedNetworkTest extends AnyFunSuite with Matchers {
         (NetworkOptions.udpUnsolicitedToOriginatingPort.id -> "false"))
     Network.unsolicitedNull20000.disabledBy(neither) should not equal None
     def problems(settings: Map[String, String], p: ProcedureDefinition) =
-      Network.configurationProblems(Options.from(bench ++ settings), List(TestProcedure("id", "t", p))).map(_.key)
+      p.configurationProblems(Options.from(bench ++ settings)).map(_.key)
     problems(Map(NetworkOptions.udpUnsolicitedPort.id -> "20000"), Network.unsolicitedNullOtherPort) should
       equal(List(NetworkOptions.udpUnsolicitedPort.id))
     problems(Map(NetworkOptions.udpOtherPort.id -> "20000"), Network.unsolicitedDataFixedPort) should

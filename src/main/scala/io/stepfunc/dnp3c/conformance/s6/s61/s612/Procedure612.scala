@@ -16,7 +16,7 @@ object Procedure612 extends ProcedureDefinition {
     expectFrame(withControl(0x00.toByte)) + expectAtLeastOneResponse(seq)
   }
 
-  def steps(options: OptionSource): Iterable[LabeledStep] = {
+  override def steps(options: OptionSource): Iterable[LabeledStep] = {
 
     val seq = MutableSequence.zero
 

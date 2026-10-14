@@ -280,12 +280,21 @@ object TestRunner {
       cleanup = config.cleanup
 
       var heading: Option[String] = None
-      for ((x, ordinal) <- config.steps.iterator.zipWithIndex) {
+      val steps = config.steps.iterator.zipWithIndex
+      var ended = false
+      while (!ended && steps.hasNext) {
+        val (x, ordinal) = steps.next()
         if (subsection.matches(x.label)) heading = Some(x.label)
         driver.reporter.note(x.label, x.step.description.map(_.toString))
-        val checks = x.step.run(driver)
-        val origin = (heading.toList :+ x.label).mkString(" ") + s" (step ${ordinal + 1} of the procedure)"
-        pending ++= checks.map(Pending(origin, _))
+        try {
+          val checks = x.step.run(driver)
+          val origin = (heading.toList :+ x.label).mkString(" ") + s" (step ${ordinal + 1} of the procedure)"
+          pending ++= checks.map(Pending(origin, _))
+        } catch {
+          case end: EndProcedure =>
+            driver.reporter.info(s"The procedure ends early, its remaining steps skipped: ${end.reason}")
+            ended = true
+        }
       }
 
       for ((p, n) <- pending.zipWithIndex) {

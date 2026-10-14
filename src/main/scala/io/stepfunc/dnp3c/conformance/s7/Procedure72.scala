@@ -12,7 +12,7 @@ import io.stepfunc.dnp3c.dnp3.transport.Transport
 
 object Procedure72 extends ProcedureDefinition {
 
-  def steps(options: OptionSource): Iterable[LabeledStep] = {
+  override def steps(options: OptionSource): Iterable[LabeledStep] = {
 
     val details: List[Comment] = List(
       "Verify that a reply longer than 249 octets starts with a transport segment that has FIR=1 and FIN=0",

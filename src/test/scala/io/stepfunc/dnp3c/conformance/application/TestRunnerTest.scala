@@ -72,7 +72,7 @@ class TestRunnerTest extends AnyFunSuite with Matchers {
       name,
       new ProcedureDefinition {
         override protected def requiredOptions: List[OptionCondition] = required
-        protected def steps(options: OptionSource): Iterable[LabeledStep] = List(LabeledStep(
+        override protected def steps(options: OptionSource): Iterable[LabeledStep] = List(LabeledStep(
           "step",
           new TestStep {
             def description: List[Comment] = Nil
@@ -90,7 +90,7 @@ class TestRunnerTest extends AnyFunSuite with Matchers {
       name,
       name,
       new ProcedureDefinition {
-        protected def steps(options: OptionSource): Iterable[LabeledStep] = stepNames.map { s =>
+        override protected def steps(options: OptionSource): Iterable[LabeledStep] = stepNames.map { s =>
           LabeledStep(
             "step",
             new TestStep {
@@ -111,7 +111,7 @@ class TestRunnerTest extends AnyFunSuite with Matchers {
       name,
       name,
       new ProcedureDefinition {
-        protected def steps(options: OptionSource): Iterable[LabeledStep] = List(LabeledStep(
+        override protected def steps(options: OptionSource): Iterable[LabeledStep] = List(LabeledStep(
           "step",
           new TestStep {
             def description: List[Comment] = Nil
@@ -311,7 +311,7 @@ class TestRunnerTest extends AnyFunSuite with Matchers {
       "a",
       new ProcedureDefinition {
         override protected def requiredOptions: List[OptionCondition] = List(SupportOptions.selfAddress)
-        protected def steps(options: OptionSource): Iterable[LabeledStep] = Nil
+        override protected def steps(options: OptionSource): Iterable[LabeledStep] = Nil
       },
       mandatoryAt = Set(2)
     )
@@ -334,7 +334,7 @@ class TestRunnerTest extends AnyFunSuite with Matchers {
       "a",
       new ProcedureDefinition {
         override protected def requirement: Requirement = Requirement.not(Requirement.none)
-        protected def steps(options: OptionSource): Iterable[LabeledStep] = Nil
+        override protected def steps(options: OptionSource): Iterable[LabeledStep] = Nil
       },
       mandatoryAt = Set(2)
     )
@@ -348,7 +348,7 @@ class TestRunnerTest extends AnyFunSuite with Matchers {
       "a",
       "a",
       new ProcedureDefinition {
-        protected def steps(options: OptionSource): Iterable[LabeledStep] = List(LabeledStep(
+        override protected def steps(options: OptionSource): Iterable[LabeledStep] = List(LabeledStep(
           "note",
           new TestStep {
             def description: List[Comment] = Nil
