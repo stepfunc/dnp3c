@@ -159,7 +159,9 @@ object Revisions {
     List(1, 2, 3),
     v31r1.Tree.sections,
     v31r1.Rules.all,
-    v31r1.EventRules.configurationProblems
+    (options, selected) =>
+      v31r1.EventRules.configurationProblems(options, selected) ++
+        v31r1.Network.configurationProblems(options, selected)
   )
 
   /** every revision, oldest first */

@@ -128,7 +128,14 @@ object Requirement {
  */
 trait ProcedureDefinition {
 
-  case class Configuration(disabledBy: Option[Unmet], steps: Iterable[LabeledStep])
+  /**
+   * @param cleanup steps that restore the DUT once the procedure ends, however it ends: the runner runs them after the
+   *   steps and their deferred checks, or after a failure
+   */
+  case class Configuration(
+      disabledBy: Option[Unmet],
+      steps: Iterable[LabeledStep],
+      cleanup: Iterable[LabeledStep] = Nil)
 
   def incomplete: Boolean = false
 
@@ -139,6 +146,9 @@ trait ProcedureDefinition {
   protected def requirement: Requirement = Requirement.all(requiredOptions*)
 
   protected def steps(options: OptionSource): Iterable[LabeledStep]
+
+  // steps that restore the DUT once the procedure ends, even if it fails: see Configuration.cleanup
+  protected def cleanup(options: OptionSource): Iterable[LabeledStep] = Nil
 
   // why the procedure won't run, if it won't; doesn't build the steps
   def disabledBy(options: OptionSource): Option[Unmet] = requirement.unmet(options)
@@ -151,7 +161,7 @@ trait ProcedureDefinition {
       case Some(x) =>
         Configuration(disabledOption, TestProcedure.disabledBy(x))
       case None =>
-        Configuration(disabledOption, TestProcedure.enabledBy(requirement) ++ steps(options))
+        Configuration(disabledOption, TestProcedure.enabledBy(requirement) ++ steps(options), cleanup(options))
     }
   }
 

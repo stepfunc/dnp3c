@@ -3,6 +3,7 @@
 
 package io.stepfunc.dnp3c.protocol.channel
 
+import java.net.InetSocketAddress
 import java.nio.ByteBuffer
 import java.nio.channels.{ Channels, SocketChannel }
 import scala.annotation.tailrec
@@ -23,6 +24,9 @@ final class SocketReadWriteChannel(channel: SocketChannel) extends ReadableWrita
     channel.socket().setSoTimeout(timeoutMs)
     wrappedChannel.read(buffer)
   }
+
+  // the address and port the connection is from
+  def localAddress: InetSocketAddress = channel.getLocalAddress.asInstanceOf[InetSocketAddress]
 
   override def close(): Unit = {
     channel.close()

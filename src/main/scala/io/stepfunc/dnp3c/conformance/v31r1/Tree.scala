@@ -619,10 +619,10 @@ object Tree {
     section("9", "Network")(
       section("9.5", "All Communication Methods")(
         section("9.5.1", "TCP Without DNP Unsolicited")(
-          notYet("9.5.1.1.2", "Port 20000"),
-          notYet("9.5.1.2.2", "Port Other Than 20000"),
-          notYet("9.5.1.3.2", "Specific IP Address"),
-          notYet("9.5.1.4.2", "Wildcard IP Address"),
+          test("9.5.1.1.2", "Port 20000", Network.tcpPort20000),
+          test("9.5.1.2.2", "Port Other Than 20000", Network.tcpOtherPort),
+          test("9.5.1.3.2", "Specific IP Address", Network.tcpSpecificAddress),
+          test("9.5.1.4.2", "Wildcard IP Address", Network.tcpWildcard),
           notYet("9.5.1.5.2", "UDP Unicast IP address with TCP as the Main Communication Method"),
           notYet("9.5.1.6.2", "UDP Multicast IP address with TCP as the Main Communication Method")
         ),

@@ -155,6 +155,19 @@ class DefaultIntegrationPlugin extends IntegrationPlugin {
         s"Event time ${java.time.Instant.ofEpochMilli(eventMs)}")
     )
 
+  override def configureNetwork(reporter: PluginReporter, setup: NetworkSetup): Unit = {
+    ManualSteps.UserAction(
+      reporter,
+      s"Set up the DUT's network to ${setup.describe}, and wait until it accepts connections or requests that way")
+  }
+
+  override def restoreNetwork(reporter: PluginReporter): Unit = {
+    ManualSteps.UserAction(reporter, "Restore the DUT's usual network setup, the one it had before this procedure")
+  }
+
+  override def verifyDisconnectNoticed(reporter: CheckReporter): Option[DeferredCheck] =
+    ManualSteps.verification(reporter, "Verify that the DUT noticed that the master closed its TCP connection", Nil)
+
   override def generateEventOn(reporter: PluginReporter, kind: PointKind, index: Int): Unit = {
     ManualSteps.UserAction(reporter, s"Change ${kind.name} $index as would generate an event for it")
   }

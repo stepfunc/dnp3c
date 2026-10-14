@@ -45,6 +45,76 @@ object PointKind {
  */
 final case class AbnormalFlag(index: Int, flags: Option[Int])
 
+/** How a DUT talks to its master over IP (3.1r1's section 9) */
+enum NetworkMode {
+  case Tcp, Udp, Both
+}
+
+/** The masters a DUT accepts TCP connections and UDP requests from (3.1r1's section 9) */
+enum AllowedMasters {
+  case Any
+  case Address(address: String)
+  // a range of addresses, e.g. "192.168.1.*"
+  case Wildcard(spec: String)
+}
+
+/** Where a DUT sends UDP messages: to the port the master sent from, or to a fixed port (3.1r1's section 9) */
+enum UdpDestination {
+  case OriginatingPort
+  case Fixed(port: Int)
+}
+
+/**
+ * Where a DUT sends unsolicited responses over UDP
+ *
+ * @param address the master's IP address
+ * @param nullPort the port of the initial null unsolicited response
+ * @param data where the others go, and solicited responses after the null's confirmation
+ */
+final case class UdpUnsolicited(address: String, nullPort: Int, data: UdpDestination)
+
+/**
+ * The network setup a test of 3.1r1's section 9 asks of a DUT, in full: anything a test doesn't care about has its usual
+ * value, e.g. a TCP test's udpResponses
+ *
+ * @param port the port the DUT listens on, for TCP connections and UDP requests
+ * @param udpResponses where the DUT sends responses to UDP requests
+ * @param unsolicited where the DUT sends unsolicited responses over UDP, if it does
+ * @param multicastGroup a multicast group whose UDP messages the DUT accepts, if any
+ */
+final case class NetworkSetup(
+    mode: NetworkMode,
+    port: Int,
+    allowedMasters: AllowedMasters,
+    udpResponses: UdpDestination = UdpDestination.OriginatingPort,
+    unsolicited: Option[UdpUnsolicited] = None,
+    multicastGroup: Option[String] = None) {
+
+  /** e.g. "use TCP, listening on port 20000, accepting any master" */
+  def describe: String = {
+    val transport = mode match {
+      case NetworkMode.Tcp => "TCP"
+      case NetworkMode.Udp => "UDP"
+      case NetworkMode.Both => "both TCP and UDP at once"
+    }
+    val masters = allowedMasters match {
+      case AllowedMasters.Any => "any master IP address"
+      case AllowedMasters.Address(a) => s"only master IP address $a"
+      case AllowedMasters.Wildcard(w) => s"only master IP addresses matching $w"
+    }
+    def destination(d: UdpDestination): String = d match {
+      case UdpDestination.OriginatingPort => "the port the master sent from"
+      case UdpDestination.Fixed(p) => s"port $p"
+    }
+    val udp = Option.when(mode != NetworkMode.Tcp)(s"sending UDP responses to ${destination(udpResponses)}").toList
+    val unsol = unsolicited.toList.map(u =>
+      s"sending unsolicited responses over UDP to ${u.address}: the initial null response to port ${u.nullPort}, " +
+        s"and every later message to ${destination(u.data)}")
+    val multicast = multicastGroup.toList.map(g => s"accepting UDP messages sent to multicast group $g")
+    (s"use $transport, listening on port $port, accepting $masters" :: udp ++ unsol ++ multicast).mkString(", ")
+  }
+}
+
 object InputKind {
   case object BinaryInput extends InputKind[BinaryPoint]("binary input")
   case object DoubleBitInput extends InputKind[DoubleBitPoint]("double-bit binary input")
@@ -190,6 +260,13 @@ trait IntegrationPlugin {
   // COMM_LOST set (3.1r1's 8.24)
   def setFlagAbnormal(reporter: PluginReporter, kind: PointKind, indices: Seq[Int]): AbnormalFlag =
     throw new UnsupportedOperationException("this plugin doesn't implement setFlagAbnormal")
+  // sets up the DUT's network as given, in full, and returns once it accepts connections or requests that way (3.1r1's
+  // section 9)
+  def configureNetwork(reporter: PluginReporter, setup: NetworkSetup): Unit =
+    throw new UnsupportedOperationException("this plugin doesn't implement configureNetwork")
+  // restores the DUT's usual network setup, the one it had when the procedure started (3.1r1's section 9)
+  def restoreNetwork(reporter: PluginReporter): Unit =
+    throw new UnsupportedOperationException("this plugin doesn't implement restoreNetwork")
 
   // ===================
   // Message validations
@@ -272,6 +349,10 @@ trait IntegrationPlugin {
   // Check that the time of an output command event is reasonable for a command sent at sentMs (3.1r1's 10.3.4, 10.4.4)
   def verifyCommandEventTime(reporter: CheckReporter, sentMs: Long, eventMs: Long): Option[DeferredCheck] =
     throw new UnsupportedOperationException("this plugin doesn't implement verifyCommandEventTime")
+
+  // Check that the DUT noticed that the master closed its TCP connection (3.1r1's 9.5.1)
+  def verifyDisconnectNoticed(reporter: CheckReporter): Option[DeferredCheck] =
+    throw new UnsupportedOperationException("this plugin doesn't implement verifyDisconnectNoticed")
 
   // Misc validations
   def verifyDelayMeasurementAccuracy(reporter: CheckReporter, delayMs: Long): Option[DeferredCheck]

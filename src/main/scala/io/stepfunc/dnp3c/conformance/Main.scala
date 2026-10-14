@@ -325,7 +325,8 @@ object Main {
     // inject an option wrapper so we can track what options the test uses
 
     val tracker = new OptionTracker(options)
-    val steps = p.configure(tracker).steps
+    val config = p.configure(tracker)
+    val steps = config.steps ++ config.cleanup
     val usedOptions = tracker.getUsedOptions.toList.sortBy(x => x.id)
 
     if (usedOptions.nonEmpty) {

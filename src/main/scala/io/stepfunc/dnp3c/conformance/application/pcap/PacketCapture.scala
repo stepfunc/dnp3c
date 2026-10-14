@@ -35,9 +35,10 @@ object PacketCapture {
     try Pcaps.findAllDevs().asScala.toList
     catch { case ex: LinkageError => throw new Exception(s"Couldn't load libpcap: $ex", ex) }
 
-  def create(nic: String, port: Int): PacketCapture = new PacketCapture {
+  // captures the packets to and from the host: the DUT's, over every port, as 3.1r1's network tests use several
+  def create(nic: String, host: String): PacketCapture = new PacketCapture {
 
-    val filter = s"port $port"
+    val filter = s"host $host"
 
     val interface: PcapNetworkInterface = {
       interfaces.find(d => matches(nic, d.getAddresses.asScala.toList)).getOrElse {
