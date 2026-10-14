@@ -5,10 +5,10 @@ package io.stepfunc.dnp3c.dnp3.app.objects
 
 import io.stepfunc.dnp3c.dnp3.app._
 import io.stepfunc.dnp3c.protocol.Hex
-import io.stepfunc.dnp3c.protocol.parsing.Field
+import io.stepfunc.dnp3c.protocol.parsing.{ Field, Integers }
 
 import java.nio.charset.{ CharacterCodingException, CodingErrorAction, StandardCharsets }
-import java.nio.{ ByteBuffer, ByteOrder }
+import java.nio.ByteBuffer
 
 // data type code of a device attribute (g0)
 case class AttrDataType(value: Byte, name: String)
@@ -90,16 +90,16 @@ object AttributeValue {
     def invalidLength = Invalid(dataType, s"length ${value.length}")
     dataType match {
       case AttrDataType.VSTR => decodeUtf8(value).map(VisibleString.apply).getOrElse(Invalid(dataType, "not UTF-8"))
-      case AttrDataType.UINT => if (isIntegerLength(value)) UnsignedInt(littleEndian(value)) else invalidLength
+      case AttrDataType.UINT => if (isIntegerLength(value)) UnsignedInt(Integers.fromBytesLE(value)) else invalidLength
       case AttrDataType.INT => if (isIntegerLength(value)) SignedInt(signExtend(value)) else invalidLength
       case AttrDataType.FLT => value.length match {
-          case 4 => FloatingPoint(buffer(value).getFloat.toDouble)
-          case 8 => FloatingPoint(buffer(value).getDouble)
+          case 4 => FloatingPoint(java.lang.Float.intBitsToFloat(Integers.fromBytesLE(value).toInt).toDouble)
+          case 8 => FloatingPoint(java.lang.Double.longBitsToDouble(Integers.fromBytesLE(value)))
           case _ => invalidLength
         }
       case AttrDataType.OSTR => OctetString(value)
       case AttrDataType.BSTR => BitString(value)
-      case AttrDataType.TIME => if (value.length == 6) Time(littleEndian(value)) else invalidLength
+      case AttrDataType.TIME => if (value.length == 6) Time(Integers.fromBytesLE(value)) else invalidLength
       case AttrDataType.LIST | AttrDataType.EXLIST =>
         if (value.length % 2 == 0) VariationList(value.grouped(2).map(x => AttributeListEntry(x(0), x(1))).toList)
         else invalidLength
@@ -113,15 +113,10 @@ object AttributeValue {
 
   private def isIntegerLength(value: List[Byte]): Boolean = List(1, 2, 4).contains(value.length)
 
-  private def littleEndian(value: List[Byte]): Long =
-    value.zipWithIndex.foldLeft(0L) { case (sum, (b, i)) => sum | ((0xFFL & b) << (8 * i)) }
-
   private def signExtend(value: List[Byte]): Int = {
     val shift = 32 - 8 * value.length
-    (littleEndian(value).toInt << shift) >> shift
+    (Integers.fromBytesLE(value).toInt << shift) >> shift
   }
-
-  private def buffer(value: List[Byte]): ByteBuffer = ByteBuffer.wrap(value.toArray).order(ByteOrder.LITTLE_ENDIAN)
 
   private def decodeUtf8(value: List[Byte]): Option[String] = {
     val decoder = StandardCharsets.UTF_8.newDecoder()

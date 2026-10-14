@@ -24,26 +24,26 @@ import io.stepfunc.dnp3c.dnp3.app.Fields._
 
 object Group22Var0 extends EmptyVariation(Group22, 0) with TypeTraits.EventVariationZero with TypeTraits.Level2
 
-object Group22Var1 extends FixedSize(Group22, 1, List(flags, count32), EventCounterBuilder) with TypeTraits.Event
+object Group22Var1 extends FixedSize(Group22, 1, List(flags, count32), CounterBuilder) with TypeTraits.Event
     with TypeTraits.Level1
 
-object Group22Var2 extends FixedSize(Group22, 2, List(flags, count16), EventCounterBuilder) with TypeTraits.Event
+object Group22Var2 extends FixedSize(Group22, 2, List(flags, count16), CounterBuilder) with TypeTraits.Event
     with TypeTraits.Level1
 
-object Group22Var3 extends FixedSize(Group22, 3, List(flags, count32), EventCounterBuilder) with TypeTraits.Event
+object Group22Var3 extends FixedSize(Group22, 3, List(flags, count32), CounterBuilder) with TypeTraits.Event
     with TypeTraits.None
 
-object Group22Var4 extends FixedSize(Group22, 4, List(flags, count16), EventCounterBuilder) with TypeTraits.Event
+object Group22Var4 extends FixedSize(Group22, 4, List(flags, count16), CounterBuilder) with TypeTraits.Event
     with TypeTraits.None
 
-object Group22Var5 extends FixedSize(Group22, 5, List(flags, count32, time48), EventCounterBuilder)
+object Group22Var5 extends FixedSize(Group22, 5, List(flags, count32, time48), CounterBuilder)
     with TypeTraits.Event with TypeTraits.None
 
-object Group22Var6 extends FixedSize(Group22, 6, List(flags, count16, time48), EventCounterBuilder)
+object Group22Var6 extends FixedSize(Group22, 6, List(flags, count16, time48), CounterBuilder)
     with TypeTraits.Event with TypeTraits.None
 
-object Group22Var7 extends FixedSize(Group22, 7, List(flags, count32, time48), EventCounterBuilder)
+object Group22Var7 extends FixedSize(Group22, 7, List(flags, count32, time48), CounterBuilder)
     with TypeTraits.Event with TypeTraits.None
 
-object Group22Var8 extends FixedSize(Group22, 8, List(flags, count16, time48), EventCounterBuilder)
+object Group22Var8 extends FixedSize(Group22, 8, List(flags, count16, time48), CounterBuilder)
     with TypeTraits.Event with TypeTraits.None

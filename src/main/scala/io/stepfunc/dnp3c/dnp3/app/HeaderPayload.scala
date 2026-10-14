@@ -53,7 +53,7 @@ case class BooleanValue(value: Boolean)
 
 final case class BitFieldHeaderPayload(bits: List[BooleanValue], isOutputStatus: Boolean)
     extends IterableHeaderPayload {
-  override def toBytes: List[Byte] = BitFieldBuilder.build(bits.map(_.value))
+  override def toBytes: List[Byte] = BitFields.pack(bits.map(_.value))
   override def descriptions: Iterable[String] = bits.map(x => x.toString)
   override def iterate: Seq[Point] = if (isOutputStatus)
     bits.map(x => BinaryOutputStatusPoint(x.value, None, None, PointType.Static))
@@ -66,10 +66,15 @@ object DoubleBit {
   object DeterminedOff extends DoubleBit(1)
   object DeterminedOn extends DoubleBit(2)
   object Indeterminate extends DoubleBit(3)
+
+  private val states = List(Intermediate, DeterminedOff, DeterminedOn, Indeterminate)
+
+  // the state that two bits, from 0 to 3, give
+  def of(bits: Int): DoubleBit = states(bits)
 }
 
 final case class DoubleBitFieldHeaderPayload(bits: List[DoubleBit]) extends IterableHeaderPayload {
-  override def toBytes: List[Byte] = BitFieldBuilder.buildDouble(bits)
+  override def toBytes: List[Byte] = BitFields.packDouble(bits)
   override def descriptions: Iterable[String] = bits.map(x => x.toString)
   override def iterate: Seq[Point] = bits.map(x => DoubleBitPoint(x, None, None, PointType.Static))
 }

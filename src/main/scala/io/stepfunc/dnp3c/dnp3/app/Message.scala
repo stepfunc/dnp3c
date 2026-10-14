@@ -49,9 +49,7 @@ object Message {
       remainder match {
         case Nil => headers
         case g :: v :: q :: remain =>
-          val variation = Variation.get(g, v)
-          val parser = ObjectHeaderParser.get(q)
-          val result = parser.parse(variation, remain)
+          val result = ObjectHeader.parse(Variation.get(g, v), q, remain)
           recurse(result.value :: headers, result.remainder)
         case _ =>
           throw new Exception("Insufficient bytes for object header: " + remainder.length)

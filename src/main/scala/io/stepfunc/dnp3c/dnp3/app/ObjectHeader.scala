@@ -3,9 +3,68 @@
 
 package io.stepfunc.dnp3c.dnp3.app
 
-import io.stepfunc.dnp3c.protocol.parsing.{ ToBytes, UInt16LE, UInt8 }
+import io.stepfunc.dnp3c.protocol.Hex
+import io.stepfunc.dnp3c.protocol.parsing.{ Parser, ToBytes, UInt16LE, UInt8 }
 
 object ObjectHeader {
+
+  /** a header of the variation, by its qualifier code, with its range or count and objects, from the bytes after it */
+  def parse(variation: Variation, qualifier: Byte, bytes: List[Byte]): Parser.Result[ObjectHeader] = {
+
+    def insufficient(q: Qualifier): Nothing = throw new Exception("Not enough data for: " + q.name)
+
+    def range(start: Int, stop: Int, objects: List[Byte]): Parser.Result[IterableHeaderPayload] = {
+      if (stop < start) throw new Exception("stop < start")
+      variation.parse(stop - start + 1, objects)
+    }
+
+    qualifier match {
+      case Qualifier.ALL_OBJECTS.value => Parser.Result(AllObjectsHeader(variation), bytes)
+      case Qualifier.ONE_BYTE_START_STOP.value =>
+        bytes match {
+          case b1 :: b2 :: objects =>
+            val (start, stop) = (UInt8.fromByte(b1), UInt8.fromByte(b2))
+            range(start.value, stop.value, objects).map(OneByteStartStopHeader(variation, start, stop, _))
+          case _ => insufficient(Qualifier.ONE_BYTE_START_STOP)
+        }
+      case Qualifier.TWO_BYTE_START_STOP.value =>
+        bytes match {
+          case start1 :: start2 :: stop1 :: stop2 :: objects =>
+            val (start, stop) = (UInt16LE(start1, start2), UInt16LE(stop1, stop2))
+            range(start.value, stop.value, objects).map(TwoByteStartStopHeader(variation, start, stop, _))
+          case _ => insufficient(Qualifier.TWO_BYTE_START_STOP)
+        }
+      case Qualifier.ONE_BYTE_COUNT.value =>
+        bytes match {
+          case b :: objects =>
+            val count = UInt8.fromByte(b)
+            variation.parse(count.value, objects).map(OneByteCountHeader(variation, count, _))
+          case _ => insufficient(Qualifier.ONE_BYTE_COUNT)
+        }
+      case Qualifier.TWO_BYTE_COUNT.value =>
+        bytes match {
+          case lsb :: msb :: objects =>
+            val count = UInt16LE(lsb, msb)
+            variation.parse(count.value, objects).map(TwoByteCountHeader(variation, count, _))
+          case _ => insufficient(Qualifier.TWO_BYTE_COUNT)
+        }
+      case Qualifier.ONE_BYTE_COUNT_AND_INDEX.value =>
+        bytes match {
+          case b :: objects =>
+            val count = UInt8.fromByte(b)
+            variation.parsePrefixedU8(count.value, objects).map(OneByteCountAndIndexHeader(variation, count, _))
+          case _ => insufficient(Qualifier.ONE_BYTE_COUNT_AND_INDEX)
+        }
+      case Qualifier.TWO_BYTE_COUNT_AND_INDEX.value =>
+        bytes match {
+          case lsb :: msb :: objects =>
+            val count = UInt16LE(lsb, msb)
+            variation.parsePrefixedU16(count.value, objects).map(TwoByteCountAndIndexHeader(variation, count, _))
+          case _ => insufficient(Qualifier.TWO_BYTE_COUNT_AND_INDEX)
+        }
+      case _ => throw new Exception("Unknown qualifier: " + Hex.prefixed(qualifier))
+    }
+  }
 
   def describe(start: Int, payload: HeaderPayload): Iterable[String] = payload.descriptions.zipWithIndex.map { x =>
     index(start + x._2) + " - " + x._1

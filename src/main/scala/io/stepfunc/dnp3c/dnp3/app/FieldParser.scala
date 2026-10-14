@@ -5,8 +5,6 @@ package io.stepfunc.dnp3c.dnp3.app
 
 import io.stepfunc.dnp3c.protocol.parsing._
 
-import java.nio.{ ByteBuffer, ByteOrder }
-
 sealed trait FieldPointParser {
   def parse(input: List[Byte], pointBuilder: PointBuilder): Parser.Result[Field]
 }
@@ -32,19 +30,31 @@ object FieldParser {
   def u8(name: String, format: Byte => String): FieldParser[Byte] =
     Details.U8(name, (n, value) => Field.Types.U8(n, value, format(value)))
 
-  def u16(name: String, isTime: Boolean): FieldParser[UInt16LE] = Details.U16(name, isTime)
-  def s16(name: String): FieldParser[Short] = Details.S16(name)
+  def u16(name: String, isTime: Boolean): FieldParser[UInt16LE] =
+    Details.Fixed("U16", name, 2, v => UInt16LE(v.toInt), Field.u16(name, _)) { (builder, value) =>
+      if (isTime) builder.onTimestamp(Timestamp(value.value, true)) else builder.onIntegerValue(value.value)
+    }
+  def s16(name: String): FieldParser[Short] =
+    Details.Fixed("S16", name, 2, _.toShort, v => Field.s16(name, SInt16LE(v)))(_.onIntegerValue(_))
 
-  def u32(name: String): FieldParser[UInt32LE] = Details.U32(name)
-  def s32(name: String): FieldParser[Int] = Details.S32(name)
+  def u32(name: String): FieldParser[UInt32LE] =
+    Details.Fixed("U32", name, 4, UInt32LE(_), Field.u32(name, _))((builder, v) => builder.onIntegerValue(v.value))
+  def s32(name: String): FieldParser[Int] =
+    Details.Fixed("S32", name, 4, _.toInt, v => Field.s32(name, SInt32LE(v)))(_.onIntegerValue(_))
 
-  def u48(name: String): FieldParser[UInt48LE] = Details.U48(name)
+  def u48(name: String): FieldParser[UInt48LE] =
+    Details.Fixed("U48", name, 6, UInt48LE(_), Field.u48(name, _)) { (builder, value) =>
+      builder.onTimestamp(Timestamp(value.value, false))
+    }
 
   // a device attribute as its data type code and value octets, described by format
   def attribute(format: (Byte, List[Byte]) => String): FieldParser[(Byte, List[Byte])] = Details.Attribute(format)
 
-  def f32(name: String): FieldParser[Float] = Details.F32(name)
-  def f64(name: String): FieldParser[Double] = Details.F64(name)
+  def f32(name: String): FieldParser[Float] =
+    Details.Fixed("F32", name, 4, v => java.lang.Float.intBitsToFloat(v.toInt), Field.f32(name, _))(
+      _.onFloatingValue(_))
+  def f64(name: String): FieldParser[Double] =
+    Details.Fixed("F64", name, 8, java.lang.Double.longBitsToDouble, Field.f64(name, _))(_.onFloatingValue(_))
 
   private object Details {
 
@@ -97,89 +107,20 @@ object FieldParser {
       }
     }
 
-    sealed case class U16(name: String, isTime: Boolean) extends FieldParser[UInt16LE] {
-      def apply(value: UInt16LE): Field = Field.u16(name, value)
-      def parse(input: List[Byte], pointBuilder: PointBuilder): Parser.Result[Field] = input match {
-        case b1 :: b2 :: remainder =>
-          val field = Field.u16(name, UInt16LE(b1, b2))
-          if (isTime) {
-            pointBuilder.onTimestamp(Timestamp(field.value.value, true))
-          } else {
-            pointBuilder.onIntegerValue(field.value.value)
-          }
-          Parser.Result(field, remainder)
-        case _ => throw new Exception("Insufficient bytes for U16: " + name)
-      }
-    }
-
-    sealed case class S16(name: String) extends FieldParser[Short] {
-      def apply(value: Short): Field = Field.s16(name, SInt16LE(value))
-      def parse(input: List[Byte], pointBuilder: PointBuilder): Parser.Result[Field] = input match {
-        case b1 :: b2 :: remainder =>
-          val field = Field.s16(name, SInt16LE(b1, b2))
-          pointBuilder.onIntegerValue(field.value.value)
-          Parser.Result(field, remainder)
-        case _ => throw new Exception("Insufficient bytes for S16: " + name)
-      }
-    }
-
-    sealed case class U32(name: String) extends FieldParser[UInt32LE] {
-      def apply(value: UInt32LE): Field = Field.u32(name, value)
-      def parse(input: List[Byte], pointBuilder: PointBuilder): Parser.Result[Field] = input match {
-        case b1 :: b2 :: b3 :: b4 :: remainder =>
-          val field = Field.u32(name, UInt32LE(b1, b2, b3, b4))
-          pointBuilder.onIntegerValue(field.value.value)
-          Parser.Result(field, remainder)
-        case _ => throw new Exception("Insufficient bytes for U32: " + name)
-      }
-    }
-
-    sealed case class S32(name: String) extends FieldParser[Int] {
-      def apply(value: Int): Field = Field.s32(name, SInt32LE(value))
-      def parse(input: List[Byte], pointBuilder: PointBuilder): Parser.Result[Field] = input match {
-        case b1 :: b2 :: b3 :: b4 :: remainder =>
-          val field = Field.s32(name, SInt32LE(b1, b2, b3, b4))
-          pointBuilder.onIntegerValue(field.value.value)
-          Parser.Result(field, remainder)
-        case _ => throw new Exception("Insufficient bytes for S32: " + name)
-      }
-    }
-
-    sealed case class U48(name: String) extends FieldParser[UInt48LE] {
-      def apply(value: UInt48LE): Field = Field.u48(name, value)
-      def parse(input: List[Byte], pointBuilder: PointBuilder): Parser.Result[Field] = input match {
-        case b1 :: b2 :: b3 :: b4 :: b5 :: b6 :: remainder =>
-          val field = Field.u48(name, UInt48LE(b1, b2, b3, b4, b5, b6))
-          pointBuilder.onTimestamp(Timestamp(field.value.value, false))
-          Parser.Result(field, remainder)
-        case _ => throw new Exception("Insufficient bytes for U48: " + name)
-      }
-    }
-
-    sealed case class F32(name: String) extends FieldParser[Float] {
-      def apply(value: Float): Field = Field.f32(name, value)
-      def parse(input: List[Byte], pointBuilder: PointBuilder): Parser.Result[Field] = input match {
-        case b1 :: b2 :: b3 :: b4 :: remainder =>
-          val buffer = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).put(b1).put(b2).put(b3).put(b4)
-          buffer.rewind()
-          val field = Field.f32(name, buffer.getFloat())
-          pointBuilder.onFloatingValue(field.value)
-          Parser.Result(field, remainder)
-        case _ => throw new Exception("Insufficient bytes for F32: " + name)
-      }
-    }
-
-    sealed case class F64(name: String) extends FieldParser[Double] {
-      def apply(value: Double): Field = Field.f64(name, value)
-      def parse(input: List[Byte], pointBuilder: PointBuilder): Parser.Result[Field] = input match {
-        case b1 :: b2 :: b3 :: b4 :: b5 :: b6 :: b7 :: b8 :: remainder =>
-          val buffer = ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN)
-          buffer.put(b1).put(b2).put(b3).put(b4).put(b5).put(b6).put(b7).put(b8)
-          buffer.rewind()
-          val field = Field.f64(name, buffer.getDouble())
-          pointBuilder.onFloatingValue(field.value)
-          Parser.Result(field, remainder)
-        case _ => throw new Exception("Insufficient bytes for F64: " + name)
+    // a field of a fixed number of bytes, least significant first, decoded to a value the point builder is given
+    final class Fixed[A](
+        kind: String,
+        name: String,
+        width: Int,
+        decode: Long => A,
+        field: A => Field)(onValue: (PointBuilder, A) => Unit) extends FieldParser[A] {
+      def apply(value: A): Field = field(value)
+      def parse(input: List[Byte], pointBuilder: PointBuilder): Parser.Result[Field] = {
+        val (bytes, remainder) = input.splitAt(width)
+        if (bytes.size < width) throw new Exception(s"Insufficient bytes for $kind: $name")
+        val value = decode(Integers.fromBytesLE(bytes))
+        onValue(pointBuilder, value)
+        Parser.Result(field(value), remainder)
       }
     }
   }
