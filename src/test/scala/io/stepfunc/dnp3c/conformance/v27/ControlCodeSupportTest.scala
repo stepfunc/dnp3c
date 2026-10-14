@@ -4,7 +4,7 @@
 package io.stepfunc.dnp3c.conformance.v27
 
 import io.stepfunc.dnp3c.conformance.Run
-import io.stepfunc.dnp3c.conformance.api.options.ControlOptions
+import io.stepfunc.dnp3c.conformance.api.options.BinaryOutputOptions
 import io.stepfunc.dnp3c.dnp3._
 import io.stepfunc.dnp3c.dnp3.app._
 import org.junit.runner.RunWith
@@ -51,14 +51,17 @@ class ControlCodeSupportTest extends AnyFunSuite with Matchers {
 
   test("a pair without a configured point is skipped, and the others still get their own sequence numbers") {
     val dut = new Dut()
-    run(dut, Map(ControlOptions.pulseOnOffPoint.index.id -> ""))
+    run(dut, Map(BinaryOutputOptions.pulseOnOffPoint.index.id -> ""))
     dut.sequences should have size 6
     dut.sequences.distinct should have size 6
   }
 
   test("a DUT with no complementary-function point configured sends no controls") {
     val dut = new Dut()
-    val none = List(ControlOptions.latchOnOffPoint, ControlOptions.pulseOnOffPoint, ControlOptions.latchAndPulsePoint)
+    val none = List(
+      BinaryOutputOptions.latchOnOffPoint,
+      BinaryOutputOptions.pulseOnOffPoint,
+      BinaryOutputOptions.latchAndPulsePoint)
     run(dut, none.map(_.index.id -> "").toMap)
     dut.sequences should be(empty)
   }

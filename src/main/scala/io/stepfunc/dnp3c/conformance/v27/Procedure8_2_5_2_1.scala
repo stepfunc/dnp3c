@@ -4,7 +4,7 @@
 package io.stepfunc.dnp3c.conformance.v27
 
 import io.stepfunc.dnp3c.conformance.api._
-import io.stepfunc.dnp3c.conformance.api.options.{ ControlOptions, SupportOptions }
+import io.stepfunc.dnp3c.conformance.api.options.{ BinaryOutputOptions, SupportOptions }
 import io.stepfunc.dnp3c.conformance.common.{ OperationSteps, OperationType }
 import io.stepfunc.dnp3c.dnp3.app.objects.ControlCode
 import io.stepfunc.dnp3c.dnp3.app.MutableSequence
@@ -22,7 +22,7 @@ object Procedure8_2_5_2_1 extends ProcedureDefinition {
     def operateEach(
         first: Int,
         last: Int,
-        point: ControlOptions.ControlCodePointOptions,
+        point: BinaryOutputOptions.ControlCodePointOptions,
         codes: List[ControlCode],
         pair: String): List[LabeledStep] = codes.flatMap(point.getConfig(options, _)) match {
       case Nil => List((first to last) --> describe(s"DUT does not support $pair."))
@@ -36,20 +36,28 @@ object Procedure8_2_5_2_1 extends ProcedureDefinition {
 
     val latchPair = "Latch On/NUL and Latch Off/NUL pair"
     val pulsePair = "Pulse On/Close and Pulse On/Trip pair"
-    val points = List(ControlOptions.latchOnOffPoint, ControlOptions.pulseOnOffPoint, ControlOptions.latchAndPulsePoint)
+    val points = List(
+      BinaryOutputOptions.latchOnOffPoint,
+      BinaryOutputOptions.pulseOnOffPoint,
+      BinaryOutputOptions.latchAndPulsePoint)
 
     if (points.exists(_.isPresent(options))) {
-      operateEach(3, 7, ControlOptions.latchOnOffPoint, List(ControlCode.latchOn, ControlCode.latchOff), latchPair) ++
+      operateEach(
+        3,
+        7,
+        BinaryOutputOptions.latchOnOffPoint,
+        List(ControlCode.latchOn, ControlCode.latchOff),
+        latchPair) ++
         operateEach(
           8,
           12,
-          ControlOptions.pulseOnOffPoint,
+          BinaryOutputOptions.pulseOnOffPoint,
           List(ControlCode.pulseClose, ControlCode.pulseTrip),
           pulsePair) ++
         operateEach(
           13,
           21,
-          ControlOptions.latchAndPulsePoint,
+          BinaryOutputOptions.latchAndPulsePoint,
           List(ControlCode.latchOn, ControlCode.pulseTrip, ControlCode.pulseClose, ControlCode.latchOff),
           s"both $latchPair and $pulsePair"
         )

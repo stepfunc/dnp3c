@@ -51,7 +51,7 @@ class PointGatingTest extends AnyFunSuite with Matchers {
       val options = Options.from(Map(
         Inputs.binary.points.id -> points.toString,
         Inputs.binary.events.id -> events.toString,
-        api.options.TimeSyncOptions.binaryInputChangeWithRelativeTime.id -> relative.toString
+        api.options.TimeSyncOptions.binaryInput.withRelativeTime.id -> relative.toString
       ))
       withClue(s"points=$points events=$events relative=$relative: ")(
         v27.Procedure8_15_2.disabledBy(options).isEmpty should equal(points && events && relative))

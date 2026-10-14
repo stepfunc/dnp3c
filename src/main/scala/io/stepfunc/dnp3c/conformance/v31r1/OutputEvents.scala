@@ -5,7 +5,7 @@ package io.stepfunc.dnp3c.conformance.v31r1
 
 import io.stepfunc.dnp3c.conformance.api._
 import io.stepfunc.dnp3c.conformance.api.options.{
-  AnalogOutputOptions, CommandConfig, ControlOptions, OutstationOptions
+  AnalogOutputOptions, CommandConfig, BinaryOutputOptions, OutstationOptions
 }
 import io.stepfunc.dnp3c.conformance.api.options.SupportOptions.Outputs
 import io.stepfunc.dnp3c.conformance.common.GenericSteps._
@@ -102,7 +102,7 @@ object OutputEvents {
     Outputs.binary.statusPoints,
     List(Outputs.binary.events, Outputs.binary.commandEvents),
     Group10Var2,
-    ControlOptions.installedPoints)
+    BinaryOutputOptions.installedPoints)
 
   // 10.4.2's step 2 says object 10 variation 2, where its desired behavior has analog output status, 40 variation 2
   val analogStatusInClassZero: ProcedureDefinition = inClassZero(
@@ -137,7 +137,7 @@ object OutputEvents {
     override protected def plan(options: OptionSource): Plan = {
       val seq = sequences
       val drain = new Drain(seq, Group10)
-      val flags = options.get(ControlOptions.statusFlags).map(_.value)
+      val flags = options.get(BinaryOutputOptions.statusFlags).map(_.value)
       var point = 0
       var current: BinaryOutputStatusPoint = BinaryOutputStatusPoint(false, Some(0), None, PointType.Static)
       var changed: List[Int] = Nil
@@ -171,7 +171,7 @@ object OutputEvents {
       )
 
       val stateSteps =
-        if (options.get(ControlOptions.statusStateEvents))
+        if (options.get(BinaryOutputOptions.statusStateEvents))
           List(
             12 --> action("Change the binary output's state, as would generate an event") { (plugin, reporter) =>
               plugin.changeBinaryOutputState(reporter, point)
@@ -423,8 +423,8 @@ object OutputEvents {
 
     override protected def steps(options: OptionSource): Iterable[LabeledStep] = {
       val seq = sequences
-      val primary = ControlOptions.primary.getConfig(options)
-      val other = ControlOptions.alternate.getConfig(options)
+      val primary = BinaryOutputOptions.primary.getConfig(options)
+      val other = BinaryOutputOptions.alternate.getConfig(options)
       var sent = 0L
       var operateStatus = 0
       def command = new TestStep {

@@ -4,7 +4,7 @@
 package io.stepfunc.dnp3c.conformance.common
 
 import io.stepfunc.dnp3c.conformance.api._
-import io.stepfunc.dnp3c.conformance.api.options.ControlOptions
+import io.stepfunc.dnp3c.conformance.api.options.BinaryOutputOptions
 import io.stepfunc.dnp3c.conformance.common.GenericSteps._
 import io.stepfunc.dnp3c.conformance.common.Validations._
 import io.stepfunc.dnp3c.dnp3.app._
@@ -163,7 +163,7 @@ private[conformance] object SupervisoryControl {
    * or 2-octet ones for an index past 255
    */
   def control(options: OptionSource, index: Index, status: CommandStatus = CommandStatus.SUCCESS): ObjectHeader = {
-    val config = ControlOptions.primary.getConfig(options)
+    val config = BinaryOutputOptions.primary.getConfig(options)
     if (index.value <= 0xFF) config.oneByteHeader(index, _.copy(status = status))
     else config.twoByteHeader(index, _.copy(status = status))
   }

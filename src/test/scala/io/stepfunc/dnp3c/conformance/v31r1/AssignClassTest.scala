@@ -88,8 +88,8 @@ class AssignClassTest extends AnyFunSuite with Matchers {
   private def run(dut: Dut, level: Int = 3): (Boolean, List[String]) = {
     val options = Options.from(Map(
       OutstationOptions.subsetLevel.id -> level.toString,
-      ClassOptions.class1BinaryInputs.id -> "0",
-      ClassOptions.class2BinaryInputs.id -> "1, 2"))
+      ClassOptions.class1.binaryInputs.id -> "0",
+      ClassOptions.class2.binaryInputs.id -> "1, 2"))
     val passed = Run.passes(AssignClass.assignClass, dut, options)
     (passed, dut.reporter.notes)
   }
@@ -115,14 +115,14 @@ class AssignClassTest extends AnyFunSuite with Matchers {
 
   test("8.26.2 needs a class 1 binary input and two class 2 ones, and 8.26.3 two in each class") {
     val classes = Map(
-      ClassOptions.supportClass1.id -> "true",
-      ClassOptions.supportClass2.id -> "true",
-      ClassOptions.supportClass3.id -> "true")
+      ClassOptions.class1.supported.id -> "true",
+      ClassOptions.class2.supported.id -> "true",
+      ClassOptions.class3.supported.id -> "true")
     def problems(test: io.stepfunc.dnp3c.conformance.api.ProcedureDefinition, points: (String, String)*) =
       test.configurationProblems(Options.from(classes ++ points)).map(_.key)
-    val class1 = ClassOptions.class1BinaryInputs.id
-    val class2 = ClassOptions.class2BinaryInputs.id
-    val class3 = ClassOptions.class3BinaryInputs.id
+    val class1 = ClassOptions.class1.binaryInputs.id
+    val class2 = ClassOptions.class2.binaryInputs.id
+    val class3 = ClassOptions.class3.binaryInputs.id
     problems(AssignClass.assignClass, class1 -> "0", class2 -> "1, 2") should equal(Nil)
     problems(AssignClass.assignClass, class1 -> "0", class2 -> "1") should equal(List(class2))
     problems(AssignClass.noClass, class1 -> "0, 1", class2 -> "2, 3", class3 -> "4, 5") should equal(Nil)

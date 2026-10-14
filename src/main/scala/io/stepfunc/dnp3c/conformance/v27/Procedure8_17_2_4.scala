@@ -13,6 +13,6 @@ object Procedure8_17_2_4 extends ProcedureDefinition {
   override def requiredOptions: List[OptionCondition] = Inputs.counter.withEvents
 
   override protected def steps(options: OptionSource): Iterable[LabeledStep] = {
-    CounterEventSteps.CountQualifierSteps(options.get(CounterOptions.numCounterEventsGenerated), true)
+    CounterEventSteps.CountQualifierSteps(options.get(CounterOptions.numEventsGenerated), true)
   }
 }

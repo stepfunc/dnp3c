@@ -6,7 +6,7 @@ package io.stepfunc.dnp3c.conformance.api
 import java.nio.file.{ Files, Path }
 
 import io.stepfunc.dnp3c.conformance.api.options.{
-  AnalogOutputOptions, ControlOptions, LinkOptions, OutstationOptions, SupportOptions, TestOptions, TimeSyncOptions
+  AnalogOutputOptions, BinaryOutputOptions, LinkOptions, OutstationOptions, SupportOptions, TestOptions, TimeSyncOptions
 }
 import io.stepfunc.dnp3c.conformance.application.OptionFileWriter
 import org.junit.runner.RunWith
@@ -17,8 +17,8 @@ import org.scalatest.funsuite.AnyFunSuite
 @RunWith(classOf[JUnitRunner])
 class OptionsTestSuite extends AnyFunSuite with Matchers {
 
-  private val function = ControlOptions.primary.options.collectFirst { case o: HexByteOption => o }.get
-  private val latchOnOff = ControlOptions.latchOnOffPoint.index
+  private val function = BinaryOutputOptions.primary.options.collectFirst { case o: HexByteOption => o }.get
+  private val latchOnOff = BinaryOutputOptions.latchOnOffPoint.index
 
   private def file(lines: String*): Path = {
     val path = Files.createTempFile("dnp3c", ".ini")
@@ -67,10 +67,10 @@ class OptionsTestSuite extends AnyFunSuite with Matchers {
 
   test("the command indexes procedures send with 1-octet indexes are at most 255; the others may be 16-bit") {
     val oneOctet = List(
-      ControlOptions.primary.index,
-      ControlOptions.alternate.index,
+      BinaryOutputOptions.primary.index,
+      BinaryOutputOptions.alternate.index,
       latchOnOff,
-      ControlOptions.singleFunctionPulseOnTripPoint.index,
+      BinaryOutputOptions.singleFunctionPulseOnTripPoint.index,
       AnalogOutputOptions.primary.index,
       AnalogOutputOptions.alternate.index
     )
@@ -78,7 +78,7 @@ class OptionsTestSuite extends AnyFunSuite with Matchers {
       Options.load(file(s"${option.id} = 255"))
       problems(s"${option.id} = 256").map(_.key) should equal(List(option.id))
     }
-    for (option <- List(ControlOptions.uninstalledIndex, AnalogOutputOptions.uninstalledIndex))
+    for (option <- List(BinaryOutputOptions.uninstalledIndex, AnalogOutputOptions.uninstalledIndex))
       Options.load(file(s"${option.id} = 65535")).get(option) should equal(Index.max)
   }
 

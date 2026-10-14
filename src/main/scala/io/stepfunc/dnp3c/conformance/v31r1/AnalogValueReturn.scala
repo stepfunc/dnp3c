@@ -15,7 +15,7 @@ import io.stepfunc.dnp3c.dnp3.app.objects.{ Group30Var0, Group32Var0 }
 /**
  * 3.1r1's 8.19.2.4, Analog Input Change, Value Return: one analog input goes up by 150% of its deadband, and back while
  * the event of the change is unconfirmed. The second read reports one event or two, as the Device Profile says the DUT
- * queues them (supports.analogEventsQueuedPerPoint), the last with the value it returned to.
+ * queues them (supports.analogInputEventsQueuedPerPoint), the last with the value it returned to.
  */
 object AnalogValueReturn {
 
@@ -56,7 +56,7 @@ object AnalogValueReturn {
       val deadband = options.get(AnalogInputOptions.valueReturnDeadband).getOrElse(
         throw new Exception(s"${AnalogInputOptions.valueReturnDeadband.id} isn't set: 8.19.2.4 changes by it"))
       val tolerance = options.get(AnalogInputOptions.valueTolerance)
-      val queued = options.get(SupportOptions.analogEventsQueuedPerPoint)
+      val queued = options.get(SupportOptions.analogInputEventsQueuedPerPoint)
       val change = AnalogValueReturn.change(deadband)
       var initial: Option[Double] = None
       def recorded: Double = initial.getOrElse(throw new Exception("Step 1 didn't record the analog input's value"))

@@ -15,8 +15,8 @@ object Procedure8_6_6_2_4 extends ProcedureDefinition {
 
   override protected def steps(options: OptionSource): Iterable[LabeledStep] = {
 
-    val maxEvents = options.get(EventBufferOptions.maxDoubleBitBinaryInputEvents)
-    val eventClass = EventClassData.numbered(options.get(DoubleBitInputOptions.doubleBitEventsClass))
+    val maxEvents = options.get(EventBufferOptions.maxDoubleBitInputEvents)
+    val eventClass = EventClassData.numbered(options.get(DoubleBitInputOptions.eventsClass))
 
     EventBufferSteps.get(
       "Double-bit Input Change Events",

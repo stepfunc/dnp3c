@@ -6,7 +6,9 @@ package io.stepfunc.dnp3c.conformance.common
 import io.stepfunc.dnp3c.conformance.Run
 import io.stepfunc.dnp3c.conformance.Placements.id
 import io.stepfunc.dnp3c.conformance.api.{ Index, Options, ProcedureDefinition }
-import io.stepfunc.dnp3c.conformance.api.options.{ AnalogOutputOptions, CommandConfig, ControlOptions, SupportOptions }
+import io.stepfunc.dnp3c.conformance.api.options.{
+  AnalogOutputOptions, CommandConfig, BinaryOutputOptions, SupportOptions
+}
 import io.stepfunc.dnp3c.conformance.v27.{ Procedure8_2_1_2_1, Procedure8_2_1_2_3, Procedure8_2_1_2_10 }
 import io.stepfunc.dnp3c.conformance.v27.{ Procedure8_4_1_2_1, Procedure8_4_1_2_3, Procedure8_4_1_2_7 }
 import io.stepfunc.dnp3c.dnp3._
@@ -51,10 +53,10 @@ class OutputProceduresTest extends AnyFunSuite with Matchers {
     (config.twoByteHeader(index), CommandConfig(index, notSupported).twoByteHeader)
 
   private val binaryUninstalled = {
-    val config = ControlOptions.primary.getConfig(defaults)
+    val config = BinaryOutputOptions.primary.getConfig(defaults)
     uninstalled(
       config,
-      defaults.get(ControlOptions.uninstalledIndex),
+      defaults.get(BinaryOutputOptions.uninstalledIndex),
       config.command.copy(status = CommandStatus.NOT_SUPPORTED))
   }
 

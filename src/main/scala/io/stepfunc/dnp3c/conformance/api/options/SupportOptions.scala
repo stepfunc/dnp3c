@@ -94,10 +94,10 @@ object SupportOptions extends OptionGroup {
   object Inputs {
 
     val binary: InputOptions = InputOptions("binaryInput", "Binary Input")
-    val doubleBit: InputOptions = InputOptions("doubleBit", "Double Bit")
+    val doubleBit: InputOptions = InputOptions("doubleBitInput", "Double Bit")
     val counter: InputOptions = InputOptions("counter", "Counter")
     val frozenCounter: InputOptions = InputOptions("frozenCounter", "Frozen Counter")
-    val analog: InputOptions = InputOptions("analog", "Analog Input")
+    val analog: InputOptions = InputOptions("analogInput", "Analog Input")
 
     val allOptions: List[BooleanOption] = List(binary, doubleBit, counter, frozenCounter, analog).flatMap(_.allOptions)
   }
@@ -121,9 +121,9 @@ object SupportOptions extends OptionGroup {
     true,
     "Does the DUT retry primary transmissions when a data link layer confirmation is not received?")
 
-  val analogEventsQueuedPerPoint: BooleanOption = OptionTypes.boolean(
+  val analogInputEventsQueuedPerPoint: BooleanOption = OptionTypes.boolean(
     this,
-    "analogEventsQueuedPerPoint",
+    "analogInputEventsQueuedPerPoint",
     true,
     "Does the DUT queue multiple Analog Input change events for the same point?")
 
@@ -194,7 +194,7 @@ object SupportOptions extends OptionGroup {
   override def options: List[TestOption] = Inputs.allOptions ::: Outputs.allOptions ::: List(
     dataLinkConfirmRequests,
     dataLinkRetries,
-    analogEventsQueuedPerPoint,
+    analogInputEventsQueuedPerPoint,
     counterEventsQueuedPerPoint,
     multiFragmentResponses,
     selfAddress,

@@ -12,12 +12,12 @@ import io.stepfunc.dnp3c.dnp3.app.objects.{ Group32Var1, Group32Var2, Group32Var
 object Procedure8_6_6_2_2 extends ProcedureDefinition {
 
   override protected def requiredOptions = Inputs.analog.withEvents :+
-    OptionCondition(SupportOptions.analogEventsQueuedPerPoint)
+    OptionCondition(SupportOptions.analogInputEventsQueuedPerPoint)
 
   override protected def steps(options: OptionSource): Iterable[LabeledStep] = {
 
     val maxEvents = options.get(EventBufferOptions.maxAnalogInputEvents)
-    val eventClass = EventClassData.numbered(options.get(AnalogInputOptions.analogInputEventsClass))
+    val eventClass = EventClassData.numbered(options.get(AnalogInputOptions.eventsClass))
 
     EventBufferSteps.get(
       "Analog Input Change Events",

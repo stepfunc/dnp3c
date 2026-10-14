@@ -53,12 +53,12 @@ sealed abstract class InputType(val name: String, val support: SupportOptions.In
 
 object InputType {
   object BinaryInput extends InputType("binary input", SupportOptions.Inputs.binary) {
-    def numEventsGenerated: IntegerOption = BinaryInputOptions.numBinaryEventsGenerated
+    def numEventsGenerated: IntegerOption = BinaryInputOptions.numEventsGenerated
     def defaultEventVariation: RequiredIntegerOption = BinaryInputOptions.defaultEventVariation
-    def withTime: BooleanOption = TimeSyncOptions.binaryInputChangeWithTime
-    def withRelativeTime: BooleanOption = TimeSyncOptions.binaryInputChangeWithRelativeTime
-    def withTimeRejected: BooleanOption = TimeSyncOptions.binaryInputChangeWithTimeRejected
-    def withRelativeTimeRejected: BooleanOption = TimeSyncOptions.binaryInputChangeWithRelativeTimeRejected
+    def withTime: BooleanOption = TimeSyncOptions.binaryInput.withTime
+    def withRelativeTime: BooleanOption = TimeSyncOptions.binaryInput.withRelativeTime
+    def withTimeRejected: BooleanOption = TimeSyncOptions.binaryInput.withTimeRejected
+    def withRelativeTimeRejected: BooleanOption = TimeSyncOptions.binaryInput.withRelativeTimeRejected
 
     def anyVariation: Variation = Group2Var0
     def noTimeVariation: Variation = Group2Var1
@@ -78,12 +78,12 @@ object InputType {
   }
 
   object DoubleBitBinaryInput extends InputType("double-bit input", SupportOptions.Inputs.doubleBit) {
-    def numEventsGenerated: IntegerOption = DoubleBitInputOptions.numDoubleBitEventsGenerated
+    def numEventsGenerated: IntegerOption = DoubleBitInputOptions.numEventsGenerated
     def defaultEventVariation: RequiredIntegerOption = DoubleBitInputOptions.defaultEventVariation
-    def withTime: BooleanOption = TimeSyncOptions.doubleBitInputChangeWithTime
-    def withRelativeTime: BooleanOption = TimeSyncOptions.doubleBitInputChangeWithRelativeTime
-    def withTimeRejected: BooleanOption = TimeSyncOptions.doubleBitInputChangeWithTimeRejected
-    def withRelativeTimeRejected: BooleanOption = TimeSyncOptions.doubleBitInputChangeWithRelativeTimeRejected
+    def withTime: BooleanOption = TimeSyncOptions.doubleBitInput.withTime
+    def withRelativeTime: BooleanOption = TimeSyncOptions.doubleBitInput.withRelativeTime
+    def withTimeRejected: BooleanOption = TimeSyncOptions.doubleBitInput.withTimeRejected
+    def withRelativeTimeRejected: BooleanOption = TimeSyncOptions.doubleBitInput.withRelativeTimeRejected
 
     def anyVariation: Variation = Group4Var0
     def noTimeVariation: Variation = Group4Var1

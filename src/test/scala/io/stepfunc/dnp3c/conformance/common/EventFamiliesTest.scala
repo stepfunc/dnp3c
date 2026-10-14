@@ -84,7 +84,7 @@ class EventFamiliesTest extends AnyFunSuite with Matchers {
   }
 
   test("the event buffer procedures read the class the points are assigned to") {
-    val dut = run(Procedure8_6_6_2_1, overflowing, Map(BinaryInputOptions.binaryEventsClass.id -> "2"))
+    val dut = run(Procedure8_6_6_2_1, overflowing, Map(BinaryInputOptions.eventsClass.id -> "2"))
     dut.reads.toList.drop(1).map(_._2) should equal(List.fill(3)(List(Group60Var3)))
   }
 }

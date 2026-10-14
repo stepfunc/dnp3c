@@ -4,7 +4,7 @@
 package io.stepfunc.dnp3c.conformance.v31r1
 
 import io.stepfunc.dnp3c.conformance.api._
-import io.stepfunc.dnp3c.conformance.api.options.ControlOptions
+import io.stepfunc.dnp3c.conformance.api.options.BinaryOutputOptions
 import io.stepfunc.dnp3c.conformance.api.options.SupportOptions.Outputs
 import io.stepfunc.dnp3c.conformance.common.GenericSteps._
 import io.stepfunc.dnp3c.conformance.common.Validations._
@@ -44,7 +44,7 @@ object ControlStatus {
     override protected def requiredOptions: List[OptionCondition] = List(Outputs.binary.commands)
 
     override protected def steps(options: OptionSource): Iterable[LabeledStep] = {
-      val select = ControlOptions.primary.getConfig(options).twoByteHeader(Index(0), _.copy(status = sentStatus))
+      val select = BinaryOutputOptions.primary.getConfig(options).twoByteHeader(Index(0), _.copy(status = sentStatus))
       List(
         1 --> send(AppFunction.select, Sequence.zero, select),
         (2 to 3) --> new TestStep {

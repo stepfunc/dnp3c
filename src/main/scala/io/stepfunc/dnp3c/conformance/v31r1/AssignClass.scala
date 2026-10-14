@@ -87,7 +87,10 @@ object AssignClass {
   private val binaryEvents: List[OptionCondition] = List(Inputs.binary.points, Inputs.binary.events)
 
   private def allClasses(options: OptionSource): Boolean =
-    List(ClassOptions.supportClass1, ClassOptions.supportClass2, ClassOptions.supportClass3).forall(options.get(_))
+    List(
+      ClassOptions.class1.supported,
+      ClassOptions.class2.supported,
+      ClassOptions.class3.supported).forall(options.get(_))
 
   // the binary inputs a test assigns: at least as many in each class as it needs
   private def needs(options: OptionSource, test: String, counts: (IndexListOption, Int)*): List[ConfigProblem] =
@@ -105,7 +108,7 @@ object AssignClass {
     // a point in class 1 and two in class 2, for a device with all three classes: one without skips the test
     override def configurationProblems(options: OptionSource): List[ConfigProblem] =
       if (!allClasses(options)) Nil
-      else needs(options, "8.26.2", ClassOptions.class1BinaryInputs -> 1, ClassOptions.class2BinaryInputs -> 2)
+      else needs(options, "8.26.2", ClassOptions.class1.binaryInputs -> 1, ClassOptions.class2.binaryInputs -> 2)
 
     override protected def plan(options: OptionSource): Plan = {
       if (!allClasses(options))
@@ -113,8 +116,8 @@ object AssignClass {
           "the DUT doesn't support classes 1, 2 and 3, so it isn't subset level 3 conformant: the test is skipped")))
       else {
         val levelThree = options.get(OutstationOptions.subsetLevel).contains(3)
-        val c1 = new Startup(options, ClassOptions.class1BinaryInputs, 1)
-        val c2 = new Startup(options, ClassOptions.class2BinaryInputs, 2)
+        val c1 = new Startup(options, ClassOptions.class1.binaryInputs, 1)
+        val c2 = new Startup(options, ClassOptions.class2.binaryInputs, 2)
         val seqs = Iterator.iterate(Sequence.zero)(_.next).take(64).toVector
         // whether the classes may not be the startup ones, which the cleanup then puts back
         var reassigned = false
@@ -236,14 +239,14 @@ object AssignClass {
     override def configurationProblems(options: OptionSource): List[ConfigProblem] = needs(
       options,
       "8.26.3",
-      ClassOptions.class1BinaryInputs -> 2,
-      ClassOptions.class2BinaryInputs -> 2,
-      ClassOptions.class3BinaryInputs -> 2)
+      ClassOptions.class1.binaryInputs -> 2,
+      ClassOptions.class2.binaryInputs -> 2,
+      ClassOptions.class3.binaryInputs -> 2)
 
     override protected def plan(options: OptionSource): Plan = {
-      val c1 = new Startup(options, ClassOptions.class1BinaryInputs, 2)
-      val c2 = new Startup(options, ClassOptions.class2BinaryInputs, 2)
-      val c3 = new Startup(options, ClassOptions.class3BinaryInputs, 2)
+      val c1 = new Startup(options, ClassOptions.class1.binaryInputs, 2)
+      val c2 = new Startup(options, ClassOptions.class2.binaryInputs, 2)
+      val c3 = new Startup(options, ClassOptions.class3.binaryInputs, 2)
       // one point of each class goes to no class, and another of each keeps its class
       def gone: List[Int] = List(c1(0), c2(0), c3(0))
       var before: Set[(String, String)] = Set.empty
