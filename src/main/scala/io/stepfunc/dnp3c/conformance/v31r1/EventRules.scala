@@ -7,6 +7,7 @@ import scala.util.Try
 
 import io.stepfunc.dnp3c.conformance.api.{ ConfigProblem, OptionSource, TestProcedure }
 import io.stepfunc.dnp3c.conformance.api.options.{ OutstationOptions, TimeSyncOptions }
+import io.stepfunc.dnp3c.conformance.api.options.SupportOptions.Inputs
 import io.stepfunc.dnp3c.conformance.s8.helpers.{ InputType, Validations }
 import io.stepfunc.dnp3c.dnp3.{ Comment, DeferredCheck, MessageValidation, ProcedureReporter }
 import io.stepfunc.dnp3c.dnp3.app.{ Message, Variation }
@@ -57,6 +58,15 @@ object EventRules {
             level.getOrElse("")
         ))
     }
+    val unreadableStatic = List(Inputs.binary, Inputs.doubleBit, Inputs.counter, Inputs.analog).flatMap { input =>
+      Option.when(level.exists(_ != 1) && !options.get(input.reads))(
+        ConfigProblem(
+          input.reads.id,
+          "false",
+          s"only a subset level 1 device may lack reads of ${input.longName} points; this one is configured for level " +
+            level.getOrElse("")
+        ))
+    }
     val tested = selected.map(_.definition).collect { case t: InputEvents.EventTest => t.input }.toSet
     val defaults = inputs.filter(tested.contains).flatMap { input =>
       Option.when(options.get(input.defaultEventVariation).isEmpty)(
@@ -98,7 +108,7 @@ object EventRules {
             s"required by 3.1r1's ${input.name} relative time test, which waits for the clock to go unsynchronized"
           ))
       }
-    unreadable ++ defaults ++ rejected ++ relativeRejected ++ expiry
+    unreadable ++ unreadableStatic ++ defaults ++ rejected ++ relativeRejected ++ expiry
   }
 
   /** the preferred variation for a read of `requested`: itself, or for variation 0 the Device Profile's default */
