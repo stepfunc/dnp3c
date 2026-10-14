@@ -4,7 +4,7 @@
 package io.stepfunc.dnp3c.conformance.s8.s88
 
 import io.stepfunc.dnp3c.conformance.api.Options
-import io.stepfunc.dnp3c.dnp3.{ ScriptedDut, StubDriver }
+import io.stepfunc.dnp3c.dnp3.{ DefaultIntegrationPlugin, PluginReporter, ScriptedDut, StubDriver }
 import io.stepfunc.dnp3c.dnp3.app.{ AppFunction, IIN, Message }
 import io.stepfunc.dnp3c.protocol.Hex
 import org.junit.runner.RunWith
@@ -60,5 +60,41 @@ class Procedure882Test extends AnyFunSuite with Matchers {
     waitFor("33 01 07 01 00 00 00 00 00 00") should equal(None) // another object
     waitFor("34 02 07 01 00 00 34 02 07 01 00 00") should equal(None) // two
     waitFor("") should equal(None)
+  }
+
+  test("3.1r1 enables cold restart first, then disables it and expects IIN2.0, then enables it again") {
+    class Plugin extends DefaultIntegrationPlugin {
+      var enabled = false
+      var settings: List[Boolean] = Nil
+      override def setColdRestartSupport(reporter: PluginReporter, enabled: Boolean): Unit = {
+        this.enabled = enabled
+        settings :+= enabled
+      }
+    }
+    // restarts on a cold restart while the plugin has it enabled, or always if it ignores the setting, and rejects it
+    // with IIN2.0 otherwise; reports IIN1.7 until a write clears it
+    def run(ignoresSetting: Boolean): (Boolean, List[Boolean]) = {
+      val plugin = new Plugin
+      var restarted = false
+      val dut = new ScriptedDut(
+        StubDriver.reporter(plugin),
+        request =>
+          if (request.function == AppFunction.coldRestart) {
+            if (plugin.enabled || ignoresSetting) {
+              restarted = true
+              (IIN.empty, Message.parse(Hex.from("C0 81 00 00 34 02 07 01 F4 01")).headers)
+            } else (IIN.FUNC_NOT_SUPPORTED, Nil)
+          } else {
+            if (request.function == AppFunction.write) restarted = false
+            (if (restarted) IIN.DEVICE_RESTART else IIN.empty, Nil)
+          }
+      ) { override def close(): Unit = () }
+      val steps = new ColdRestart(configures = true).configure(Options.from(Map())).steps
+      val passed = scala.util.Try(steps.foreach(s => s.step.run(dut).foreach(_.check()))).isSuccess
+      (passed, plugin.settings)
+    }
+    run(ignoresSetting = false) should equal((true, List(true, false, true)))
+    // which fails step 12, but still has cold restart turned back on
+    run(ignoresSetting = true) should equal((false, List(true, false, true)))
   }
 }

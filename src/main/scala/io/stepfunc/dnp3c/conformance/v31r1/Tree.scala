@@ -262,7 +262,7 @@ object Tree {
         )
       ),
       section("8.8", "Cold Restart")(
-        notYet("8.8.2", "Test Procedure")
+        test("8.8.2", "Test Procedure", new s8.s88.ColdRestart(configures = true))
       ),
       section("8.9", "Application Layer Fragmentation")(
         section("8.9.1", "Use of FIR, FIN and SEQUENCE in Fragmentation")(

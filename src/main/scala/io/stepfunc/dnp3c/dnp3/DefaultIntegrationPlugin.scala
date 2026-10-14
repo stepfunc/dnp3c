@@ -112,6 +112,10 @@ class DefaultIntegrationPlugin extends IntegrationPlugin {
   }
 
   // Unsolicited responses
+  override def setColdRestartSupport(reporter: PluginReporter, enabled: Boolean): Unit = {
+    ManualSteps.UserAction(reporter, s"${enableDisable(enabled)} the DUT's support for cold restart (function code 13)")
+  }
+
   override def enableUnsolicitedResponse(reporter: PluginReporter, enabled: Boolean): Unit = {
     ManualSteps.UserAction(reporter, s"${enableDisable(enabled)} unsolicited response support")
   }

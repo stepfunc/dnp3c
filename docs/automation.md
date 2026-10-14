@@ -106,6 +106,8 @@ Verifications return `Option[DeferredCheck]`, and `generateUnsolicitedEvents` re
 
 To fail a step, throw an exception with a message saying what went wrong. The procedure fails, and the message goes into its log. The same goes for actions the device can't perform; but if the device doesn't support a feature, turn it off with its `supports.*` option instead, so the procedures that need it are skipped.
 
+A few actions are used only by 3.1r1's tests, e.g. `setColdRestartSupport` (8.8.2). They have a default that throws `UnsupportedOperationException`, so a plugin written before them keeps compiling; override one if the device runs a test that uses it. `DefaultIntegrationPlugin` prompts for them like any other.
+
 Every method gets a `PluginReporter` (verifications get a `CheckReporter`, which extends it). Anything you pass to its `log` method appears in the procedure's log, e.g. what the plugin did, or the values it compared.
 
 `startProcedure` and `endProcedure` do nothing by default. Override them to set the device up and tear it down around each procedure that runs; they aren't called for a skipped procedure.
