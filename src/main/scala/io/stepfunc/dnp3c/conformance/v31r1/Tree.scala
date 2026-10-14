@@ -146,7 +146,7 @@ object Tree {
           test("8.2.5.2.2", "Binary Output, Single Function Support", s8.s82.s825.Procedure82522)
         ),
         section("8.2.6", "No Control When Status Code is Non-Zero")(
-          notYet("8.2.6-1", "Test Procedure")
+          test("8.2.6-1", "Test Procedure", ControlStatus.nonZeroStatus)
         )
       ),
       section("8.3", "Analog Output Status")(
