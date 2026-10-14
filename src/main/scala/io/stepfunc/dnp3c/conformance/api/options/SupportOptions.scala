@@ -162,6 +162,14 @@ object SupportOptions extends OptionGroup {
   val deviceAttributes: BooleanOption =
     OptionTypes.boolean(this, "deviceAttributes", true, "Does the DUT support device attributes (group 0)?")
 
+  val multipleAddresses: BooleanOption = OptionTypes.boolean(
+    this,
+    "multipleAddresses",
+    false,
+    "Does the DUT answer to more than one DNP3 address over the TCP connection (link.otherDestination)? 3.1r1's " +
+      "6.6.2-4 runs over TCP only for such a DUT"
+  )
+
   override def prefix: String = "supports"
   override def description: String = "Optionally supported DNP3 features"
 
@@ -177,6 +185,7 @@ object SupportOptions extends OptionGroup {
     individualRemoteSupervisoryControl,
     configurableFragmentSize,
     unsolicitedResponse,
-    deviceAttributes
+    deviceAttributes,
+    multipleAddresses
   )
 }

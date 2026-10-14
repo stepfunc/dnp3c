@@ -11,6 +11,14 @@ object LinkOptions extends OptionGroup {
     OptionTypes.integer(this, "source", 1, "Link layer address of the test harness (master)", Some(0), Some(0xFFEF))
   val destination: IntegerOption =
     OptionTypes.integer(this, "destination", 1024, "Link layer address of the DUT (outstation)", Some(0), Some(0xFFEF))
+  val otherDestination: IntegerOption = OptionTypes.integer(
+    this,
+    "otherDestination",
+    1025,
+    "Another link layer address of the DUT over the same connection, where it has one (supports.multipleAddresses)",
+    Some(0),
+    Some(0xFFEF)
+  )
   val numRetry: IntegerOption =
     OptionTypes.integer(this, "num.retry", 3, "Number of configured link layer retries", Some(1), Some(10))
   val timeout: IntegerOption =
@@ -21,6 +29,7 @@ object LinkOptions extends OptionGroup {
   def options: List[TestOption] = List(
     source,
     destination,
+    otherDestination,
     numRetry,
     timeout)
 }

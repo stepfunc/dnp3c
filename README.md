@@ -59,6 +59,7 @@ The library jar, `io.stepfunc:dnp3c`, is published to Maven Central. See [Automa
 - **8.11.2.1 step 24:** the procedure expects a READ to be answered while the device's startup unsolicited response is still unconfirmed, while IEEE 1815's outstation state table would let the device defer it. The tool follows the procedure.
 - **8.6.4:** 2.7's description of the desired behavior still has a binary output in local mode set LOCAL_FORCED. TB2017-001 replaced the tests, which the tool runs, but not that description: in local mode an output clears ONLINE and keeps its other flags.
 - **Counter events in 3.1r1** may be changes of a counter's flags alone (TB2017-003a). The default plugin's prompts for 8.17 ask for counts, so a device that reports only flag changes needs a plugin that generates and checks those instead.
+- **3.1r1's 6.6.2-4** (No Inter-frame Gap) is for serial and UDP, and for TCP only where the device has more than one DNP3 address. dnp3c connects over TCP only, so it runs the test only for such a device (`supports.multipleAddresses`).
 - **Packet capture** doesn't work on macOS.
 
 ## Building
