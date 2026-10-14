@@ -6,8 +6,8 @@ package io.stepfunc.dnp3c.conformance.v31r1
 import io.stepfunc.dnp3c.conformance.api._
 import io.stepfunc.dnp3c.conformance.api.options.{ AnalogOutputOptions, CommandConfig }
 import io.stepfunc.dnp3c.conformance.api.options.SupportOptions.Outputs
-import io.stepfunc.dnp3c.conformance.s8.helpers.GenericSteps._
-import io.stepfunc.dnp3c.conformance.s8.helpers.Validations._
+import io.stepfunc.dnp3c.conformance.common.GenericSteps._
+import io.stepfunc.dnp3c.conformance.common.Validations._
 import io.stepfunc.dnp3c.dnp3.app._
 import io.stepfunc.dnp3c.dnp3.app.objects.{ CommandStatus, Group41Var1 }
 

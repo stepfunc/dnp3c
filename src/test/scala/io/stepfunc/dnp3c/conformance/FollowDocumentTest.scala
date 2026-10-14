@@ -55,7 +55,7 @@ class FollowDocumentTest extends AnyFunSuite with Matchers {
   }
 
   test("the long-interval relative-time procedures finish by reading the relative-time variation") {
-    for ((procedure, variation) <- List(s8.s814.Procedure814215 -> Group2Var3, s8.s822.Procedure822215 -> Group4Var3))
+    for ((procedure, variation) <- List(v27.Procedure8_14_2_15 -> Group2Var3, v27.Procedure8_22_2_15 -> Group4Var3))
       withClue(procedure.id) {
         // step 15's READ is the one with sequence number 3
         val last = runEachStep(procedure).requests.last
@@ -65,21 +65,21 @@ class FollowDocumentTest extends AnyFunSuite with Matchers {
   }
 
   test("the configurable-device SBO selects point 0, whatever the primary point") {
-    val dut = runEachStep(s8.s82.s821.Procedure821210, Map(ControlOptions.primary.index.id -> "3"))
+    val dut = runEachStep(v27.Procedure8_2_1_2_10, Map(ControlOptions.primary.index.id -> "3"))
     val selects = dut.requests.filter(_.function == AppFunction.select)
     // group, variation, qualifier 0x28 and a 2-byte count come before the 2-byte index
     selects.flatMap(_.headers).map(_.toBytes.slice(5, 7)) should equal(List(Hex.from("00 00")))
   }
 
   test("6.6.2.5 sends class 0 reads") {
-    val dut = runEachStep(s6.s66.s662.Procedure6625)
+    val dut = runEachStep(v27.Procedure6_6_2_5)
     // the prologue's, and one for each of the 5 control blocks with the wrong FCV
     val reads = dut.requests.toList.filter(_.function == AppFunction.read)
     reads.map(_.headers.map(_.variation)) should equal(List.fill(6)(List(Group60Var1)))
   }
 
   test("an input configurable-device procedure uninstalls and reinstalls the points without cycling power") {
-    for (procedure <- List(s8.s813.Procedure81323, s8.s816.Procedure816123, s8.s821.Procedure82122))
+    for (procedure <- List(v27.Procedure8_13_2_3, v27.Procedure8_16_1_2_3, v27.Procedure8_21_2_2))
       withClue(procedure.id)(runEachStep(procedure).plugin.calls.toList should equal(List("uninstall", "reinstall")))
   }
 }

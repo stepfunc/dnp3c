@@ -3,7 +3,7 @@
 
 package io.stepfunc.dnp3c.conformance.v31r1
 
-import io.stepfunc.dnp3c.conformance.s8
+import io.stepfunc.dnp3c.conformance.v27
 import io.stepfunc.dnp3c.conformance.api.{ LabeledStep, Options, ProcedureDefinition }
 import io.stepfunc.dnp3c.conformance.api.options.SupportOptions.Inputs
 import org.junit.runner.RunWith
@@ -24,17 +24,17 @@ class CounterAnalogEventsTest extends AnyFunSuite with Matchers {
     steps(procedure, options).filter(_.label.endsWith(label)).flatMap(_.step.description).mkString("\n")
 
   test("the confirmations 3.1r1 numbers move the later steps on") {
-    lastStep(s8.s817.Procedure81723) should equal("15")
+    lastStep(v27.Procedure8_17_2_3) should equal("15")
     lastStep(CounterAnalogEvents.counterOneByteCount) should equal("17")
     lastStep(CounterAnalogEvents.counterTwoByteCount) should equal("17")
-    lastStep(s8.s819.Procedure81921) should equal("14")
+    lastStep(v27.Procedure8_19_2_1) should equal("14")
     lastStep(CounterAnalogEvents.analogChange) should equal("15")
   }
 
   test("8.17.2-3 leaves the first response with the events unconfirmed, which 2.7 confirms") {
-    lastStep(s8.s817.Procedure81722) should equal("16")
+    lastStep(v27.Procedure8_17_2_2) should equal("16")
     lastStep(CounterAnalogEvents.counterAll) should equal("17")
-    describes(s8.s817.Procedure81722, "8 to 12") should include("Confirm each response")
+    describes(v27.Procedure8_17_2_2, "8 to 12") should include("Confirm each response")
     describes(CounterAnalogEvents.counterAll, "8 to 13") should not include "Confirm each response"
     describes(CounterAnalogEvents.counterAll, "17") should
       include("recorded at step 14 plus the increments made at step 15")

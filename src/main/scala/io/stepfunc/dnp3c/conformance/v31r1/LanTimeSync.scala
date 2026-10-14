@@ -5,9 +5,9 @@ package io.stepfunc.dnp3c.conformance.v31r1
 
 import io.stepfunc.dnp3c.conformance.api._
 import io.stepfunc.dnp3c.conformance.api.options.TimeSyncOptions
-import io.stepfunc.dnp3c.conformance.s8.helpers.GenericSteps._
-import io.stepfunc.dnp3c.conformance.s8.helpers.Validations._
-import io.stepfunc.dnp3c.conformance.s8.s87.s872.Procedure8722
+import io.stepfunc.dnp3c.conformance.common.GenericSteps._
+import io.stepfunc.dnp3c.conformance.common.Validations._
+import io.stepfunc.dnp3c.conformance.v27
 import io.stepfunc.dnp3c.dnp3._
 import io.stepfunc.dnp3c.dnp3.app._
 import io.stepfunc.dnp3c.dnp3.app.objects.{ Group50Var3, Group60Var2 }
@@ -72,7 +72,7 @@ object LanTimeSync {
         14 --> expectAtLeastOneResponse(
           Sequence.three,
           verifyConfirmRequestedIfRequired &&
-            (Procedure8722.timeTaggedEvent && PluginValidations.verifyTimestamp()).acrossFragments)
+            (v27.Procedure8_7_2_2.timeTaggedEvent && PluginValidations.verifyTimestamp()).acrossFragments)
       )
     }
   }

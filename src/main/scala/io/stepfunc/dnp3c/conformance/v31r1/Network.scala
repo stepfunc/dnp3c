@@ -7,13 +7,13 @@ import java.net.{ ConnectException, InetAddress, InetSocketAddress, SocketTimeou
 
 import io.stepfunc.dnp3c.conformance.api._
 import io.stepfunc.dnp3c.conformance.api.options.{ ChannelOptions, NetworkOptions, SupportOptions, UnsolicitedOptions }
-import io.stepfunc.dnp3c.conformance.s6.{ expectFrame, sendLinkControl, withAnyControl }
-import io.stepfunc.dnp3c.conformance.s8.helpers.GenericSteps.{
+import io.stepfunc.dnp3c.conformance.common.LinkSteps.{ expectFrame, sendLinkControl, withAnyControl }
+import io.stepfunc.dnp3c.conformance.common.GenericSteps.{
   expectAtLeastOneResponse, expectNoUnsolicitedResponse, expectSingleResponse, expectUnsolicitedResponse, send
 }
-import io.stepfunc.dnp3c.conformance.s8.helpers.UnconfirmedResponse
-import io.stepfunc.dnp3c.conformance.s8.helpers.GenericSteps.validateUnsolicitedResponse
-import io.stepfunc.dnp3c.conformance.s8.helpers.Validations.{ isNull, without }
+import io.stepfunc.dnp3c.conformance.common.UnconfirmedResponse
+import io.stepfunc.dnp3c.conformance.common.GenericSteps.validateUnsolicitedResponse
+import io.stepfunc.dnp3c.conformance.common.Validations.{ isNull, without }
 import io.stepfunc.dnp3c.dnp3._
 import io.stepfunc.dnp3c.dnp3.app.{ AppFunction, IIN, Message, Sequence, Unsolicited }
 import io.stepfunc.dnp3c.dnp3.app.objects.{ Group60Var2, Group60Var3, Group60Var4 }

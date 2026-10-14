@@ -8,8 +8,7 @@ import java.io.StringReader
 import io.stepfunc.dnp3c.conformance.Run
 import io.stepfunc.dnp3c.conformance.api.{ Options, ProcedureDefinition }
 import io.stepfunc.dnp3c.conformance.api.options.{ OutstationOptions, SupportOptions }
-import io.stepfunc.dnp3c.conformance.s8.s81.Procedure812
-import io.stepfunc.dnp3c.conformance.s8.s83.Procedure832
+import io.stepfunc.dnp3c.conformance.v27
 import io.stepfunc.dnp3c.dnp3.{ ScriptedDut, StubDriver }
 import io.stepfunc.dnp3c.dnp3.app.{ AppFunction, IIN, Message, ObjectHeader }
 import io.stepfunc.dnp3c.protocol.Hex
@@ -46,7 +45,7 @@ class OutputStatusTest extends AnyFunSuite with Matchers {
     passes(Definitions.binaryOutputStatus, noBinaryOutputs, IIN.OBJECT_UNKNOWN) should equal(true)
     passes(Definitions.binaryOutputStatus, noBinaryOutputs, IIN.PARAM_ERROR) should equal(true)
     passes(Definitions.binaryOutputStatus, noBinaryOutputs, IIN.FUNC_NOT_SUPPORTED) should equal(false)
-    passes(Procedure812, noBinaryOutputs, IIN.empty) should equal(true)
+    passes(v27.Procedure8_1_2, noBinaryOutputs, IIN.empty) should equal(true)
   }
 
   test("8.3.2: without analog outputs, 3.1r1 takes a Null Response or a Null Error Response, but no objects") {
@@ -55,7 +54,7 @@ class OutputStatusTest extends AnyFunSuite with Matchers {
     // an error response with objects: 2.7 took it, 3.1r1 doesn't
     val objects = "28 02 00 00 00 01 0A 00" // g40v2, index 0
     passes(Definitions.analogOutputStatus, noAnalogOutputs, IIN.OBJECT_UNKNOWN, objects) should equal(false)
-    passes(Procedure832, noAnalogOutputs, IIN.OBJECT_UNKNOWN, objects) should equal(true)
+    passes(v27.Procedure8_3_2, noAnalogOutputs, IIN.OBJECT_UNKNOWN, objects) should equal(true)
   }
 
   test("8.3.2: 3.1r1 allows g40v1 at level 3 only") {

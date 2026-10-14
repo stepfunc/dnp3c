@@ -6,7 +6,7 @@ package io.stepfunc.dnp3c.conformance
 import io.stepfunc.dnp3c.conformance.api._
 import io.stepfunc.dnp3c.conformance.api.options.OutstationOptions
 import io.stepfunc.dnp3c.conformance.api.options.SupportOptions.Inputs
-import io.stepfunc.dnp3c.conformance.s8.helpers.OperationType
+import io.stepfunc.dnp3c.conformance.common.OperationType
 import io.stepfunc.dnp3c.dnp3._
 import io.stepfunc.dnp3c.dnp3.app.Message
 import io.stepfunc.dnp3c.dnp3.link.LinkFrame
@@ -110,17 +110,17 @@ class CleanupTest extends AnyFunSuite with Matchers {
   test("points uninstalled or disabled come back, and link confirms go off, when a later step fails") {
     val binaryOutputs = OperationType.BinaryOutput.support
     for ((procedure, settings, expected) <- List(
-        (s8.s813.Procedure81323, Map.empty[String, String], List("uninstall", "reinstall")),
+        (v27.Procedure8_13_2_3, Map.empty[String, String], List("uninstall", "reinstall")),
         (
           v31r1.DisableDoubleBit.static,
           Map(Inputs.doubleBit.points.id -> "true", Inputs.doubleBit.disabling.id -> "true"),
           List("uninstall", "reinstall")),
         (
-          s8.s82.s821.Procedure821210,
+          v27.Procedure8_2_1_2_10,
           Map(binaryOutputs.commands.id -> "true", binaryOutputs.disabling.id -> "true"),
           List("uninstall", "reinstall")),
         (
-          s6.s66.s663.Procedure6631,
+          v27.Procedure6_6_3_1,
           Map.empty[String, String],
           List("confirms true", "cyclePower", "confirms false", "cyclePower"))
       ))

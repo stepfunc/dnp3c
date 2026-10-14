@@ -9,7 +9,7 @@ import io.stepfunc.dnp3c.conformance.Run
 import io.stepfunc.dnp3c.conformance.api.{ Options, ProcedureDefinition }
 import io.stepfunc.dnp3c.conformance.api.options.{ OutstationOptions, SupportOptions }
 import io.stepfunc.dnp3c.conformance.api.options.SupportOptions.Inputs
-import io.stepfunc.dnp3c.conformance.s8
+import io.stepfunc.dnp3c.conformance.v27
 import io.stepfunc.dnp3c.dnp3._
 import io.stepfunc.dnp3c.dnp3.app.{ IIN, Message, ObjectHeader }
 import org.junit.runner.RunWith
@@ -107,7 +107,7 @@ class StaticInputsTest extends AnyFunSuite with Matchers {
     def describes(procedure: ProcedureDefinition, options: Options): String =
       procedure.configure(options).steps.flatMap(_.step.description).mkString("\n")
     val level2 = Options.from(Map(OutstationOptions.subsetLevel.id -> "2"))
-    describes(s8.s820.Procedure8202, level2) should include("order of the request")
+    describes(v27.Procedure8_20_2, level2) should include("order of the request")
     describes(MultipleReads.multipleObjectTypes, level2) should not include "order of the request"
     describes(MultipleReads.multipleObjectTypes, level2) should include("g20v0")
     val noCounterReads = Options.from(Map(Inputs.counter.reads.id -> "false"))
