@@ -4,7 +4,7 @@
 package io.stepfunc.dnp3c.conformance.v31r1
 
 import io.stepfunc.dnp3c.dnp3.MessagePolicy
-import io.stepfunc.dnp3c.dnp3.app.{ AppFunction, Event, IIN, Message }
+import io.stepfunc.dnp3c.dnp3.app.{ AppFunction, CommonTimeOfOccurrence, Event, IIN, Message }
 
 /** 3.1r1's rules for every message a procedure receives, beyond what each test checks */
 object Rules {
@@ -34,5 +34,23 @@ object Rules {
 
   }
 
-  val all: List[MessagePolicy] = List(confirmOnlyWhenRequired)
+  /**
+   * 8.11.1, Runtime Behavior: an unsolicited response carries only event data, with the CTOs that time it. 2.7 also
+   * allowed the static g10v2 and g40v2, for which there are no events.
+   */
+  val unsolicitedOnlyEvents: MessagePolicy = new MessagePolicy {
+
+    def id: String = "8.11.1"
+
+    def description: String = "an unsolicited response carries only event data"
+
+    def violation(message: Message): Option[String] = {
+      val others = message.headers.map(_.variation).filterNot(v =>
+        v.objectType == Event || v.objectType == CommonTimeOfOccurrence)
+      Option.when(message.function == AppFunction.unsolicited && others.nonEmpty)(
+        s"it's unsolicited, but carries ${others.distinct.mkString(", ")}, which aren't events")
+    }
+  }
+
+  val all: List[MessagePolicy] = List(confirmOnlyWhenRequired, unsolicitedOnlyEvents)
 }

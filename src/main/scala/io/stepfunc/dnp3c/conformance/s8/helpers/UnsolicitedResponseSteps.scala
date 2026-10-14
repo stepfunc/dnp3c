@@ -145,7 +145,24 @@ object UnsolicitedResponseSteps {
     steps1to6 ++ steps7to15 ++ steps16to17
   }
 
+  /** what 8.11.2.5.9 does about a limited number of retries before it tests unlimited ones (step 19 on) */
+  sealed trait RetryLimit
+  object RetryLimit {
+
+    /** configure the DUT to retry this many times, and verify it does (steps 1 to 18) */
+    final case class Tested(retries: Int) extends RetryLimit
+
+    /**
+     * note why the limited number of retries can't be tested, and skip to step 19
+     *
+     * @param knownLimit the limited number of retries the DUT is configured to, if it's known, which step 28 retries
+     *   go beyond
+     */
+    final case class NotTested(note: String, knownLimit: Option[Int] = None) extends RetryLimit
+  }
+
   def unsolAndPolledResponsesSteps(
+      retryLimit: RetryLimit,
       unsolConfirmTimeoutMs: Int,
       hasMinNumEventsBeforeUnsolicited: Boolean,
       appConfirmTimeoutMs: Int,
@@ -162,8 +179,6 @@ object UnsolicitedResponseSteps {
       generateAndExpectEvents(holdOffMs, unsolConfirmTimeoutMs, actionWindowMs)(autoConfirm, validation)
     val unconfirmedUnsolicited = new UnconfirmedResponse(unsolConfirmTimeoutMs)
     val unconfirmedPolled = new UnconfirmedResponse(appConfirmTimeoutMs)
-    // the retry limit 8.11.2.5.9 configures
-    val maxRetries = 5
     // an unsolicited retry comes within a confirm timeout, plus the tolerance expectRetry allows, of the response it
     // repeats, so no response in that window means no more retries; 8.11.2.5.9 only counts its retries, so it doesn't
     // check they come no sooner, as expectRetry does
@@ -185,6 +200,33 @@ object UnsolicitedResponseSteps {
       first + 3 --> send(enableUnsolicitedResponses(seq.increment())),
       first + 4 --> expectNullResponse(seq)
     )
+
+    // 8.11.2.5.9 steps 1 to 18. The requests take their sequence numbers as the steps are built, so these are built in
+    // their place, after the sections before them.
+    def limitedRetries: List[LabeledStep] = retryLimit match {
+      case RetryLimit.Tested(retries) =>
+        List(1 --> PluginSteps.setMaxUnsolicitedRetries(Some(retries))) ++
+          restartAndEnable(2) ++
+          List(
+            7 --> PluginSteps.generateUnsolicitedEvents(),
+            (8 to 9) --> expectEvents(AutoConfirm.No),
+            10 --> repeat(retries)(expectRetry(AutoConfirm.No)) + expectNoMoreRetries
+          ) ++
+          restartAndEnable(11) ++
+          List(
+            // Step 18 confirms one response and then expects no more, so retries mustn't pile up before it: the
+            // harness is already reading when the events are generated. Steps 8-10 and 26-28 only count retries, so
+            // they needn't be.
+            (16 to 17) --> generateAndExpect(AutoConfirm.No),
+            18 --> expectRetry(AutoConfirm.Yes) + expectNoMoreRetries
+          )
+      case RetryLimit.NotTested(note, _) => List((1 to 18) --> noting(note))
+    }
+    // "an extended period" (step 28): more retries than the limit set at step 1, or known, or than 5 where there's none
+    val extendedRetries = retryLimit match {
+      case RetryLimit.Tested(retries) => retries + 2
+      case RetryLimit.NotTested(_, knownLimit) => knownLimit.getOrElse(5) + 2
+    }
 
     // 8.11.2.5.8 also allows a DUT that holds events back for a time instead of until there are enough of them. Only
     // the count threshold is covered: unsolicited.holdOffMs is the longest a DUT may wait, not a guaranteed safe
@@ -275,30 +317,14 @@ object UnsolicitedResponseSteps {
       Label("8.11.2.5.8") --> describe("Inhibits Unsolicited responses until after polled confirmation")
     ) ++
       section811258 ++
-      List(
-        Label("8.11.2.5.9") --> describe("Retries unsolicited responses configurable number of times"),
-        1 --> PluginSteps.setMaxUnsolicitedRetries(Some(maxRetries))
-      ) ++
-      restartAndEnable(2) ++
-      List(
-        7 --> PluginSteps.generateUnsolicitedEvents(),
-        (8 to 9) --> expectEvents(AutoConfirm.No),
-        10 --> repeat(maxRetries)(expectRetry(AutoConfirm.No)) + expectNoMoreRetries
-      ) ++
-      restartAndEnable(11) ++
-      List(
-        // Step 18 confirms one response and then expects no more, so retries mustn't pile up before it: the harness is
-        // already reading when the events are generated. Steps 8-10 and 26-28 only count retries, so they needn't be.
-        (16 to 17) --> generateAndExpect(AutoConfirm.No),
-        18 --> expectRetry(AutoConfirm.Yes) + expectNoMoreRetries,
-        19 --> PluginSteps.setMaxUnsolicitedRetries(None)
-      ) ++
+      List(Label("8.11.2.5.9") --> describe("Retries unsolicited responses configurable number of times")) ++
+      limitedRetries ++
+      List(19 --> PluginSteps.setMaxUnsolicitedRetries(None)) ++
       restartAndEnable(20) ++
       List(
         25 --> PluginSteps.generateUnsolicitedEvents(),
         (26 to 27) --> expectEvents(AutoConfirm.No),
-        // "an extended period": more retries than the limit of 5 set at step 1
-        28 --> repeat(maxRetries + 2)(expectRetry(AutoConfirm.No))
+        28 --> repeat(extendedRetries)(expectRetry(AutoConfirm.No))
       )
   }
 

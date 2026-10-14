@@ -73,8 +73,14 @@ class Revision31r1Test extends AnyFunSuite with Matchers {
     List("9.2", "9.4", "10.1", "10.3.1") foreach (id => revision.elements.contains(id) should equal(false))
   }
 
-  test("the unsolicited class tests don't share 2.7's: 3.1r1 allows only events in an unsolicited response") {
-    procedure("8.11.2-2").incomplete should equal(true)
+  test("the unsolicited class tests share 2.7's, under 3.1r1's rule that an unsolicited response carries only events") {
+    procedure("8.11.2-2").definition should be theSameInstanceAs s8.s811.Procedure81122
+    revision.policies should contain(v31r1.Rules.unsolicitedOnlyEvents)
+  }
+
+  test("Unsolicited and Polled Responses is one test, 8.11.2.5, which its sections' numbers give it") {
+    procedure("8.11.2.5").definition should be theSameInstanceAs v31r1.Unsolicited.unsolicitedAndPolledResponses
+    revision.elements.contains("8.11.2.5.1") should equal(false)
   }
 
   test("tests that apply at some levels only say so; the rest apply at every level") {

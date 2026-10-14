@@ -126,10 +126,7 @@ object InputEvents {
           (6 -->
             // the step asks for IIN2.1; other error bits aren't ruled out
             (expectSingleResponse(Sequence.two, Validations.isEmpty && Validations.containing(IIN.OBJECT_UNKNOWN)) +
-              new TestStep {
-                def description = List(Comment(s"Note the result: $compliantWith2012Only"))
-                def run(driver: TestDriver): List[DeferredCheck] = { driver.reporter.note(compliantWith2012Only); Nil }
-              }))
+              noting(compliantWith2012Only)))
       else
         start ++ List(
           (7 to 12) --> expectSingleResponse(
@@ -223,14 +220,6 @@ object InputEvents {
   // the note on a device that answers a read of events with relative time with IIN2.1
   private val relativeCompliantWith2012Only = "the DUT answers a read of events with relative time with IIN2.1: it " +
     "complies with IEEE 1815-2012, but not with IEEE 1815-202x"
-
-  private def noting(text: String): TestStep = new TestStep {
-    def description: List[Comment] = List(Comment(s"Note the result: $text"))
-    def run(driver: TestDriver): List[DeferredCheck] = {
-      driver.reporter.note(text)
-      Nil
-    }
-  }
 
   /**
    * With relative time, qualifier 0x06 (8.14.2-13), in three phases: after a restart, while the clock is
