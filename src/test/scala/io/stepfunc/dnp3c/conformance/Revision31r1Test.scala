@@ -50,10 +50,10 @@ class Revision31r1Test extends AnyFunSuite with Matchers {
   }
 
   test("the same definition can have a different number in each revision") {
-    // 2.7's 8.16.1.2.2 is 3.1r1's 8.16.1.2.3: a new level 1 test took its number
-    procedure("8.16.1.2.3").definition should be theSameInstanceAs
+    // 2.7's 8.11.2.6 is 3.1r1's 8.11.2-5: 3.1r1 doesn't number it
+    procedure("8.11.2-5").definition should be theSameInstanceAs
       Revisions.v2_7
-        .elements("8.16.1.2.2")
+        .elements("8.11.2.6")
         .asInstanceOf[TestProcedure]
         .definition
   }

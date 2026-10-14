@@ -61,7 +61,7 @@ class Procedure8202Test extends AnyFunSuite with Matchers {
   }
 
   test("static objects must come in the order requested; events may come anywhere before them") {
-    val order = Procedure8202.verifyStaticOrder(List(AllObjectsHeader(Group1Var0), AllObjectsHeader(Group20Var0)))
+    val order = MultipleObjectTypes.verifyStaticOrder(List(AllObjectsHeader(Group1Var0), AllObjectsHeader(Group20Var0)))
     def passes(objects: String) = scala.util.Try(
       order.validate(StubDriver.reporter(), Message.parse(Hex.from("C0 81 00 00 " + objects)))).isSuccess
 

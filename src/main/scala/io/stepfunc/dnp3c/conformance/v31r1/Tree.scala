@@ -340,20 +340,25 @@ object Tree {
       ),
       section("8.16", "Binary Counters Specific Object Requests")(
         section("8.16.1", "Binary Counters, Running")(
-          notYet(
+          test(
             "8.16.1.2.1",
             "Subset Level 1 device that does not support a read for binary counters",
+            StaticInputs.counterLevelOne,
             levels = Some(Set(1))),
-          notYet("8.16.1.2.2", "Device does not have Binary Counters"),
-          test("8.16.1.2.3", "Device responds with Binary Counters", s8.s816.Procedure816122),
-          notYet("8.16.1.2.4", "Device supports Binary Counters, Configurable Device")
+          test("8.16.1.2.2", "Device does not have Binary Counters", StaticInputs.counterWithout),
+          test("8.16.1.2.3", "Device responds with Binary Counters", StaticInputs.counterHas),
+          test(
+            "8.16.1.2.4",
+            "Device supports Binary Counters, Configurable Device",
+            StaticInputs.counterConfigurable)
         ),
         section("8.16.2", "Binary Counters, Frozen")(
-          notYet(
+          test(
             "8.16.2.2.1",
             "Subset Level 1 device that does not support a read for frozen counters",
+            StaticInputs.frozenCounterLevelOne,
             levels = Some(Set(1))),
-          notYet("8.16.2.2.2", "Device does not have Frozen Counters"),
+          test("8.16.2.2.2", "Device does not have Frozen Counters", StaticInputs.frozenCounterWithout),
           notYet("8.16.2.2.3", "Binary Counter, Freeze"),
           notYet("8.16.2.2.4", "Binary Counter, Freeze and Clear"),
           notYet("8.16.2.2.5", "Binary Counter, Freeze, No Acknowledge"),
@@ -375,12 +380,13 @@ object Tree {
       ),
       section("8.18", "Analog Input")(
         section("8.18.2", "Test Procedure")(
-          notYet(
+          test(
             "8.18.2-1",
             "Subset Level 1 Device that does not support a Read for Analog Inputs",
+            StaticInputs.analogLevelOne,
             levels = Some(Set(1))),
-          notYet("8.18.2-2", "Device does not have Analog Inputs"),
-          test("8.18.2-3", "Device has Analog Inputs", s8.s818.Procedure81822)
+          test("8.18.2-2", "Device does not have Analog Inputs", StaticInputs.analogWithout),
+          test("8.18.2-3", "Device has Analog Inputs", StaticInputs.analogHas)
         )
       ),
       section("8.19", "Analog Change Event")(
@@ -396,11 +402,12 @@ object Tree {
       ),
       section("8.20", "Multiple Read Requests")(
         section("8.20.2", "Test Procedure")(
-          notYet(
+          test(
             "8.20.2-1",
             "Subset Level 1 Device that does not support a Read for Individual Object Types",
+            MultipleReads.levelOne,
             levels = Some(Set(1))),
-          notYet("8.20.2-2", "Multiple Object Types")
+          test("8.20.2-2", "Multiple Object Types", MultipleReads.multipleObjectTypes)
         )
       ),
       section("8.21", "Double-bit Inputs")(
