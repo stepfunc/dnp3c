@@ -78,13 +78,13 @@ class SerialChannelTest extends AnyFunSuite with Matchers {
     withPair { (a, b) =>
       val sent = System.nanoTime()
       b.write(ByteBuffer.wrap(Array[Byte](1, 2, 3)))
-      Thread.sleep(500)
-      val buffer = ByteBuffer.allocate(16)
-      a.read(buffer, 1000) should be > 0
+      Thread.sleep(1000)
+      val reading = System.nanoTime()
+      a.read(ByteBuffer.allocate(16), 1000) should be > 0
       val arrived = a.lastReadAt.get
       arrived should be >= sent
-      // well before the read, half a second after
-      (System.nanoTime() - arrived) / 1000000 should be >= 400L
+      // well before the read, a second after: the bridge and the reader have most of a second to pass them on
+      (reading - arrived) / 1000000 should be >= 200L
     }
   }
 

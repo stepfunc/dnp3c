@@ -30,14 +30,14 @@ class CollisionAvoidanceTest extends AnyFunSuite with Matchers {
    * that answers a read to it as collision avoidance has it: once the line has been free for its backoff, the fixed
    * delay plus a random one, starting again whenever the line is busy before the backoff ends. The line is busy while
    * there's data on it, or, for a DUT that watchesCarrier, while RTS is asserted. A DUT that ignoresLine answers after
-   * its turnaround, whatever is on the line; one with fixedRandom always picks the same random delay, and one that's
-   * alternating picks none and the most in turn.
+   * its turnaround, whatever is on the line; one with fixedRandom always picks the same random delay, and one with an
+   * outlier picks the most once in ten, and the same otherwise.
    */
   private class Line(
       ignoresLine: Boolean = false,
       fixedRandom: Boolean = false,
       watchesCarrier: Boolean = false,
-      alternating: Boolean = false)
+      outlier: Boolean = false)
       extends StubDriver(StubDriver.reporter()) {
     private var delays = CollisionDelays(100, 50)
     val set: mutable.ListBuffer[Option[CollisionDelays]] = mutable.ListBuffer.empty
@@ -83,7 +83,7 @@ class CollisionAvoidanceTest extends AnyFunSuite with Matchers {
     private def random(): Double = {
       draws += 1
       if (fixedRandom) 10.0
-      else if (alternating) (draws % 2) * delays.maxRandomMs.toDouble
+      else if (outlier) (if (draws % 10 == 5) delays.maxRandomMs.toDouble else 10.0)
       else (draws * 37 % 97) / 97.0 * delays.maxRandomMs
     }
 
@@ -162,8 +162,8 @@ class CollisionAvoidanceTest extends AnyFunSuite with Matchers {
     line.rts.grouped(2).foreach(_ should equal(List(true, false)))
   }
 
-  test("delays that alternate between two fail, though they spread") {
-    val (passed, why) = run(new Line(alternating = true), Map(SerialOptions.timingToleranceMs.id -> "5"))
+  test("delays that are mostly the same fail, though they spread") {
+    val (passed, why) = run(new Line(outlier = true), Map(SerialOptions.timingToleranceMs.id -> "5"))
     passed should equal(false)
     why should include("the same")
   }

@@ -43,12 +43,18 @@ final class SerialChannel private (port: SerialPort) extends ReadableWritableCha
   private val reader = new Thread(
     () => {
       val bytes = new Array[Byte](4096)
-      while (running) {
-        val n = port.readBytes(bytes, bytes.length)
-        if (n < 0) {
+      try
+        while (running) {
+          val n = port.readBytes(bytes, bytes.length)
+          if (n < 0) {
+            if (running) readFailed = true
+            running = false
+          } else if (n > 0) chunks.put((bytes.take(n), System.nanoTime()))
+        }
+      catch {
+        case _: Throwable =>
           if (running) readFailed = true
           running = false
-        } else if (n > 0) chunks.put((bytes.take(n), System.nanoTime()))
       }
     },
     s"dnp3c serial reader ($name)"

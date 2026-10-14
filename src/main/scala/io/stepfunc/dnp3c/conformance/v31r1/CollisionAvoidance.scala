@@ -82,15 +82,16 @@ object CollisionAvoidance {
     var turnaroundMs: Option[Double] = None
     var noiseFrames = 1
     val measured = scala.collection.mutable.ListBuffer.empty[Double]
-    // of ten random delays, within a quarter of the tolerance of each other: a random delay at least four times the
-    // tolerance puts each in a range an eighth of its own, so more than four that close is no chance
-    private val maxSame = 4
+    // of ten random delays, within a quarter of the tolerance of one: a random delay at least four times the tolerance
+    // puts each in a range at most an eighth of its own, where seven or more is well under a chance in a hundred
+    private val maxSame = 6
 
     // the DUT's answer to the read: a response to the master, with the read's sequence number, not unsolicited
     private def answers(driver: TestDriver, frame: LinkFrame): Boolean = {
       val d = frame.data
       frame.header.src == driver.remote && frame.header.dest == driver.local && d.size >= 5 &&
       (d(0) & 0x40) != 0 &&
+      (d(1) & 0x80) != 0 &&
       (d(2) & 0xFF) == 0x81 &&
       (d(1) & 0x0F) == seq.value &&
       (d(1) & 0x10) == 0
@@ -132,14 +133,18 @@ object CollisionAvoidance {
         sleepUntil(driver, end + ns(gapMs))
         if (carrier) driver.setRts(true)
         val at = clock.nanoTime()
-        val gap = ms(at - end)
+        driver.write(bytes)
+        val returned = clock.nanoTime()
+        val transmit = ns(settings.transmitMs(bytes.size))
+        // the noise started at the latest its time on the line before the write returned
+        val gap = ms(math.max(at, returned - transmit) - end)
         if (gap >= delays.fixedMs)
           throw new BenchException(
-            s"The harness couldn't make a gap shorter than the fixed delay, ${delays.fixedMs} ms: it made ${show(gap)}",
+            s"The harness couldn't make a gap shorter than the fixed delay, ${delays.fixedMs} ms: it may have made " +
+              show(gap),
             null)
-        driver.reporter.info(s"Gap: ${show(gap)}")
-        driver.write(bytes)
-        end = math.max(at + ns(settings.transmitMs(bytes.size)), clock.nanoTime())
+        driver.reporter.info(s"Gap: at most ${show(gap)}")
+        end = math.max(at + transmit, returned)
       }
       if (carrier) {
         sleepUntil(driver, end)
@@ -191,22 +196,24 @@ object CollisionAvoidance {
     val sizeNoise: TestStep = new TestStep {
       def description: List[Comment] = List(
         "Size the noise to end after the turnaround and the fixed delay, but before the turnaround plus the fixed and " +
-          s"maximum random delays: midway, in REQUEST LINK STATUS frames to 0x${"%04X".format(reserved.value)} of " +
+          s"maximum random delays: as near midway as whole REQUEST LINK STATUS frames to 0x${"%04X".format(reserved.value)} of " +
           show(frameMs) + " each")
       def run(driver: TestDriver): List[DeferredCheck] = {
         val turnaround = turnaroundMs.getOrElse(0.0)
         val lower = math.max(turnaround, delays.fixedMs.toDouble)
         val upper = turnaround + delays.fixedMs + delays.maxRandomMs
-        noiseFrames = math.max(1, math.ceil((lower + upper) / 2 / frameMs).toInt)
-        val noiseMs = noiseFrames * frameMs
-        driver.reporter.info(s"Noise: $noiseFrames frames, ${show(noiseMs)}, for a window of ${show(lower)} to " +
-          show(upper))
-        if (noiseMs <= lower || noiseMs >= upper)
+        // the whole number of frames that ends within the window nearest its middle
+        val fits = (math.floor(lower / frameMs).toInt + 1 to math.ceil(upper / frameMs).toInt)
+          .filter(n => n >= 1 && n * frameMs > lower && n * frameMs < upper)
+        if (fits.isEmpty)
           throw new BenchException(
             s"Noise of whole frames of ${show(frameMs)} can't end within the window of ${show(lower)} to " +
               s"${show(upper)}: the DUT's delays are too short for the port's speed",
             null
           )
+        noiseFrames = fits.minBy(n => math.abs(n * frameMs - (lower + upper) / 2))
+        driver.reporter.info(
+          s"Noise: $noiseFrames frames, ${show(noiseFrames * frameMs)}, for a window of ${show(lower)} to ${show(upper)}")
         Nil
       }
     }
