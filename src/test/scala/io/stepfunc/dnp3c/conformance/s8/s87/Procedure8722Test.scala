@@ -3,6 +3,7 @@
 
 package io.stepfunc.dnp3c.conformance.s8.s87
 
+import io.stepfunc.dnp3c.conformance.api.options.OutstationOptions
 import io.stepfunc.dnp3c.conformance.api.Options
 import io.stepfunc.dnp3c.conformance.s8.s87.s872.Procedure8722
 import io.stepfunc.dnp3c.dnp3._
@@ -73,7 +74,8 @@ class Procedure8722Test extends AnyFunSuite with Matchers {
 
   private def passes(plugin: Plugin, fragments: String*): Boolean = {
     val dut = new Dut(plugin, fragments.toList)
-    Try(Procedure8722.configure(Options.from(Map())).steps.foreach(_.step.run(dut))).isSuccess
+    Try(Procedure8722.configure(
+      Options.from(Map(OutstationOptions.subsetLevel.id -> "2"))).steps.foreach(_.step.run(dut))).isSuccess
   }
 
   test("accepts a time-tagged event") {

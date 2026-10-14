@@ -3,6 +3,7 @@
 
 package io.stepfunc.dnp3c.conformance.s8
 
+import io.stepfunc.dnp3c.conformance.api.options.OutstationOptions
 import io.stepfunc.dnp3c.conformance.Placements.id
 import io.stepfunc.dnp3c.conformance.api.{ Options, ProcedureDefinition }
 import io.stepfunc.dnp3c.dnp3._
@@ -76,7 +77,8 @@ class EventExpectationsTest extends AnyFunSuite with Matchers {
   private def expectations(procedure: ProcedureDefinition): List[(String, EventExpectation)] = {
     val dut = new Dut
     Console.withIn(new StringReader(""))(
-      procedure.configure(Options.from(Map())).steps.foreach(s => Try(s.step.run(dut))))
+      procedure.configure(Options.from(Map(OutstationOptions.subsetLevel.id -> "2"))).steps.foreach(s =>
+        Try(s.step.run(dut))))
     dut.plugin.expected.toList
   }
 

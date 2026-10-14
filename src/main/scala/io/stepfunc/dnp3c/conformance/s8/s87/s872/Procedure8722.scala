@@ -19,7 +19,7 @@ object Procedure8722 extends ProcedureDefinition {
 
     val waitMs = options.get(TimeSyncOptions.maxTimeFromResetToIIN14Ms)
     val latencyMs = options.get(TimeSyncOptions.timeWriteLatencyMs)
-    val allowDoubleBit = options.get(SupportOptions.Inputs.doubleBit.points)
+    val tables = Tables(options)
 
     List(
       1 --> PluginSteps.cyclePower,
@@ -33,7 +33,7 @@ object Procedure8722 extends ProcedureDefinition {
       // step 4 only emptied class 1, so class 2 and 3 events pending since the restart can make this several fragments
       9 --> expectAtLeastOneResponse(
         Sequence.two,
-        verifyOnlyTable84Contents(allowDoubleBit) && verifyConfirmRequestedIfRequired &&
+        verifyOnlyTable84Contents(tables) && verifyConfirmRequestedIfRequired &&
           (timeTaggedEvent && PluginValidations.verifyTimestamp()).acrossFragments
       )
     )

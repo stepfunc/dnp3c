@@ -4,7 +4,7 @@
 package io.stepfunc.dnp3c.conformance.s8.helpers
 
 import io.stepfunc.dnp3c.conformance.api.{ Options, ProcedureDefinition }
-import io.stepfunc.dnp3c.conformance.api.options.UnsolicitedOptions
+import io.stepfunc.dnp3c.conformance.api.options.{ OutstationOptions, UnsolicitedOptions }
 import io.stepfunc.dnp3c.conformance.s8.s811.Procedure81125
 import io.stepfunc.dnp3c.conformance.v31r1
 import io.stepfunc.dnp3c.dnp3.link.FrameValidator
@@ -111,7 +111,8 @@ class UnsolicitedChecksTest extends AnyFunSuite with Matchers {
     def failedSteps(delayMs: Long): Int = {
       val dut = new Responder(delayMs)
       Console.withIn(new StringReader(""))(
-        Procedure81125.configure(Options.from(Map())).steps.count(s => Try(s.step.run(dut)).isFailure))
+        Procedure81125.configure(Options.from(Map(OutstationOptions.subsetLevel.id -> "2"))).steps.count(s =>
+          Try(s.step.run(dut)).isFailure))
     }
     // the default confirm timeout is 5000 ms: an unsolicited response at once can't be either retry
     failedSteps(0) should equal(failedSteps(5000) + 2)
@@ -149,7 +150,10 @@ class UnsolicitedChecksTest extends AnyFunSuite with Matchers {
         else Some(solicited.dequeue())
     }
     val all = Options.from(
-      Map(UnsolicitedOptions.unsolicitedConfirmTimeoutMs.id -> "2000", UnsolicitedOptions.holdOffMs.id -> "1000") ++
+      Map(
+        UnsolicitedOptions.unsolicitedConfirmTimeoutMs.id -> "2000",
+        UnsolicitedOptions.holdOffMs.id -> "1000",
+        OutstationOptions.subsetLevel.id -> "2") ++
         options)
     Console.withIn(new StringReader(""))(procedure.configure(all).steps.foreach(s => Try(s.step.run(dut))))
     def inRetryWindow(retryLimitSet: Boolean) = waits.count(_ == (retryLimitSet, Some(2500)))

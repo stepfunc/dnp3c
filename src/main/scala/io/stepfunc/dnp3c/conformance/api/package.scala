@@ -35,6 +35,20 @@ package object api {
 
   def describe(desc: String*): TestStep = describe(desc.map(Comment.apply).toList)
 
+  /**
+   * The steps, each run with the revision's rules named exempt: for a procedure whose text allows what a rule for every
+   * test forbids
+   */
+  def exempting(ids: Set[String])(steps: Iterable[LabeledStep]): List[LabeledStep] = steps.map { s =>
+    LabeledStep(
+      s.label,
+      new TestStep {
+        def description: List[Comment] = s.step.description
+        def run(driver: TestDriver): List[DeferredCheck] = driver.policies.exempting(ids)(s.step.run(driver))
+      }
+    )
+  }.toList
+
   /** a step that notes `text` on the procedure's result, which the report shows even when it passes */
   def noting(text: String): TestStep = new TestStep {
     def description: List[Comment] = List(Comment(s"Note the result: $text"))

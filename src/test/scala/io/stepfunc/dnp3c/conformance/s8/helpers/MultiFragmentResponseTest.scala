@@ -3,6 +3,7 @@
 
 package io.stepfunc.dnp3c.conformance.s8.helpers
 
+import io.stepfunc.dnp3c.conformance.api.options.OutstationOptions
 import io.stepfunc.dnp3c.conformance.Placements.id
 import io.stepfunc.dnp3c.conformance.api.{ Options, ProcedureDefinition }
 import io.stepfunc.dnp3c.conformance.s8.{ s814, s817, s819, s822, s83, s86, s87 }
@@ -84,7 +85,8 @@ class MultiFragmentResponseTest extends AnyFunSuite with Matchers {
   // runs every step, carrying on past failures; a manual question gets no answer (end of input), so it fails rather
   // than waits. Returns how many steps failed.
   private def failedSteps(procedure: ProcedureDefinition, dut: Dut): Int = Console.withIn(new StringReader(""))(
-    procedure.configure(Options.from(Map())).steps.count(s => Try(s.step.run(dut)).isFailure))
+    procedure.configure(Options.from(Map(OutstationOptions.subsetLevel.id -> "2"))).steps.count(s =>
+      Try(s.step.run(dut)).isFailure))
 
   test("8.5.5.2.2: the last fragment needn't ask for confirmation when it carries only static data") {
     def classes1230(fragments: Fragment*) = failedSteps(Procedure85522, new Dut(1, fragments.toList)) == 0

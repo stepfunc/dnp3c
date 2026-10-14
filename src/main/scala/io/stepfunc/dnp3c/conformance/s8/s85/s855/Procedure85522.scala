@@ -4,7 +4,6 @@
 package io.stepfunc.dnp3c.conformance.s8.s85.s855
 
 import io.stepfunc.dnp3c.conformance.api._
-import io.stepfunc.dnp3c.conformance.api.options.SupportOptions
 import io.stepfunc.dnp3c.conformance.s8.helpers.GenericSteps._
 import io.stepfunc.dnp3c.conformance.s8.helpers.Validations._
 import io.stepfunc.dnp3c.dnp3.Requests
@@ -23,7 +22,7 @@ object Procedure85522 extends ProcedureDefinition {
         PluginValidations.verifyLatestClassEvents(EventClass.All).acrossFragments &&
           PluginValidations.verifyAllStaticValues(isClass0 = true).acrossFragments &&
           verifyEventDataPrecedesStaticData &&
-          verifyOnlyTable83OrTable84Contents(options.get(SupportOptions.Inputs.doubleBit.points)) &&
+          verifyOnlyTable83OrTable84Contents(Tables(options)) &&
           verifyFlagsComplyWithFlagNote && verifyConfirmRequestedIfRequired
       )
     )
