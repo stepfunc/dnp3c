@@ -162,6 +162,15 @@ object SupportOptions extends OptionGroup {
   val deviceAttributes: BooleanOption =
     OptionTypes.boolean(this, "deviceAttributes", true, "Does the DUT support device attributes (group 0)?")
 
+  val rangeReads: BooleanOption = OptionTypes.boolean(
+    this,
+    "rangeReads",
+    true,
+    "Does the DUT answer reads of binary inputs, binary output status, counters, frozen counters, analog inputs and " +
+      "analog output status with a start/stop range (qualifiers 0x00 and 0x01)? Subset level 3 requires it (3.1r1's " +
+      "8.23)"
+  )
+
   val multipleAddresses: BooleanOption = OptionTypes.boolean(
     this,
     "multipleAddresses",
@@ -186,6 +195,7 @@ object SupportOptions extends OptionGroup {
     configurableFragmentSize,
     unsolicitedResponse,
     deviceAttributes,
+    rangeReads,
     multipleAddresses
   )
 }

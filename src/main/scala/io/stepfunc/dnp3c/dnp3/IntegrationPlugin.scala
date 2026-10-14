@@ -141,6 +141,11 @@ trait IntegrationPlugin {
   // applies a stable input of the value to the analog input, so the DUT reports it (3.1r1's 8.19.2.4)
   def setAnalogInput(reporter: PluginReporter, index: Int, value: Double): Unit =
     throw new UnsupportedOperationException("this plugin doesn't implement setAnalogInput")
+  // uninstall or disable every frozen counter, or every analog input, until reinstallPoints (3.1r1's 8.23)
+  def uninstallFrozenCounters(reporter: PluginReporter): Unit =
+    throw new UnsupportedOperationException("this plugin doesn't implement uninstallFrozenCounters")
+  def uninstallAnalogInputs(reporter: PluginReporter): Unit =
+    throw new UnsupportedOperationException("this plugin doesn't implement uninstallAnalogInputs")
 
   // ===================
   // Message validations

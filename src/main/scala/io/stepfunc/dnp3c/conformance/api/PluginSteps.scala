@@ -145,6 +145,16 @@ object PluginSteps {
     }
 
   // Counters
+  def uninstallFrozenCounters: TestStep = action("Uninstall or disable every frozen counter on the DUT") {
+    (plugin, reporter) =>
+      plugin.uninstallFrozenCounters(reporter)
+  }
+
+  def uninstallAnalogInputs: TestStep = action("Uninstall or disable every analog input on the DUT") {
+    (plugin, reporter) =>
+      plugin.uninstallAnalogInputs(reporter)
+  }
+
   def uninstallCounterInputs: TestStep = action("Uninstall or disable every counter point on the DUT") {
     (plugin, reporter) =>
       plugin.uninstallCounters(reporter)
