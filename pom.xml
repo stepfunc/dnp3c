@@ -64,10 +64,35 @@
         <maven-shade-plugin.version>3.6.2</maven-shade-plugin.version>
         <maven-assembly-plugin.version>3.8.0</maven-assembly-plugin.version>
         <maven-source-plugin.version>3.3.1</maven-source-plugin.version>
+        <license-maven-plugin.version>2.7.1</license-maven-plugin.version>
     </properties>
 
     <build>
         <defaultGoal>package</defaultGoal>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+            </resource>
+            <!-- the licenses of the dependencies the CLI jar bundles (license-maven-plugin, below) -->
+            <resource>
+                <directory>src/license/texts</directory>
+                <targetPath>META-INF/third-party/licenses</targetPath>
+            </resource>
+            <resource>
+                <directory>${project.build.directory}/generated-sources/license</directory>
+                <includes>
+                    <include>THIRD-PARTY.txt</include>
+                </includes>
+                <targetPath>META-INF/third-party</targetPath>
+            </resource>
+            <resource>
+                <directory>src/license</directory>
+                <includes>
+                    <include>licenses-resolved.xml</include>
+                </includes>
+                <targetPath>META-INF/third-party</targetPath>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <groupId>net.alchim31.maven</groupId>
@@ -132,6 +157,86 @@
                 </configuration>
             </plugin>
             <plugin>
+                <!--
+                  The licenses of the dependencies the CLI jar bundles: a list (THIRD-PARTY.txt), and each license's
+                  text. The build fails on a license that isn't allowed. The texts are kept in src/license/texts, so a
+                  build downloads only a license it hasn't seen, which then shows in git to be reviewed and committed.
+                  src/license/licenses.xml corrects what the dependencies' POMs say.
+                -->
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>license-maven-plugin</artifactId>
+                <version>${license-maven-plugin.version}</version>
+                <configuration>
+                    <excludedScopes>test,provided,system</excludedScopes>
+                    <licenseMerges>
+                        <licenseMerge>Apache-2.0|Apache Software License, Version 2.0|Apache License v2.0|Apache License, Version 2.0</licenseMerge>
+                        <licenseMerge>MIT|MIT License</licenseMerge>
+                        <licenseMerge>LGPL-2.1|LGPL, version 2.1</licenseMerge>
+                        <licenseMerge>LGPL-3.0|GNU Lesser GPL, Version 3</licenseMerge>
+                    </licenseMerges>
+                    <!-- licenses compatible with GPL-3.0-only; a dependency needs one of them -->
+                    <includedLicenses>
+                        <includedLicense>Apache-2.0</includedLicense>
+                        <includedLicense>MIT</includedLicense>
+                    </includedLicenses>
+                    <failOnBlacklist>true</failOnBlacklist>
+                    <failOnMissing>true</failOnMissing>
+                    <addOutputDirectoryAsResourceDir>false</addOutputDirectoryAsResourceDir>
+                    <!-- the texts, and which dependency each is for: both committed, so that the build reads them
+                         rather than downloads them, and whatever changes in them shows in git; nothing is deleted,
+                         and the build doesn't depend on Maven's offline mode -->
+                    <licensesOutputDirectory>${project.basedir}/src/license/texts</licensesOutputDirectory>
+                    <licensesOutputFile>${project.basedir}/src/license/licenses-resolved.xml</licensesOutputFile>
+                    <removeOrphanLicenseFiles>false</removeOrphanLicenseFiles>
+                    <sortByGroupIdAndArtifactId>true</sortByGroupIdAndArtifactId>
+                    <offline>false</offline>
+                    <errorRemedy>failFast</errorRemedy>
+                    <licenseUrlReplacements>
+                        <licenseUrlReplacement>
+                            <regexp>\Qhttps://www.apache.org/licenses/LICENSE-2.0\E(\.txt)?</regexp>
+                            <replacement>https://www.apache.org/licenses/LICENSE-2.0.txt</replacement>
+                        </licenseUrlReplacement>
+                        <licenseUrlReplacement>
+                            <regexp>\Qhttp://www.apache.org/licenses/LICENSE-2.0\E(\.txt)?</regexp>
+                            <replacement>https://www.apache.org/licenses/LICENSE-2.0.txt</replacement>
+                        </licenseUrlReplacement>
+                    </licenseUrlReplacements>
+                    <!-- local names for the texts, with checksums of what they should be -->
+                    <licenseUrlFileNames>
+                        <apache-2.0.txt>
+                            sha1:2b8b815229aa8a61e483fb4ba0588b8b6c491890
+                            \Qhttps://www.apache.org/licenses/LICENSE-2.0.txt\E
+                        </apache-2.0.txt>
+                        <mit-pcap4j.txt>
+                            sha1:354c9d694964180b61f6ab630cd9b5456d373f5b
+                            \Qhttps://raw.githubusercontent.com/kaitoy/pcap4j/\E.*
+                        </mit-pcap4j.txt>
+                        <mit-slf4j.txt>
+                            sha1:961528e4584043f215e2fc740f5d37dc9e72485f
+                            \Qhttps://raw.githubusercontent.com/qos-ch/slf4j/\E.*
+                        </mit-slf4j.txt>
+                        <notice-jserialcomm.txt>
+                            sha1:04ac407bf32f707f5d5d165a2b64a7deb39288fd
+                            \Qhttps://raw.githubusercontent.com/Fazecast/jSerialComm/\E.*/NOTICE
+                        </notice-jserialcomm.txt>
+                        <notice-scala.md>
+                            sha1:3779faf6d2234d1205d0282fc8aa4645ae21ccc1
+                            \Qhttps://raw.githubusercontent.com/scala/scala3/\E.*/NOTICE\.md
+                        </notice-scala.md>
+                    </licenseUrlFileNames>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>third-party</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>add-third-party</goal>
+                            <goal>download-licenses</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
                 <!-- the library jar, which plugins depend on -->
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
@@ -168,6 +273,12 @@
                                     <mainClass>io.stepfunc.dnp3c.conformance.Main</mainClass>
                                 </transformer>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                                <!-- the dependencies' NOTICE files, merged; their own LICENSE files, which would
+                                     overwrite each other, are left out for META-INF/third-party -->
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ApacheNoticeResourceTransformer">
+                                    <addHeader>false</addHeader>
+                                </transformer>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ApacheLicenseResourceTransformer"/>
                             </transformers>
                         </configuration>
                     </execution>

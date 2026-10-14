@@ -78,4 +78,6 @@ mvn package    # build the library jar, the runnable jar and the CLI zip in targ
 
 dnp3c is licensed under the [GNU General Public License v3.0 only](LICENSE).
 
+The runnable jar and the CLI zip bundle dnp3c's dependencies. Their licenses are listed in `third-party/THIRD-PARTY.txt` in the zip, and `META-INF/third-party/` in the jars, with each license's text and the dependencies' NOTICE files.
+
 Copyright Step Function I/O LLC

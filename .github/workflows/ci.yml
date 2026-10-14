@@ -34,6 +34,14 @@ jobs:
           cache: maven
       - name: Build and test
         run: mvn -B verify
+      # the build downloads the license of a new dependency into src/license/texts, to be reviewed and committed
+      - name: Check the dependencies' licenses are committed
+        run: |
+          if [ -n "$(git status --porcelain -- src/license)" ]; then
+            git status --porcelain -- src/license
+            echo "A dependency's license changed: review src/license/texts and commit it"
+            exit 1
+          fi
 
   # runs the CLI zip's launcher with Java 21, and checks it rejects Java 11 and a missing Java
   cli:
