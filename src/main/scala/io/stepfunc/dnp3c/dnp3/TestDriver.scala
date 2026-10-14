@@ -119,17 +119,26 @@ trait TestDriver {
 
   def write(bytes: List[Byte]): Unit
 
+  // closes the connection; a UDP connection's socket stays bound, as UDP has no connection to close
   def close(): Unit
+
+  // closes everything, once the procedure is done
+  def shutdown(): Unit = close()
 
   // the time and waits of the run: every timed read and wait goes through it, so tests can use virtual time
   def clock: Clock
 
   // ---- network (3.1r1's section 9) ----
 
-  // Closes the connection and connects to the DUT as given, now; what follows uses the new connection, as does a
-  // reconnection after close(). Returns the local address it's from. Throws if the DUT doesn't accept a TCP
-  // connection, and LocalBindException if the harness can't use the local address.
-  def connect(connection: Connection): InetSocketAddress =
+  // Makes the connection current, opening it now unless an earlier connect kept it open; what follows uses it, as does
+  // a reconnection after close(). The current connection closes, unless keep, which keeps it open for a later connect
+  // to make current again. Returns the local address it's from. Throws if the DUT doesn't accept a TCP connection, and
+  // LocalBindException if the harness can't use the local address.
+  def connect(connection: Connection, keep: Boolean = false): InetSocketAddress =
+    throw new UnsupportedOperationException("this driver can't make its own connections")
+
+  // Discards the datagrams that have arrived at an open UDP connection and haven't been read, and counts them
+  def drainDatagrams(connection: UdpConnection): Int =
     throw new UnsupportedOperationException("this driver can't make its own connections")
 
   // Sends the message as datagrams, one per link frame, from the local address to the remote one (which may be a

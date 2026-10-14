@@ -198,6 +198,66 @@ object NetworkOptions extends OptionGroup {
       "9.5.2 tests it, as 9.5.1 does for TCP"
   )
 
+  val udpUnsolicited: BooleanOption = OptionTypes.boolean(
+    this,
+    "udp.unsolicited",
+    false,
+    "Can the DUT send unsolicited responses over UDP? 3.1r1's UDP Unsolicited tests (9.5.3) run where it can, and " +
+      "supports.unsolicitedResponse is true"
+  )
+
+  val udpUnsolicitedTo20000: BooleanOption = OptionTypes.boolean(
+    this,
+    "udp.unsolicitedTo20000",
+    false,
+    "Can the DUT send its unsolicited responses over UDP, null and with data, and its other UDP responses, to the " +
+      "master's port 20000? 3.1r1 requires it of a device that sends unsolicited responses over UDP, and tests it in " +
+      "9.5.3 and 9.5.4. 9.5.3's Unsolicited Null tests need it or network.udp.unsolicitedToOriginatingPort"
+  )
+
+  val udpUnsolicitedNullPort: BooleanOption = OptionTypes.boolean(
+    this,
+    "udp.unsolicitedNullOtherPort",
+    false,
+    "Can the DUT send its initial null unsolicited response over UDP to a port other than 20000 " +
+      "(network.udp.unsolicitedPort)? 3.1r1's 9.5.3 tests it"
+  )
+
+  val udpUnsolicitedPort: IntegerOption = OptionTypes.integer(
+    this,
+    "udp.unsolicitedPort",
+    20002,
+    "The port other than 20000 that 3.1r1's 9.5.3 has the DUT send its initial null unsolicited response to, where " +
+      "network.udp.unsolicitedNullOtherPort is true",
+    Some(1),
+    Some(65535)
+  )
+
+  val udpUnsolicitedToOriginatingPort: BooleanOption = OptionTypes.boolean(
+    this,
+    "udp.unsolicitedToOriginatingPort",
+    false,
+    "Can the DUT send its initial null unsolicited response over UDP to port 20000, and every later UDP message to the " +
+      "port the master confirmed it from? 3.1r1 requires it of a device that sends unsolicited responses over UDP, " +
+      "and tests it in 9.5.3"
+  )
+
+  val udpFixedOtherPort: BooleanOption = OptionTypes.boolean(
+    this,
+    "udp.fixedOtherPort",
+    false,
+    "Can the DUT listen for UDP requests on a port other than 20000 (network.udp.otherPort) and send all its UDP " +
+      "messages, unsolicited or not, to the same port of the master? 3.1r1's 9.5.3 tests it"
+  )
+
+  val udpAndTcp: BooleanOption = OptionTypes.boolean(
+    this,
+    "udpAndTcp",
+    false,
+    "Can the DUT use TCP and UDP at once, sending its unsolicited responses over UDP until a TCP connection is made? " +
+      "3.1r1's 9.5.4 tests it, where network.udp.unsolicitedTo20000 is also true"
+  )
+
   def options: List[TestOption] = List(
     masterAddress,
     tcp,
@@ -219,6 +279,13 @@ object NetworkOptions extends OptionGroup {
     udpOtherPort,
     udpSpecificAddress,
     udpWildcard,
+    udpUnsolicited,
+    udpUnsolicitedTo20000,
+    udpUnsolicitedNullPort,
+    udpUnsolicitedPort,
+    udpUnsolicitedToOriginatingPort,
+    udpFixedOtherPort,
+    udpAndTcp,
     wildcardRange,
     wildcardAddress,
     outsideAddress

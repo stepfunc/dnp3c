@@ -6,11 +6,18 @@ package io.stepfunc.dnp3c.conformance.v31r1
 import java.net.{ ConnectException, InetAddress, InetSocketAddress, SocketTimeoutException }
 
 import io.stepfunc.dnp3c.conformance.api._
-import io.stepfunc.dnp3c.conformance.api.options.{ ChannelOptions, NetworkOptions }
+import io.stepfunc.dnp3c.conformance.api.options.{ ChannelOptions, NetworkOptions, SupportOptions, UnsolicitedOptions }
 import io.stepfunc.dnp3c.conformance.s6.{ expectFrame, sendLinkControl, withAnyControl }
-import io.stepfunc.dnp3c.conformance.s8.helpers.GenericSteps.{ expectAtLeastOneResponse, send }
+import io.stepfunc.dnp3c.conformance.s8.helpers.GenericSteps.{
+  expectAtLeastOneResponse, expectNoUnsolicitedResponse, expectSingleResponse, expectUnsolicitedResponse, send
+}
+import io.stepfunc.dnp3c.conformance.s8.helpers.UnconfirmedResponse
+import io.stepfunc.dnp3c.conformance.s8.helpers.GenericSteps.validateUnsolicitedResponse
+import io.stepfunc.dnp3c.conformance.s8.helpers.Validations.{ isNull, without }
 import io.stepfunc.dnp3c.dnp3._
-import io.stepfunc.dnp3c.dnp3.app.{ IIN, Message, Sequence }
+import io.stepfunc.dnp3c.dnp3.app.{ AppFunction, IIN, Message, Sequence, Unsolicited }
+import io.stepfunc.dnp3c.dnp3.app.objects.{ Group60Var2, Group60Var3, Group60Var4 }
+import io.stepfunc.dnp3c.dnp3.link.FrameValidator
 import io.stepfunc.dnp3c.protocol.parsing.UInt16LE
 
 /**
@@ -55,8 +62,12 @@ object Network {
         ConfigProblem(NetworkOptions.wildcardRange.id, "", "required by 3.1r1's Wildcard IP Address tests")),
       Option.when(running.contains(tcpOtherPort) && options.get(NetworkOptions.tcpOtherPort) == port)(
         ConfigProblem(NetworkOptions.tcpOtherPort.id, port.toString, "must be a port other than 20000")),
-      Option.when(running.contains(udpOtherPort) && options.get(NetworkOptions.udpOtherPort) == port)(
+      Option.when(
+        (running.contains(udpOtherPort) || running.contains(unsolicitedDataFixedPort)) &&
+          options.get(NetworkOptions.udpOtherPort) == port)(
         ConfigProblem(NetworkOptions.udpOtherPort.id, port.toString, "must be a port other than 20000")),
+      Option.when(running.contains(unsolicitedNullOtherPort) && options.get(NetworkOptions.udpUnsolicitedPort) == port)(
+        ConfigProblem(NetworkOptions.udpUnsolicitedPort.id, port.toString, "must be a port other than 20000")),
       Option.when(running.contains(udpMulticast) && !isMulticast(group))(
         ConfigProblem(NetworkOptions.multicastGroup.id, group, "needs a multicast group's IP address, e.g. 239.0.0.1"))
     ).flatten
@@ -433,5 +444,279 @@ object Network {
       4 --> udpFrom(dut(options), from(master(options), port)),
       (5 to 6) --> linkStatus
     )
+  }
+
+  // ---- 9.5.3 and 9.5.4: unsolicited responses over UDP ----
+
+  // a retry of an unconfirmed unsolicited response comes within the confirm timeout, give or take the tolerance
+  private def retryWindow(options: OptionSource): Option[Int] =
+    Some(options.get(UnsolicitedOptions.unsolicitedConfirmTimeoutMs) + UnconfirmedResponse.timingToleranceMs)
+
+  private val withEvents = MessageValidation.check("Verify that the response reports events") { m =>
+    if (m.headers.isEmpty) throw new Exception("The unsolicited response reports no events")
+  }
+
+  private def expectNull(autoConfirm: AutoConfirm, timeoutMs: Option[Int] = None): TestStep =
+    expectUnsolicitedResponse(autoConfirm, FrameValidator.none, isNull, LinkOverride.default, timeoutMs)
+
+  // copies of a response already waiting come within this of each other
+  private val queuedMs = 100
+  // at most this many copies are read, so a DUT that never stops can't hold up the test
+  private val maxQueued = 20
+
+  /**
+   * The null unsolicited response the DUT sends as it starts, and the retries of it that queued up while it restarted,
+   * which a manual restart can leave: the newest is confirmed, if it is, so that none left waiting looks like a retry
+   * sent after the confirmation. Its sequence number is recorded.
+   */
+  private def startupNull(confirm: Boolean, record: Sequence => Unit = _ => ()): TestStep = new TestStep {
+    def description: List[Comment] = List(
+      "Read the null unsolicited response the DUT sends as it starts, and any retries of it already waiting",
+      "Verify that each is empty, without error IIN bits",
+      if (confirm) "Confirm the newest" else "Don't confirm it"
+    )
+    def run(driver: TestDriver): List[DeferredCheck] = {
+      def read(timeoutMs: Option[Int]) =
+        driver.readMessage(Unsolicited.Yes, FrameValidator.none, LinkOverride.default, timeoutMs)
+      val first = read(None).getOrElse(throw new Exception("No unsolicited response received."))
+      val queued = Iterator.continually(read(Some(queuedMs))).take(maxQueued).takeWhile(_.isDefined).flatten.toList
+      if (queued.nonEmpty) driver.reporter.info(s"${queued.size} retries of it were already waiting")
+      val all = first :: queued
+      all.foreach { m =>
+        validateUnsolicitedResponse(m)
+        isNull.validate(driver.reporter, m)
+      }
+      record(all.last.ctrl.seq)
+      if (confirm) driver.writeMessage(Requests.confirm(all.last.ctrl.seq, Unsolicited.Yes))
+      Nil
+    }
+  }
+
+  // the master's initialization of the DUT: a clear of IIN1.7, a poll of every input, and, last, an enable of
+  // unsolicited responses
+  private val initialization: TestStep =
+    send(Requests.clearRestartIIN(Sequence.zero)) + expectSingleResponse(Sequence.zero, without(IIN.errors)) +
+      send(Requests.readClass1230(Sequence.one)) + expectAtLeastOneResponse(Sequence.one, without(IIN.errors)) +
+      send(Requests.allObjects(AppFunction.enableUnsolicited, Sequence.two, Group60Var2, Group60Var3, Group60Var4)) +
+      expectSingleResponse(Sequence.two, isNull)
+
+  // events the DUT reports unsolicited, which the harness confirms, and no more after them
+  private def eventsAndNoMore(options: OptionSource): List[TestStep] = List(
+    PluginSteps.generateUnsolicitedEvents(),
+    // the DUT may hold events back for up to its hold-off time
+    expectUnsolicitedResponse(
+      AutoConfirm.Yes,
+      FrameValidator.none,
+      withEvents,
+      LinkOverride.default,
+      Some(
+        options.get(UnsolicitedOptions.holdOffMs) + options.get(UnsolicitedOptions.unsolicitedConfirmTimeoutMs) +
+          UnconfirmedResponse.timingToleranceMs)
+    ),
+    expectNoUnsolicitedResponse(retryWindow(options))
+  )
+
+  // the UDP setup of the unsolicited tests: the DUT sends its null unsolicited response to the master's nullPort, and
+  // every other UDP message to data
+  private def unsolicited(options: OptionSource, listen: Int, nullPort: Int, data: UdpDestination): NetworkSetup =
+    udp(options, listen, anyUdpMaster(options), data)
+      .copy(unsolicited = Some(UdpUnsolicited(master(options), nullPort, data)))
+
+  private val udpUnsolicited: List[OptionCondition] =
+    List(SupportOptions.unsolicitedResponse, NetworkOptions.udpUnsolicited)
+
+  /**
+   * 9.5.3's Unsolicited Null 20000 and Unsolicited Null, Not 20000: the null, confirmed, and no more. They only set
+   * where the null goes; the setup sends everything else as the DUT can: to port 20000, or to the port the null was
+   * confirmed from, which also takes the null to port 20000 in the first test.
+   */
+  private def unsolicitedNull(gates: List[OptionCondition], nullPort: OptionSource => Int) =
+    new Test {
+      override protected def requirement: Requirement = Requirement.all(
+        (udpUnsolicited ++ gates :+ Requirement.anyOf(
+          OptionCondition(NetworkOptions.udpUnsolicitedTo20000),
+          OptionCondition(NetworkOptions.udpUnsolicitedToOriginatingPort)))*)
+
+      override protected def steps(options: OptionSource): Iterable[LabeledStep] = {
+        val to = nullPort(options)
+        val data =
+          if (options.get(NetworkOptions.udpUnsolicitedTo20000)) UdpDestination.Fixed(port)
+          else UdpDestination.OriginatingPort
+        List(
+          (1 to 2) --> setUp(unsolicited(options, port, to, data)),
+          3 --> udpFrom(dut(options), from(master(options), to)),
+          4 --> PluginSteps.cyclePower,
+          (5 to 6) --> startupNull(confirm = true),
+          7 --> expectNoUnsolicitedResponse(retryWindow(options))
+        )
+      }
+    }
+
+  val unsolicitedNull20000: ProcedureDefinition = unsolicitedNull(Nil, _ => port)
+
+  val unsolicitedNullOtherPort: ProcedureDefinition = unsolicitedNull(
+    List(OptionCondition(NetworkOptions.udpUnsolicitedNullPort)),
+    _.get(NetworkOptions.udpUnsolicitedPort))
+
+  /** 9.5.3's Data Filled Messages to Port 20000 */
+  val unsolicitedData20000: ProcedureDefinition = new Test {
+    override protected def requiredOptions: List[OptionCondition] =
+      udpUnsolicited :+ OptionCondition(NetworkOptions.udpUnsolicitedTo20000)
+
+    override protected def steps(options: OptionSource): Iterable[LabeledStep] = {
+      val List(generate, expect, noMore) = eventsAndNoMore(options)
+      List(
+        1 --> setUp(unsolicited(options, port, port, UdpDestination.Fixed(port))),
+        (2 to 3) --> udpFrom(dut(options), from(master(options), port)),
+        4 --> PluginSteps.cyclePower,
+        (5 to 6) --> startupNull(confirm = true),
+        (7 to 10) --> initialization,
+        11 --> generate,
+        (12 to 13) --> expect,
+        14 --> noMore
+      )
+    }
+  }
+
+  /**
+   * 9.5.3's Data Filled Messages to Originating Port: the null comes to port 20000, and the harness confirms it from
+   * another port, where every later message must come
+   */
+  val unsolicitedDataOriginatingPort: ProcedureDefinition = new Test {
+    override protected def requiredOptions: List[OptionCondition] =
+      udpUnsolicited :+ OptionCondition(NetworkOptions.udpUnsolicitedToOriginatingPort)
+
+    override protected def steps(options: OptionSource): Iterable[LabeledStep] = {
+      val List(generate, expect, noMore) = eventsAndNoMore(options)
+      var nullSeq: Option[Sequence] = None
+      val other = UdpConnection(dut(options), from(master(options)))
+      List(
+        (1 to 2) --> setUp(unsolicited(options, port, port, UdpDestination.OriginatingPort)),
+        (3 to 5) --> udpFrom(dut(options), from(master(options), port)),
+        6 --> PluginSteps.cyclePower,
+        7 --> startupNull(confirm = false, seq => nullSeq = Some(seq)),
+        8 --> new TestStep {
+          def description: List[Comment] = List(
+            s"Confirm it from ${master(options)}, from a port the system chooses, other than 20000: from now on, the " +
+              "harness sends from that port, and processes only the datagrams that come back to it")
+          def run(driver: TestDriver): List[DeferredCheck] = {
+            val bound = driver.connect(other)
+            driver.reporter.info(s"Confirming from port ${bound.getPort}")
+            driver.writeMessage(Requests.confirm(nullSeq.get, Unsolicited.Yes))
+            Nil
+          }
+        },
+        (9 to 12) --> initialization,
+        13 --> generate,
+        (14 to 15) --> expect,
+        16 --> noMore
+      )
+    }
+  }
+
+  /** 9.5.3's Data Filled Messages to a Fixed Port Other Than 20000: the DUT and the master both use that port */
+  val unsolicitedDataFixedPort: ProcedureDefinition = new Test {
+    override protected def requiredOptions: List[OptionCondition] =
+      udpUnsolicited :+ OptionCondition(NetworkOptions.udpFixedOtherPort)
+
+    override protected def steps(options: OptionSource): Iterable[LabeledStep] = {
+      val List(generate, expect, noMore) = eventsAndNoMore(options)
+      val other = options.get(NetworkOptions.udpOtherPort)
+      List(
+        (1 to 3) --> setUp(unsolicited(options, other, other, UdpDestination.Fixed(other))),
+        4 --> udpFrom(dut(options, other), from(master(options), other)),
+        5 --> PluginSteps.cyclePower,
+        (6 to 7) --> startupNull(confirm = true),
+        (8 to 11) --> initialization,
+        12 --> generate,
+        (13 to 14) --> expect,
+        15 --> noMore,
+        16 --> describe("The cleanup restores the DUT's usual network setup")
+      )
+    }
+  }
+
+  /**
+   * 9.5.4's test: unsolicited responses over UDP until a TCP connection is made, then over TCP only, while requests over
+   * UDP are still answered over UDP
+   */
+  val unsolicitedUdpAndTcp: ProcedureDefinition = new Test {
+    override protected def requiredOptions: List[OptionCondition] = udpUnsolicited ++ List(
+      OptionCondition(NetworkOptions.udpUnsolicitedTo20000),
+      OptionCondition(NetworkOptions.udpAndTcp),
+      OptionCondition(NetworkOptions.tcp))
+
+    override protected def steps(options: OptionSource): Iterable[LabeledStep] = {
+      val udpLink = UdpConnection(dut(options), from(master(options), port))
+      val tcpLink = TcpConnection(dut(options), from(master(options)))
+      val allowed =
+        if (options.get(NetworkOptions.tcpAnyAddress) && options.get(NetworkOptions.udpAnyAddress)) AllowedMasters.Any
+        else AllowedMasters.Address(master(options))
+      val setup = NetworkSetup(
+        NetworkMode.Both,
+        port,
+        allowed,
+        UdpDestination.Fixed(port),
+        Some(UdpUnsolicited(master(options), port, UdpDestination.Fixed(port))))
+      val noUdp = new TestStep {
+        def description: List[Comment] =
+          List("Verify that no UDP datagram has come from the DUT since the TCP connection was made")
+        def run(driver: TestDriver): List[DeferredCheck] = {
+          val count = driver.drainDatagrams(udpLink)
+          if (count > 0) throw new Exception(s"The DUT sent $count UDP datagram(s) after the TCP connection was made")
+          Nil
+        }
+      }
+      val List(generate, expect, _) = eventsAndNoMore(options)
+      List(
+        1 --> setUp(setup),
+        2 --> udpFrom(dut(options), from(master(options), port)),
+        3 --> PluginSteps.cyclePower,
+        4 --> startupNull(confirm = false),
+        5 --> describe("Don't confirm it"),
+        6 --> expectNull(AutoConfirm.No, retryWindow(options)),
+        7 --> describe("Don't confirm it"),
+        (8 to 9) --> new TestStep {
+          def description: List[Comment] = List(
+            s"Issue a TCP connection to the DUT's port $port from ${master(options)} at once, keeping the UDP socket " +
+              "open alongside it",
+            "Verify that the DUT accepts it"
+          )
+          def run(driver: TestDriver): List[DeferredCheck] = {
+            val earlier = driver.drainDatagrams(udpLink)
+            if (earlier > 0) driver.reporter.info(s"$earlier more UDP datagram(s) came before the TCP connection")
+            val connected =
+              try driver.connect(tcpLink, keep = true)
+              catch {
+                case ex @ (_: ConnectException | _: SocketTimeoutException) =>
+                  throw new Exception(s"The DUT didn't accept the connection: ${ex.getMessage}", ex)
+              }
+            // what came while the connection was being made may have been sent before the DUT saw it: not counted
+            val meanwhile = driver.drainDatagrams(udpLink)
+            if (meanwhile > 0)
+              driver.reporter.info(s"$meanwhile UDP datagram(s) came while the TCP connection was made")
+            driver.reporter.info(s"Connected from port ${connected.getPort}")
+            Nil
+          }
+        },
+        (10 to 12) --> expectNull(AutoConfirm.No, retryWindow(options)),
+        13 --> noUdp,
+        (14 to 15) --> expectNull(AutoConfirm.Yes, retryWindow(options)),
+        (16 to 19) --> initialization,
+        20 --> generate,
+        (21 to 22) --> (expect + noUdp),
+        23 --> new TestStep {
+          def description: List[Comment] = List(
+            s"Send a class 1, 2, 3 and 0 read over UDP to the DUT's port $port, from port $port, keeping the TCP " +
+              "connection open")
+          def run(driver: TestDriver): List[DeferredCheck] = {
+            driver.connect(udpLink, keep = true)
+            driver.writeMessage(Requests.readClass1230(Sequence(3)))
+            Nil
+          }
+        },
+        24 --> expectAtLeastOneResponse(Sequence(3))
+      )
+    }
   }
 }

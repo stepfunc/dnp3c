@@ -186,6 +186,43 @@ class NetworkDriverTest extends AnyFunSuite with Matchers {
     waitFor(done) should equal((local.getPort, local.getPort))
   }
 
+  test("over UDP, a close leaves the socket bound, so what the DUT sends meanwhile is read") {
+    val (address, done) = serveUdp { s =>
+      val request = receive(s)
+      s.send(new DatagramPacket(linkStatus, linkStatus.length, request.getSocketAddress))
+    }
+    val dut = driver()
+    dut.connect(UdpConnection(address, anyPort))
+    dut.writeFrame(LinkFrame.headerOnly(Control(0xC9.toByte), UInt16LE(1024), UInt16LE(1)))
+    waitFor(done)
+    dut.close()
+    dut.readFrame() should not be empty
+    dut.shutdown()
+  }
+
+  test("a connection kept open while another is current is current again later, its datagrams counted meanwhile") {
+    val (udpAddress, udpDone) = serveUdp { s =>
+      val request = receive(s)
+      for (_ <- 1 to 2) s.send(new DatagramPacket(linkStatus, linkStatus.length, request.getSocketAddress))
+      receive(s).getPort
+    }
+    val (tcpAddress, tcpDone) = serve(drain)
+    val dut = driver()
+    val udp = UdpConnection(udpAddress, anyPort)
+    val local = dut.connect(udp)
+    dut.writeFrame(LinkFrame.headerOnly(Control(0xC9.toByte), UInt16LE(1024), UInt16LE(1)))
+    dut.connect(TcpConnection(tcpAddress, anyPort), keep = true)
+    // both datagrams arrive while TCP is current
+    Thread.sleep(200)
+    dut.drainDatagrams(udp) should equal(2)
+    dut.drainDatagrams(udp) should equal(0)
+    dut.connect(udp, keep = true) should equal(local)
+    dut.writeFrame(LinkFrame.headerOnly(Control(0xC9.toByte), UInt16LE(1024), UInt16LE(1)))
+    waitFor(udpDone) should equal(local.getPort)
+    dut.shutdown()
+    waitFor(tcpDone)
+  }
+
   test("datagrams sent alongside the connection go one frame each, to the destination given") {
     val (address, done) = serveUdp(s => (receive(s), receive(s)))
     // a read of 90 headers, 272 bytes, takes two frames

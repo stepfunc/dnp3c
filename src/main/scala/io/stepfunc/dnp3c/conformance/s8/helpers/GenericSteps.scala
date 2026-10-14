@@ -270,7 +270,7 @@ object GenericSteps {
     }
   }
 
-  private[helpers] def validateUnsolicitedResponse(msg: Message): Unit = {
+  private[conformance] def validateUnsolicitedResponse(msg: Message): Unit = {
     if (!msg.ctrl.uns.value) throw new Exception("Unexpected solicited response")
     if (msg.function != AppFunction.unsolicited) throw new Exception("Unexpected function code: " + msg.function)
     if (!msg.ctrl.con.value) throw new Exception("Unsolicited responses should always have the CON bit set")

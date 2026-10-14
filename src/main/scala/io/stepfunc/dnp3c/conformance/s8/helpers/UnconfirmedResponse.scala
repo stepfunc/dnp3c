@@ -121,5 +121,5 @@ class UnconfirmedResponse(confirmTimeoutMs: Int) {
 object UnconfirmedResponse {
   // Timing tolerance, e.g. between the DUT sending and us receiving a response. Adopted from the measurement
   // accuracy 8.11.2.1 allows for unsolicited retries.
-  private[helpers] val timingToleranceMs = 500
+  private[conformance] val timingToleranceMs = 500
 }
