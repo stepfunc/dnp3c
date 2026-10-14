@@ -4,15 +4,15 @@
 package io.stepfunc.dnp3c.conformance.v31r1
 
 import scala.collection.mutable
-import scala.util.Try
 
-import io.stepfunc.dnp3c.conformance.api.{ Options, ProcedureDefinition }
+import io.stepfunc.dnp3c.conformance.Run
+import io.stepfunc.dnp3c.conformance.api.ProcedureDefinition
 import io.stepfunc.dnp3c.conformance.api.options.ControlOptions
 import io.stepfunc.dnp3c.conformance.api.options.SupportOptions.Outputs
 import io.stepfunc.dnp3c.dnp3._
 import io.stepfunc.dnp3c.dnp3.app._
 import io.stepfunc.dnp3c.dnp3.app.objects.Group60
-import io.stepfunc.dnp3c.dnp3.link.{ FrameValidator, LinkFrame }
+import io.stepfunc.dnp3c.dnp3.link.LinkFrame
 import io.stepfunc.dnp3c.protocol.Hex
 import org.junit.runner.RunWith
 import org.scalatestplus.junit.JUnitRunner
@@ -29,14 +29,13 @@ class OutputEventsTest extends AnyFunSuite with Matchers {
    * unless the DUT reports a wrong status. Class polls report the events, which a confirmation clears.
    */
   private class Dut(wrongStatus: Boolean = false, hidesFlag: Boolean = false)
-      extends StubDriver(StubDriver.reporter()) {
+      extends RespondingDriver {
     private val flags = mutable.Map(0 -> 0x01, 1 -> 0x01)
     private var events = List.empty[String]
     private var awaiting: Option[Int] = None
     private var selected: Option[Int] = None
-    private val responses = mutable.Queue.empty[Message]
 
-    val plugin: DefaultIntegrationPlugin = new DefaultIntegrationPlugin {
+    override protected val testPlugin: DefaultIntegrationPlugin = new DefaultIntegrationPlugin {
       override def changeOutputFlag(reporter: PluginReporter, kind: PointKind, index: Int, flag: Int): Unit = {
         flags(index) ^= 1 << flag
         if (!hidesFlag) events :+= "0B 01 17 01 %02X %02X".format(index, flags(index))
@@ -44,15 +43,14 @@ class OutputEventsTest extends AnyFunSuite with Matchers {
       override def verifyCommandEventTime(reporter: CheckReporter, sentMs: Long, eventMs: Long): Option[DeferredCheck] =
         None
     }
-    override val reporter: ProcedureReporter = StubDriver.reporter(plugin)
 
     override def writeMessage(message: Message, options: LinkOverride): Unit = {
       val seq = message.ctrl.seq.value.toInt
       def respond(con: Boolean, iin: String, objects: String): Unit =
-        responses.enqueue(Message.parse(Hex.from("%02X 81 %s %s".format(
+        enqueue("%02X 81 %s %s".format(
           0xC0 | (if (con) 0x20 else 0) | seq,
           iin,
-          objects))))
+          objects))
       message.function match {
         case AppFunction.confirm =>
           if (awaiting.contains(seq)) events = Nil
@@ -82,18 +80,11 @@ class OutputEventsTest extends AnyFunSuite with Matchers {
       }
     }
 
-    override def readMessage(
-        unsolicited: Unsolicited,
-        validator: FrameValidator,
-        linkOverride: LinkOverride,
-        timeoutMs: Option[Int]): Option[Message] =
-      if (responses.isEmpty) timedOut(timeoutMs) else Some(responses.dequeue())
     override def readFrame(timeout: Option[Int]): Option[LinkFrame] = timedOut(timeout)
-    override def close(): Unit = {}
   }
 
   private def run(procedure: ProcedureDefinition, dut: Dut, settings: Map[String, String] = Map()): Boolean =
-    Try(procedure.configure(Options.from(settings)).steps.foreach(s => s.step.run(dut).foreach(_.check()))).isSuccess
+    Run.passes(procedure, dut, settings)
 
   private val commandEvents = Map(Outputs.binary.commandEvents.id -> "true")
 

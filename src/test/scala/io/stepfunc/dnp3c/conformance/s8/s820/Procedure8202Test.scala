@@ -3,6 +3,7 @@
 
 package io.stepfunc.dnp3c.conformance.s8.s820
 
+import io.stepfunc.dnp3c.conformance.Run
 import io.stepfunc.dnp3c.conformance.api.Options
 import io.stepfunc.dnp3c.conformance.api.options.SupportOptions.{ Inputs, Outputs }
 import io.stepfunc.dnp3c.dnp3._
@@ -118,8 +119,7 @@ class Procedure8202Test extends AnyFunSuite with Matchers {
             linkOverride: LinkOverride,
             timeoutMs: Option[Int]): Option[Message] = Some(Message.parse(Hex.from("E0 81 00 00 " + objects)))
       }
-      val steps = Procedure8202.configure(Options.from(Map())).steps.toList
-      scala.util.Try(steps.foreach(_.step.run(driver))).isSuccess
+      Run.passes(Procedure8202, driver)
     }
     val binary = "01 02 00 00 00 01" // g1v2, index 0
     passes(binary) should equal(true)

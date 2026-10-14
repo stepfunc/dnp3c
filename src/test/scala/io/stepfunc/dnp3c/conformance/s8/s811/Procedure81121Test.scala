@@ -3,6 +3,7 @@
 
 package io.stepfunc.dnp3c.conformance.s8.s811
 
+import io.stepfunc.dnp3c.conformance.Run
 import io.stepfunc.dnp3c.conformance.api.Options
 import io.stepfunc.dnp3c.conformance.api.options.UnsolicitedOptions
 import io.stepfunc.dnp3c.dnp3._
@@ -14,7 +15,6 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.funsuite.AnyFunSuite
 
 import scala.collection.mutable
-import scala.util.Try
 
 @RunWith(classOf[JUnitRunner])
 class Procedure81121Test extends AnyFunSuite with Matchers {
@@ -35,25 +35,23 @@ class Procedure81121Test extends AnyFunSuite with Matchers {
   // each read for one, except the `early`th, which it sends at once, and nothing once events are generated; it answers
   // requests with null responses. Records the timeouts of the reads for unsolicited responses after the events.
   private class Dut(plugin: Plugin, confirmTimeoutMs: Int, early: Option[Int] = None)
-      extends StubDriver(StubDriver.reporter(plugin)) {
+      extends RespondingDriver(StubDriver.reporter(plugin)) {
     private var restart = true
     private var sent = 0
-    private val responses = mutable.Queue.empty[Message]
     val timeoutsAfterEvents = mutable.ListBuffer.empty[Option[Int]]
 
-    override def close(): Unit = ()
     override def writeMessage(message: Message, options: LinkOverride): Unit = message.function match {
       case AppFunction.confirm =>
       case function =>
         if (function == AppFunction.write) restart = false
-        responses.enqueue(Message(Control.request(message.ctrl.seq), AppFunction.response, Some(iin), Nil))
+        enqueue(Message(Control.request(message.ctrl.seq), AppFunction.response, Some(iin), Nil))
     }
     override def readMessage(
         unsolicited: Unsolicited,
         validator: FrameValidator,
         linkOverride: LinkOverride,
         timeoutMs: Option[Int]): Option[Message] =
-      if (!unsolicited.value) Some(responses.dequeue())
+      if (!unsolicited.value) super.readMessage(unsolicited, validator, linkOverride, timeoutMs)
       else if (plugin.eventsGenerated) {
         timeoutsAfterEvents += timeoutMs
         timedOut(timeoutMs)
@@ -75,7 +73,7 @@ class Procedure81121Test extends AnyFunSuite with Matchers {
     val plugin = new Plugin
     val dut = new Dut(plugin, 5000)
     val options = Options.from(Map(UnsolicitedOptions.holdOffMs.id -> "3000"))
-    Procedure81121.configure(options).steps.foreach(_.step.run(dut))
+    Run.passing(Procedure81121, dut, options)
     // the hold-off, the confirm timeout and a 200 ms margin
     dut.timeoutsAfterEvents.toList should equal(List(Some(8200)))
   }
@@ -83,7 +81,7 @@ class Procedure81121Test extends AnyFunSuite with Matchers {
   test("each unsolicited response after the first is a retry, one confirm timeout after the one before") {
     def passes(early: Option[Int]) = {
       val dut = new Dut(new Plugin, 5000, early)
-      Try(Procedure81121.configure(Options.from(Map())).steps.foreach(_.step.run(dut))).isSuccess
+      Run.passes(Procedure81121, dut)
     }
     passes(None) should equal(true)
     // steps 15 to 18 (the 3rd and 4th responses), 21 (the 5th), 25 (the 6th) and 27 (the 7th)

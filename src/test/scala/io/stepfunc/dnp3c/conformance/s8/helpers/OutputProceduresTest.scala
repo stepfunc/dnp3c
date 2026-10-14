@@ -3,6 +3,7 @@
 
 package io.stepfunc.dnp3c.conformance.s8.helpers
 
+import io.stepfunc.dnp3c.conformance.Run
 import io.stepfunc.dnp3c.conformance.Placements.id
 import io.stepfunc.dnp3c.conformance.api.{ Index, Options, ProcedureDefinition }
 import io.stepfunc.dnp3c.conformance.api.options.{ AnalogOutputOptions, CommandConfig, ControlOptions, SupportOptions }
@@ -38,7 +39,7 @@ class OutputProceduresTest extends AnyFunSuite with Matchers {
       extends ScriptedDut(StubDriver.reporter(plugin), answer)
 
   private def run(procedure: ProcedureDefinition, options: Options, dut: Dut): Unit =
-    procedure.configure(options).steps.foreach(_.step.run(dut))
+    Run.passing(procedure, dut, options)
 
   private val defaults = Options.from(Map())
 

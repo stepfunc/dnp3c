@@ -3,9 +3,7 @@
 
 package io.stepfunc.dnp3c.conformance.v31r1
 
-import scala.util.Try
-
-import io.stepfunc.dnp3c.conformance.api.Options
+import io.stepfunc.dnp3c.conformance.Run
 import io.stepfunc.dnp3c.conformance.api.options.{ CounterOptions, OutstationOptions }
 import io.stepfunc.dnp3c.dnp3._
 import io.stepfunc.dnp3c.dnp3.app._
@@ -78,12 +76,11 @@ class StaticVariationsTest extends AnyFunSuite with Matchers {
       d: ScriptedDut,
       level: Int = 3,
       settings: Map[String, String] = Map()): (Boolean, List[String]) = {
-    val reporter = d.reporter
-    val options = Options.from(settings + (OutstationOptions.subsetLevel.id -> level.toString))
-    val passed = Try(
-      StaticVariations.test(StaticVariations.counters).configure(options).steps.foreach(s =>
-        s.step.run(d).foreach(_.check()))).isSuccess
-    (passed, reporter.notes)
+    val passed = Run.passes(
+      StaticVariations.test(StaticVariations.counters),
+      d,
+      settings + (OutstationOptions.subsetLevel.id -> level.toString))
+    (passed, d.reporter.notes)
   }
 
   test("counters in the variations requested, the abnormal one with flags, pass, and the flags are noted") {

@@ -3,10 +3,10 @@
 
 package io.stepfunc.dnp3c.conformance.s8.helpers
 
+import io.stepfunc.dnp3c.conformance.Run
 import io.stepfunc.dnp3c.conformance.Placements.id
-import io.stepfunc.dnp3c.conformance.api.{ Options, ProcedureDefinition }
+import io.stepfunc.dnp3c.conformance.api.ProcedureDefinition
 import io.stepfunc.dnp3c.conformance.api.options.BinaryInputOptions
-import io.stepfunc.dnp3c.dnp3.link.FrameValidator
 import io.stepfunc.dnp3c.conformance.s8.s86.s866.Procedure86621
 import io.stepfunc.dnp3c.dnp3._
 import io.stepfunc.dnp3c.dnp3.app._
@@ -45,20 +45,14 @@ class EventFamiliesTest extends AnyFunSuite with Matchers {
   }
 
   // answers each request by its sequence number with a whole response, given as bytes after the control and function
-  private class Dut(answers: Map[Int, String]) extends StubDriver(StubDriver.reporter(new Plugin)) {
+  private class Dut(answers: Map[Int, String]) extends RespondingDriver(StubDriver.reporter(new Plugin)) {
     val reads = mutable.ListBuffer.empty[(Int, List[Variation])]
-    private val pending = mutable.Queue.empty[Message]
     override def writeMessage(message: Message, options: LinkOverride): Unit =
       if (message.function == AppFunction.read) {
         val seq = message.ctrl.seq.value.toInt
         reads += ((seq, message.headers.map(_.variation)))
-        pending.enqueue(Message.parse(Hex.from(answers(seq))))
+        enqueue(answers(seq))
       }
-    override def readMessage(
-        unsolicited: Unsolicited,
-        validator: FrameValidator,
-        linkOverride: LinkOverride,
-        timeoutMs: Option[Int]): Option[Message] = if (pending.isEmpty) None else Some(pending.dequeue())
   }
 
   private class Plugin extends DefaultIntegrationPlugin {
@@ -78,7 +72,7 @@ class EventFamiliesTest extends AnyFunSuite with Matchers {
       answers: Map[Int, String],
       settings: Map[String, String] = Map()): Dut = {
     val dut = new Dut(answers)
-    procedure.configure(Options.from(settings)).steps.foreach(_.step.run(dut))
+    Run.passing(procedure, dut, settings)
     dut
   }
 

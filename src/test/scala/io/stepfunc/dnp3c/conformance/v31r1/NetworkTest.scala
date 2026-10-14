@@ -6,14 +6,12 @@ package io.stepfunc.dnp3c.conformance.v31r1
 import java.net.{ ConnectException, InetSocketAddress }
 
 import scala.collection.mutable
-import scala.util.Try
 
+import io.stepfunc.dnp3c.conformance.Run
 import io.stepfunc.dnp3c.conformance.api.{ Options, ProcedureDefinition, TestProcedure }
 import io.stepfunc.dnp3c.conformance.api.options.NetworkOptions
 import io.stepfunc.dnp3c.dnp3._
-import io.stepfunc.dnp3c.dnp3.app.{ Message, Unsolicited }
-import io.stepfunc.dnp3c.dnp3.link.FrameValidator
-import io.stepfunc.dnp3c.protocol.Hex
+import io.stepfunc.dnp3c.dnp3.app.Message
 import io.stepfunc.dnp3c.dnp3.link.{ Control, LinkFrame }
 import io.stepfunc.dnp3c.protocol.parsing.UInt16LE
 import org.junit.runner.RunWith
@@ -32,7 +30,7 @@ class NetworkTest extends AnyFunSuite with Matchers {
    * multicast group its setup gives. A DUT that ignoresSetup keeps using TCP on port 20000, for any master.
    */
   private class Dut(ignoresSetup: Boolean = false, ignoresBroadcasts: Boolean = false)
-      extends StubDriver(StubDriver.reporter()) {
+      extends RespondingDriver {
     private var setup = NetworkSetup(NetworkMode.Tcp, 20000, AllowedMasters.Any)
     val setups: mutable.ListBuffer[NetworkSetup] = mutable.ListBuffer.empty
     val connections: mutable.ListBuffer[InetSocketAddress] = mutable.ListBuffer.empty
@@ -41,9 +39,8 @@ class NetworkTest extends AnyFunSuite with Matchers {
     private var current: Option[Connection] = None
     private var pending: Option[LinkFrame] = None
     private var broadcast = false
-    private val responses = mutable.Queue.empty[Message]
 
-    val plugin: DefaultIntegrationPlugin = new DefaultIntegrationPlugin {
+    override protected val testPlugin: DefaultIntegrationPlugin = new DefaultIntegrationPlugin {
       override def configureNetwork(reporter: PluginReporter, s: NetworkSetup): Unit = {
         setups += s
         if (!ignoresSetup) setup = s
@@ -51,7 +48,6 @@ class NetworkTest extends AnyFunSuite with Matchers {
       override def restoreNetwork(reporter: PluginReporter): Unit = restored += 1
       override def verifyDisconnectNoticed(reporter: CheckReporter): Option[DeferredCheck] = None
     }
-    override val reporter: ProcedureReporter = StubDriver.reporter(plugin)
 
     private def bound(c: Connection): InetSocketAddress =
       new InetSocketAddress(c.local.getAddress, if (c.local.getPort == 0) 50000 else c.local.getPort)
@@ -100,8 +96,6 @@ class NetworkTest extends AnyFunSuite with Matchers {
         broadcast = true
     }
 
-    override def close(): Unit = {}
-
     override def writeFrame(frame: LinkFrame): Unit =
       if (current.exists(answers) && frame.header.ctrl.toByte == 0xC9.toByte)
         pending = Some(LinkFrame.headerOnly(Control(0x0B.toByte), UInt16LE(1), UInt16LE(1024)))
@@ -114,16 +108,10 @@ class NetworkTest extends AnyFunSuite with Matchers {
 
     override def writeMessage(message: Message, options: LinkOverride): Unit = {
       val seq = message.ctrl.seq.value.toInt
-      responses.enqueue(Message.parse(Hex.from("%02X 81 %02X 00".format(0xC0 | seq, if (broadcast) 1 else 0))))
+      enqueue("%02X 81 %02X 00".format(0xC0 | seq, if (broadcast) 1 else 0))
       broadcast = false
     }
 
-    override def readMessage(
-        unsolicited: Unsolicited,
-        validator: FrameValidator,
-        linkOverride: LinkOverride,
-        timeoutMs: Option[Int]): Option[Message] =
-      if (responses.isEmpty) timedOut(timeoutMs) else Some(responses.dequeue())
   }
 
   private val bench = Map(
@@ -146,13 +134,8 @@ class NetworkTest extends AnyFunSuite with Matchers {
     NetworkOptions.udpWildcard.id -> "true"
   )
 
-  // runs the steps, then the cleanup, as the runner does
-  private def run(procedure: ProcedureDefinition, dut: Dut, settings: Map[String, String] = Map()): Boolean = {
-    val config = procedure.configure(Options.from(bench ++ settings))
-    val passed = Try(config.steps.foreach(s => s.step.run(dut).foreach(_.check()))).isSuccess
-    config.cleanup.foreach(s => s.step.run(dut).foreach(_.check()))
-    passed
-  }
+  private def run(procedure: ProcedureDefinition, dut: Dut, settings: Map[String, String] = Map()): Boolean =
+    Run.passes(procedure, dut, bench ++ settings)
 
   test("9.5.1.1: connections from port 20000, then from another port, which is noted") {
     val dut = new Dut

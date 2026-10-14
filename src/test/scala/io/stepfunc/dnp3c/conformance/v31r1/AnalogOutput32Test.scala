@@ -3,9 +3,7 @@
 
 package io.stepfunc.dnp3c.conformance.v31r1
 
-import scala.util.Try
-
-import io.stepfunc.dnp3c.conformance.api.Options
+import io.stepfunc.dnp3c.conformance.Run
 import io.stepfunc.dnp3c.conformance.api.options.AnalogOutputOptions
 import io.stepfunc.dnp3c.dnp3._
 import io.stepfunc.dnp3c.dnp3.app.{ AppFunction, IIN, Message, ObjectHeader }
@@ -33,8 +31,7 @@ class AnalogOutput32Test extends AnyFunSuite with Matchers {
     val plugin = new Plugin
     val dut = new ScriptedDut(StubDriver.reporter(plugin), answer)
     val passed =
-      Try(AnalogOutput32.sbo.configure(Options.from(settings)).steps.foreach(s => s.step.run(dut).foreach(_.check())))
-        .isSuccess
+      Run.passes(AnalogOutput32.sbo, dut, settings)
     (passed, plugin.operated)
   }
 

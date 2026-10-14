@@ -3,6 +3,7 @@
 
 package io.stepfunc.dnp3c.conformance.v31r1
 
+import io.stepfunc.dnp3c.conformance.Run
 import io.stepfunc.dnp3c.conformance.{ Revisions, s8 }
 import io.stepfunc.dnp3c.conformance.api.{ Options, ProcedureDefinition, TestProcedure }
 import io.stepfunc.dnp3c.conformance.api.options.{ ClassOptions, OutstationOptions }
@@ -74,7 +75,7 @@ class ClassDataTest extends AnyFunSuite with Matchers {
       }
     }
     val options = Options.from(Map(OutstationOptions.subsetLevel.id -> "2", ClassOptions.supportClass1.id -> "false"))
-    ClassData.class1All.configure(options).steps.foreach(_.step.run(dut))
+    Run.passing(ClassData.class1All, dut, options)
     a[Exception] should be thrownBy dut.readMessage(Unsolicited.No, FrameValidator.none, LinkOverride.default, None)
   }
 }

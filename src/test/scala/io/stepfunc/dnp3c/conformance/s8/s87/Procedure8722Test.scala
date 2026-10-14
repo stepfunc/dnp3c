@@ -3,20 +3,15 @@
 
 package io.stepfunc.dnp3c.conformance.s8.s87
 
+import io.stepfunc.dnp3c.conformance.Run
 import io.stepfunc.dnp3c.conformance.api.options.OutstationOptions
-import io.stepfunc.dnp3c.conformance.api.Options
 import io.stepfunc.dnp3c.conformance.s8.s87.s872.Procedure8722
 import io.stepfunc.dnp3c.dnp3._
 import io.stepfunc.dnp3c.dnp3.app._
-import io.stepfunc.dnp3c.dnp3.link.FrameValidator
-import io.stepfunc.dnp3c.protocol.Hex
 import org.junit.runner.RunWith
 import org.scalatestplus.junit.JUnitRunner
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.funsuite.AnyFunSuite
-
-import scala.collection.mutable
-import scala.util.Try
 
 @RunWith(classOf[JUnitRunner])
 class Procedure8722Test extends AnyFunSuite with Matchers {
@@ -34,14 +29,12 @@ class Procedure8722Test extends AnyFunSuite with Matchers {
   }
 
   // needs time until it's written; answers the class 1, 2 and 3 read with `fragments`, each the objects of one
-  private class Dut(plugin: Plugin, fragments: List[String]) extends StubDriver(StubDriver.reporter(plugin)) {
+  private class Dut(plugin: Plugin, fragments: List[String]) extends RespondingDriver(StubDriver.reporter(plugin)) {
     private var needTime = true
-    private val pending = mutable.Queue.empty[Message]
-    override def close(): Unit = ()
 
     private def respond(ctrl: Int, objects: String): Unit = {
       val iin = if (needTime) "10 00" else "00 00"
-      pending.enqueue(Message.parse(Hex.from("%02X 81 %s %s".format(ctrl, iin, objects))))
+      enqueue("%02X 81 %s %s".format(ctrl, iin, objects))
     }
 
     override def writeMessage(message: Message, options: LinkOverride): Unit = {
@@ -61,11 +54,6 @@ class Procedure8722Test extends AnyFunSuite with Matchers {
       }
     }
 
-    override def readMessage(
-        unsolicited: Unsolicited,
-        validator: FrameValidator,
-        linkOverride: LinkOverride,
-        timeoutMs: Option[Int]): Option[Message] = if (pending.isEmpty) timedOut(timeoutMs) else Some(pending.dequeue())
   }
 
   private val timedBinary = "02 02 17 01 00 81 00 00 00 00 00 00" // g2v2: binary input 0, with time
@@ -74,8 +62,7 @@ class Procedure8722Test extends AnyFunSuite with Matchers {
 
   private def passes(plugin: Plugin, fragments: String*): Boolean = {
     val dut = new Dut(plugin, fragments.toList)
-    Try(Procedure8722.configure(
-      Options.from(Map(OutstationOptions.subsetLevel.id -> "2"))).steps.foreach(_.step.run(dut))).isSuccess
+    Run.passes(Procedure8722, dut, Map(OutstationOptions.subsetLevel.id -> "2"))
   }
 
   test("accepts a time-tagged event") {

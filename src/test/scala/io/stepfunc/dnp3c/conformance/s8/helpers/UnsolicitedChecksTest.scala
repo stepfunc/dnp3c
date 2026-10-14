@@ -3,6 +3,7 @@
 
 package io.stepfunc.dnp3c.conformance.s8.helpers
 
+import io.stepfunc.dnp3c.conformance.Run
 import io.stepfunc.dnp3c.conformance.api.{ Options, ProcedureDefinition }
 import io.stepfunc.dnp3c.conformance.api.options.{ OutstationOptions, UnsolicitedOptions }
 import io.stepfunc.dnp3c.conformance.s8.s811.Procedure81125
@@ -37,7 +38,7 @@ class UnsolicitedChecksTest extends AnyFunSuite with Matchers {
       messages: List[Option[Message]],
       elapseMs: Long = 0,
       plugin: IntegrationPlugin = new DefaultIntegrationPlugin())
-      extends StubDriver(StubDriver.reporter(plugin)) {
+      extends RespondingDriver(StubDriver.reporter(plugin)) {
     private var pending = messages
     val timeouts = mutable.ListBuffer.empty[Option[Int]]
     override def readMessage(
@@ -91,11 +92,10 @@ class UnsolicitedChecksTest extends AnyFunSuite with Matchers {
       override def generateUnsolicitedEvents(reporter: PluginReporter, timing: ActionTiming): ActionResult =
         ActionResult.Performed
     }
-    class Responder(delayMs: Long) extends StubDriver(StubDriver.reporter(plugin)) {
-      private val solicited = mutable.Queue.empty[Message]
+    class Responder(delayMs: Long) extends RespondingDriver(StubDriver.reporter(plugin)) {
       override def writeMessage(message: Message, options: LinkOverride): Unit =
         if (message.function != AppFunction.confirm)
-          solicited.enqueue(Message.parse(Hex.from("%02X 81 00 00".format(0xC0 | message.ctrl.seq.value))))
+          enqueue("%02X 81 00 00".format(0xC0 | message.ctrl.seq.value))
       override def readMessage(
           unsolicited: Unsolicited,
           validator: FrameValidator,
@@ -104,15 +104,13 @@ class UnsolicitedChecksTest extends AnyFunSuite with Matchers {
         if (unsolicited.value) {
           clock.advance(delayMs)
           Some(Message.parse(Hex.from("F0 82 00 00 02 01 17 01 05 81")))
-        } else if (solicited.isEmpty) timedOut(timeoutMs)
-        else Some(solicited.dequeue())
+        } else super.readMessage(unsolicited, validator, linkOverride, timeoutMs)
     }
     // runs every step, carrying on past failures; a manual action gets no answer (end of input), so it fails
     def failedSteps(delayMs: Long): Int = {
       val dut = new Responder(delayMs)
       Console.withIn(new StringReader(""))(
-        Procedure81125.configure(Options.from(Map(OutstationOptions.subsetLevel.id -> "2"))).steps.count(s =>
-          Try(s.step.run(dut)).isFailure))
+        Run.everyStep(Procedure81125, dut, Map(OutstationOptions.subsetLevel.id -> "2")))
     }
     // the default confirm timeout is 5000 ms: an unsolicited response at once can't be either retry
     failedSteps(0) should equal(failedSteps(5000) + 2)
@@ -133,11 +131,10 @@ class UnsolicitedChecksTest extends AnyFunSuite with Matchers {
     }
     val plugin = new Plugin
     val waits = mutable.ListBuffer.empty[(Boolean, Option[Int])]
-    val dut = new StubDriver(StubDriver.reporter(plugin)) {
-      private val solicited = mutable.Queue.empty[Message]
+    val dut = new RespondingDriver(StubDriver.reporter(plugin)) {
       override def writeMessage(message: Message, options: LinkOverride): Unit =
         if (message.function != AppFunction.confirm)
-          solicited.enqueue(Message.parse(Hex.from("%02X 81 00 00".format(0xC0 | message.ctrl.seq.value))))
+          enqueue("%02X 81 00 00".format(0xC0 | message.ctrl.seq.value))
       override def readMessage(
           unsolicited: Unsolicited,
           validator: FrameValidator,
@@ -146,8 +143,7 @@ class UnsolicitedChecksTest extends AnyFunSuite with Matchers {
         if (unsolicited.value) {
           waits += ((plugin.retryLimitSet, timeoutMs))
           Some(Message.parse(Hex.from("F0 82 00 00 02 01 17 01 05 81")))
-        } else if (solicited.isEmpty) timedOut(timeoutMs)
-        else Some(solicited.dequeue())
+        } else super.readMessage(unsolicited, validator, linkOverride, timeoutMs)
     }
     val all = Options.from(
       Map(
@@ -155,7 +151,7 @@ class UnsolicitedChecksTest extends AnyFunSuite with Matchers {
         UnsolicitedOptions.holdOffMs.id -> "1000",
         OutstationOptions.subsetLevel.id -> "2") ++
         options)
-    Console.withIn(new StringReader(""))(procedure.configure(all).steps.foreach(s => Try(s.step.run(dut))))
+    Console.withIn(new StringReader(""))(Run.everyStep(procedure, dut, all))
     def inRetryWindow(retryLimitSet: Boolean) = waits.count(_ == (retryLimitSet, Some(2500)))
     (inRetryWindow(false), inRetryWindow(true))
   }

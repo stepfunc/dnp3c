@@ -4,15 +4,14 @@
 package io.stepfunc.dnp3c.conformance.v31r1
 
 import scala.collection.mutable
-import scala.util.Try
 
+import io.stepfunc.dnp3c.conformance.Run
 import io.stepfunc.dnp3c.conformance.api.Options
 import io.stepfunc.dnp3c.conformance.api.options.{ ClassOptions, OutstationOptions }
 import io.stepfunc.dnp3c.dnp3._
 import io.stepfunc.dnp3c.dnp3.app._
 import io.stepfunc.dnp3c.dnp3.app.objects._
-import io.stepfunc.dnp3c.dnp3.link.{ FrameValidator, LinkFrame }
-import io.stepfunc.dnp3c.protocol.Hex
+import io.stepfunc.dnp3c.dnp3.link.LinkFrame
 import org.junit.runner.RunWith
 import org.scalatestplus.junit.JUnitRunner
 import org.scalatest.matchers.should.Matchers
@@ -29,13 +28,12 @@ class AssignClassTest extends AnyFunSuite with Matchers {
    * its events, which a read of their class reports and a confirmation clears
    */
   private class Dut(ignoresAssign: Boolean = false, notImplemented: Boolean = false)
-      extends StubDriver(StubDriver.reporter()) {
+      extends RespondingDriver {
     val classes: mutable.Map[Int, Int] = mutable.Map.from(startup)
     private var events = List.empty[(Int, Int)] // point, class
     private var awaiting: Option[(Int, List[(Int, Int)])] = None
-    private val responses = mutable.Queue.empty[Message]
 
-    val plugin: DefaultIntegrationPlugin = new DefaultIntegrationPlugin {
+    override protected val testPlugin: DefaultIntegrationPlugin = new DefaultIntegrationPlugin {
       override def generateEventOn(reporter: PluginReporter, kind: PointKind, index: Int): Unit =
         if (classes(index) != 0) events :+= (index, classes(index))
       override def verifyAllStaticCurrentValues(
@@ -43,7 +41,6 @@ class AssignClassTest extends AnyFunSuite with Matchers {
           isClass0: Boolean,
           points: Seq[GenIndexedPoint[MeasurementPoint]]): Option[DeferredCheck] = None
     }
-    override val reporter: ProcedureReporter = StubDriver.reporter(plugin)
 
     private def classBits(remaining: List[(Int, Int)]): Int =
       remaining.map(_._2).distinct.map(c => 1 << c).sum
@@ -55,7 +52,7 @@ class AssignClassTest extends AnyFunSuite with Matchers {
           awaiting.filter(_._1 == seq).foreach((_, sent) => events = events.filterNot(sent.contains))
           awaiting = None
         case AppFunction.assignClass =>
-          if (notImplemented) responses.enqueue(Message.parse(Hex.from("%02X 81 00 01".format(0xC0 | seq))))
+          if (notImplemented) enqueue("%02X 81 00 01".format(0xC0 | seq))
           else {
             if (!ignoresAssign) {
               var current = 0
@@ -67,7 +64,7 @@ class AssignClassTest extends AnyFunSuite with Matchers {
                 }
               }
             }
-            responses.enqueue(Message.parse(Hex.from("%02X 81 %02X 00".format(0xC0 | seq, classBits(events)))))
+            enqueue("%02X 81 %02X 00".format(0xC0 | seq, classBits(events)))
           }
         case _ =>
           val requested = message.headers.map(_.variation).collect {
@@ -80,20 +77,12 @@ class AssignClassTest extends AnyFunSuite with Matchers {
             if (sent.isEmpty) ""
             else "02 01 17 %02X %s".format(sent.size, sent.map(e => "%02X 01".format(e._1)).mkString(" "))
           val con = if (sent.nonEmpty) 0x20 else 0
-          responses.enqueue(Message.parse(Hex.from(
-            "%02X 81 %02X 00 %s".format(0xC0 | con | seq, classBits(events.filterNot(sent.contains)), objects))))
+          enqueue("%02X 81 %02X 00 %s".format(0xC0 | con | seq, classBits(events.filterNot(sent.contains)), objects))
           if (sent.nonEmpty) awaiting = Some((seq, sent))
       }
     }
 
-    override def readMessage(
-        unsolicited: Unsolicited,
-        validator: FrameValidator,
-        linkOverride: LinkOverride,
-        timeoutMs: Option[Int]): Option[Message] =
-      if (responses.isEmpty) timedOut(timeoutMs) else Some(responses.dequeue())
     override def readFrame(timeout: Option[Int]): Option[LinkFrame] = timedOut(timeout)
-    override def close(): Unit = {}
   }
 
   private def run(dut: Dut, level: Int = 3): (Boolean, List[String]) = {
@@ -101,8 +90,7 @@ class AssignClassTest extends AnyFunSuite with Matchers {
       OutstationOptions.subsetLevel.id -> level.toString,
       ClassOptions.class1BinaryInputs.id -> "0",
       ClassOptions.class2BinaryInputs.id -> "1, 2"))
-    val passed = Try(
-      AssignClass.assignClass.configure(options).steps.foreach(s => s.step.run(dut).foreach(_.check()))).isSuccess
+    val passed = Run.passes(AssignClass.assignClass, dut, options)
     (passed, dut.reporter.notes)
   }
 

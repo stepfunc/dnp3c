@@ -3,7 +3,7 @@
 
 package io.stepfunc.dnp3c.conformance.s8.s82.s825
 
-import io.stepfunc.dnp3c.conformance.api.Options
+import io.stepfunc.dnp3c.conformance.Run
 import io.stepfunc.dnp3c.conformance.api.options.ControlOptions
 import io.stepfunc.dnp3c.dnp3._
 import io.stepfunc.dnp3c.dnp3.app._
@@ -37,7 +37,7 @@ class ControlCodeSupportTest extends AnyFunSuite with Matchers {
 
   // the default configuration supports every complementary pair, on the same point
   private def run(dut: Dut, settings: Map[String, String] = Map()): Unit =
-    Procedure82521.configure(Options.from(settings)).steps.foreach(_.step.run(dut))
+    Run.passing(Procedure82521, dut, settings)
 
   test("each control gets its own sequence number, and its echo is checked") {
     val dut = new Dut()

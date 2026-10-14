@@ -5,8 +5,7 @@ package io.stepfunc.dnp3c.conformance.v31r1
 
 import java.io.StringReader
 
-import scala.util.Try
-
+import io.stepfunc.dnp3c.conformance.Run
 import io.stepfunc.dnp3c.conformance.api.{ Options, ProcedureDefinition }
 import io.stepfunc.dnp3c.conformance.api.options.{ OutstationOptions, SupportOptions }
 import io.stepfunc.dnp3c.conformance.s8.s81.Procedure812
@@ -34,7 +33,7 @@ class OutputStatusTest extends AnyFunSuite with Matchers {
     }
     val dut = new ScriptedDut(StubDriver.reporter(), answer)
     Console.withIn(new StringReader(""))(
-      Try(procedure.configure(options).steps.foreach(s => s.step.run(dut).foreach(_.check()))).isSuccess)
+      Run.passes(procedure, dut, options))
   }
 
   private val noBinaryOutputs = options(SupportOptions.Outputs.binary.statusPoints.id -> "false")

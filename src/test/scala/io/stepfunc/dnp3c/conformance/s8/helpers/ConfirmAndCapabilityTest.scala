@@ -3,6 +3,7 @@
 
 package io.stepfunc.dnp3c.conformance.s8.helpers
 
+import io.stepfunc.dnp3c.conformance.Run
 import io.stepfunc.dnp3c.conformance.Placements.id
 import io.stepfunc.dnp3c.conformance.api.{ Options, ProcedureDefinition }
 import io.stepfunc.dnp3c.conformance.api.options.{ ClassOptions, SupportOptions, OutstationOptions }
@@ -10,7 +11,6 @@ import io.stepfunc.dnp3c.conformance.s8.s83.Procedure832
 import io.stepfunc.dnp3c.conformance.s8.s85.s852.Procedure85224
 import io.stepfunc.dnp3c.dnp3._
 import io.stepfunc.dnp3c.dnp3.app._
-import io.stepfunc.dnp3c.dnp3.link.FrameValidator
 import io.stepfunc.dnp3c.protocol.Hex
 import org.junit.runner.RunWith
 import org.scalatestplus.junit.JUnitRunner
@@ -38,18 +38,12 @@ class ConfirmAndCapabilityTest extends AnyFunSuite with Matchers {
 
   // answers each request (other than a confirm) with answer(request), or not at all; records what's written
   private class Dut(answer: Message => Option[Message], val plugin: Plugin = new Plugin)
-      extends StubDriver(StubDriver.reporter(plugin)) {
+      extends RespondingDriver(StubDriver.reporter(plugin)) {
     val written = mutable.ListBuffer.empty[(AppFunction, Int)]
-    private val pending = mutable.Queue.empty[Message]
     override def writeMessage(message: Message, options: LinkOverride): Unit = {
       written += ((message.function, message.ctrl.seq.value.toInt))
-      if (message.function != AppFunction.confirm) answer(message).foreach(pending.enqueue)
+      if (message.function != AppFunction.confirm) answer(message).foreach(m => enqueue(m))
     }
-    override def readMessage(
-        unsolicited: Unsolicited,
-        validator: FrameValidator,
-        linkOverride: LinkOverride,
-        timeoutMs: Option[Int]): Option[Message] = if (pending.isEmpty) None else Some(pending.dequeue())
   }
 
   // a response given as bytes, by the request's sequence number
@@ -57,8 +51,7 @@ class ConfirmAndCapabilityTest extends AnyFunSuite with Matchers {
     answers.get(request.ctrl.seq.value.toInt).map(a => Message.parse(Hex.from(a)))
 
   private def run(procedure: ProcedureDefinition, dut: Dut, settings: Map[String, String] = Map()): Unit =
-    procedure.configure(
-      Options.from(settings + (OutstationOptions.subsetLevel.id -> "2"))).steps.foreach(_.step.run(dut))
+    Run.passing(procedure, dut, settings + (OutstationOptions.subsetLevel.id -> "2"))
 
   test("class data without confirm confirms the second response once, at step 18") {
     val event = "02 01 17 01 05 81"

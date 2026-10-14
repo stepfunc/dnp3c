@@ -3,7 +3,7 @@
 
 package io.stepfunc.dnp3c.conformance.s7
 
-import io.stepfunc.dnp3c.conformance.api.Options
+import io.stepfunc.dnp3c.conformance.Run
 import io.stepfunc.dnp3c.dnp3._
 import io.stepfunc.dnp3c.dnp3.app.{
   AppFunction, Confirm, Final, First, IIN, Message, Sequence, Unsolicited, Control => AppControl
@@ -15,8 +15,6 @@ import org.junit.runner.RunWith
 import org.scalatestplus.junit.JUnitRunner
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.funsuite.AnyFunSuite
-
-import scala.util.Try
 
 @RunWith(classOf[JUnitRunner])
 class Procedure72Test extends AnyFunSuite with Matchers {
@@ -55,7 +53,7 @@ class Procedure72Test extends AnyFunSuite with Matchers {
 
   private def passes(fragments: List[Int]*): Boolean = {
     val dut = new Dut(fragments.toList)
-    Try(Procedure72.configure(Options.from(Map())).steps.foreach(_.step.run(dut))).isSuccess
+    Run.passes(Procedure72, dut)
   }
 
   test("a reply that fits one link frame must be one segment") {

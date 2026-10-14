@@ -4,14 +4,13 @@
 package io.stepfunc.dnp3c.conformance.v31r1
 
 import scala.collection.mutable
-import scala.util.Try
 
+import io.stepfunc.dnp3c.conformance.Run
 import io.stepfunc.dnp3c.conformance.api.{ Options, TestProcedure }
 import io.stepfunc.dnp3c.conformance.api.options.SerialOptions
 import io.stepfunc.dnp3c.dnp3._
 import io.stepfunc.dnp3c.dnp3.app.{ Message, Unsolicited }
 import io.stepfunc.dnp3c.dnp3.link.{ Control, FrameValidator, LinkFrame }
-import io.stepfunc.dnp3c.protocol.Hex
 import io.stepfunc.dnp3c.protocol.parsing.UInt16LE
 import org.junit.runner.RunWith
 import org.scalatestplus.junit.JUnitRunner
@@ -27,13 +26,12 @@ class MultiDropTest extends AnyFunSuite with Matchers {
    * which the harness sees on the drop too
    */
   private class Drop(answersBroadcast: Boolean = false, lateOther: Boolean = false)
-      extends StubDriver(StubDriver.reporter()) {
+      extends RespondingDriver {
     val delays: mutable.ListBuffer[Option[RtsDelays]] = mutable.ListBuffer.empty
     var carrierChecks = 0
     private val frames = mutable.Queue.empty[LinkFrame]
-    private val responses = mutable.Queue.empty[Message]
 
-    val plugin: DefaultIntegrationPlugin = new DefaultIntegrationPlugin {
+    override protected val testPlugin: DefaultIntegrationPlugin = new DefaultIntegrationPlugin {
       override def setRtsDelays(reporter: PluginReporter, d: Option[RtsDelays]): Unit = delays += d
       override def verifyNoCarrier(reporter: CheckReporter): Option[DeferredCheck] = None
       override def verifyCarrierTiming(reporter: CheckReporter, d: Option[RtsDelays]): Option[DeferredCheck] = {
@@ -41,14 +39,13 @@ class MultiDropTest extends AnyFunSuite with Matchers {
         None
       }
     }
-    override val reporter: ProcedureReporter = StubDriver.reporter(plugin)
 
     override def writeMessage(message: Message, options: LinkOverride): Unit = {
       val to = options.destination.getOrElse(remote).value
       val seq = message.ctrl.seq.value.toInt
       if (to == remote.value || (to == 0xFFFF && answersBroadcast)) {
         frames.enqueue(LinkFrame.headerOnly(Control(0x44.toByte), local, remote))
-        if (to == remote.value) responses.enqueue(Message.parse(Hex.from("%02X 81 00 00".format(0xC0 | seq))))
+        if (to == remote.value) enqueue("%02X 81 00 00".format(0xC0 | seq))
       } else if (to != 0xFFFF) {
         frames.enqueue(LinkFrame.headerOnly(Control(0x44.toByte), local, UInt16LE(to)))
         // the other device's answer comes again later, after the harness has stopped waiting for the DUT
@@ -75,7 +72,7 @@ class MultiDropTest extends AnyFunSuite with Matchers {
       if ((frames ++ late).exists(_.header.src != remote))
         throw new Exception("A frame from another device came with the DUT's response")
       frames.clear()
-      if (responses.isEmpty) timedOut(timeoutMs) else Some(responses.dequeue())
+      super.readMessage(unsolicited, validator, linkOverride, timeoutMs)
     }
   }
 
@@ -84,12 +81,8 @@ class MultiDropTest extends AnyFunSuite with Matchers {
     SerialOptions.multiDrop.id -> "true",
     SerialOptions.otherDevices.id -> "5, 6")
 
-  private def run(drop: Drop, settings: Map[String, String] = Map()): Boolean = {
-    val config = MultiDrop.multiDrop.configure(Options.from(bench ++ settings))
-    val passed = Try(config.steps.foreach(s => s.step.run(drop).foreach(_.check()))).isSuccess
-    config.cleanup.foreach(s => s.step.run(drop).foreach(_.check()))
-    passed
-  }
+  private def run(drop: Drop, settings: Map[String, String] = Map()): Boolean =
+    Run.passes(MultiDrop.multiDrop, drop, bench ++ settings)
 
   test("the DUT answers its own reads only, while the other devices answer theirs") {
     val drop = new Drop

@@ -6,8 +6,8 @@ package io.stepfunc.dnp3c.conformance.v31r1
 import java.net.InetSocketAddress
 
 import scala.collection.mutable
-import scala.util.Try
 
+import io.stepfunc.dnp3c.conformance.Run
 import io.stepfunc.dnp3c.conformance.api.{ Options, ProcedureDefinition, TestProcedure }
 import io.stepfunc.dnp3c.conformance.api.options.NetworkOptions
 import io.stepfunc.dnp3c.dnp3._
@@ -32,7 +32,7 @@ class UnsolicitedNetworkTest extends AnyFunSuite with Matchers {
    * after a TCP connection is made.
    */
   private class Dut(dataTo20000: Boolean = false, udpAfterTcp: Boolean = false, queuedAtStart: Int = 0)
-      extends StubDriver(StubDriver.reporter()) {
+      extends RespondingDriver {
     private var setup = NetworkSetup(NetworkMode.Tcp, 20000, AllowedMasters.Any)
     var restored = 0
     // the harness's connections, by the ports they're bound to
@@ -47,9 +47,8 @@ class UnsolicitedNetworkTest extends AnyFunSuite with Matchers {
     private var udpSent = 0
     // retries of the null already waiting when the restart ends, which a quick read gets
     private var queued = 0
-    private val responses = mutable.Queue.empty[Message]
 
-    val plugin: DefaultIntegrationPlugin = new DefaultIntegrationPlugin {
+    override protected val testPlugin: DefaultIntegrationPlugin = new DefaultIntegrationPlugin {
       override def configureNetwork(reporter: PluginReporter, s: NetworkSetup): Unit = setup = s
       override def restoreNetwork(reporter: PluginReporter): Unit = restored += 1
       override def cyclePower(reporter: PluginReporter): Unit = {
@@ -67,7 +66,6 @@ class UnsolicitedNetworkTest extends AnyFunSuite with Matchers {
         ActionResult.Performed
       }
     }
-    override val reporter: ProcedureReporter = StubDriver.reporter(plugin)
 
     private def port(c: Connection): Int = open.getOrElse(c, if (c.local.getPort == 0) 50000 else c.local.getPort)
 
@@ -114,8 +112,6 @@ class UnsolicitedNetworkTest extends AnyFunSuite with Matchers {
       n
     }
 
-    override def close(): Unit = {}
-
     override def readFrame(timeout: Option[Int]): Option[LinkFrame] = timedOut(timeout)
 
     override def writeMessage(message: Message, options: LinkOverride): Unit = {
@@ -129,7 +125,7 @@ class UnsolicitedNetworkTest extends AnyFunSuite with Matchers {
         case f =>
           if (f == AppFunction.enableUnsolicited) enabled = true
           if (reaches(isNull = false, solicited = true))
-            responses.enqueue(Message.parse(Hex.from("%02X 81 00 00".format(0xC0 | s))))
+            enqueue("%02X 81 00 00".format(0xC0 | s))
       }
     }
 
@@ -156,8 +152,7 @@ class UnsolicitedNetworkTest extends AnyFunSuite with Matchers {
             } else timedOut(timeoutMs)
           case None => timedOut(timeoutMs)
         }
-      } else if (responses.isEmpty) timedOut(timeoutMs)
-      else Some(responses.dequeue())
+      } else super.readMessage(unsolicited, validator, linkOverride, timeoutMs)
   }
 
   private val bench = Map(
@@ -173,9 +168,7 @@ class UnsolicitedNetworkTest extends AnyFunSuite with Matchers {
   )
 
   private def run(procedure: ProcedureDefinition, dut: Dut): Boolean = {
-    val config = procedure.configure(Options.from(bench))
-    val passed = Try(config.steps.foreach(s => s.step.run(dut).foreach(_.check()))).isSuccess
-    config.cleanup.foreach(s => s.step.run(dut).foreach(_.check()))
+    val passed = Run.passes(procedure, dut, bench)
     dut.restored should equal(1)
     passed
   }

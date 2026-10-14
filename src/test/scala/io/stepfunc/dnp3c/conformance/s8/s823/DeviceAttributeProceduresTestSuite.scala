@@ -3,6 +3,7 @@
 
 package io.stepfunc.dnp3c.conformance.s8.s823
 
+import io.stepfunc.dnp3c.conformance.Run
 import io.stepfunc.dnp3c.conformance.api.{ OptionSource, Options }
 import io.stepfunc.dnp3c.conformance.api.options.{ AttributeOptions, SupportOptions }
 import io.stepfunc.dnp3c.dnp3.app._
@@ -15,7 +16,6 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.funsuite.AnyFunSuite
 
 import scala.collection.mutable
-import scala.util.Try
 
 @RunWith(classOf[JUnitRunner])
 class DeviceAttributeProceduresTestSuite extends AnyFunSuite with Matchers {
@@ -53,7 +53,7 @@ class DeviceAttributeProceduresTestSuite extends AnyFunSuite with Matchers {
       SupportOptions.deviceAttributes.id -> "true",
       AttributeOptions.supportedVariations.id -> "208",
       AttributeOptions.writableVariations.id -> "208")
-    Procedure82324.configure(settings).steps.foreach(s => Try(s.step.run(dut)))
+    Run.everyStep(Procedure82324, dut, settings)
     dut.functions should contain(AppFunction.write)
   }
 }

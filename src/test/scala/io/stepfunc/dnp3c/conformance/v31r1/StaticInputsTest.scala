@@ -5,8 +5,7 @@ package io.stepfunc.dnp3c.conformance.v31r1
 
 import java.io.StringReader
 
-import scala.util.Try
-
+import io.stepfunc.dnp3c.conformance.Run
 import io.stepfunc.dnp3c.conformance.api.{ Options, ProcedureDefinition }
 import io.stepfunc.dnp3c.conformance.api.options.{ OutstationOptions, SupportOptions }
 import io.stepfunc.dnp3c.conformance.api.options.SupportOptions.Inputs
@@ -31,7 +30,7 @@ class StaticInputsTest extends AnyFunSuite with Matchers {
   private def passes(procedure: ProcedureDefinition, options: Options, iin: IIN): Boolean = {
     val dut = new ScriptedDut(StubDriver.reporter(new Plugin), (_: Message) => (iin, List.empty[ObjectHeader]))
     Console.withIn(new StringReader(""))(
-      Try(procedure.configure(options).steps.foreach(s => s.step.run(dut).foreach(_.check()))).isSuccess)
+      Run.passes(procedure, dut, options))
   }
 
   test("8.13.2-2: a device without binary inputs answers with IIN2.1 or IIN2.2, not a Null Response") {

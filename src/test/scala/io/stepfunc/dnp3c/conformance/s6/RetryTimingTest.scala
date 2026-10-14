@@ -3,6 +3,7 @@
 
 package io.stepfunc.dnp3c.conformance.s6
 
+import io.stepfunc.dnp3c.conformance.Run
 import io.stepfunc.dnp3c.conformance.Placements.id
 import io.stepfunc.dnp3c.conformance.api.Options
 import io.stepfunc.dnp3c.conformance.api.options.{ BehaviorOptions, LinkOptions, OutstationOptions, SupportOptions }
@@ -94,7 +95,7 @@ class RetryTimingTest extends AnyFunSuite with Matchers {
         LinkOptions.timeout.id -> "1000",
         LinkOptions.numRetry.id -> "2",
         OutstationOptions.responseTimeout.id -> "3000"))
-    Procedure642.configure(options).steps.foreach(_.step.run(dut))
+    Run.passing(Procedure642, dut, options)
     dut
   }
 
@@ -175,7 +176,7 @@ class RetryTimingTest extends AnyFunSuite with Matchers {
     // runs every step, carrying on past failures: this DUT fails steps 1 to 21 either way
     def failedSteps(repeat: LinkFrame): Int = {
       val dut = new Dut612(new LinkConfirmPlugin, frame(true), repeat)
-      Procedure612.configure(Options.from(settings)).steps.count(s => scala.util.Try(s.step.run(dut)).isFailure)
+      Run.everyStep(Procedure612, dut, settings)
     }
     failedSteps(frame(true, List(9))) should equal(failedSteps(frame(true)) + 1)
   }
@@ -208,7 +209,7 @@ class RetryTimingTest extends AnyFunSuite with Matchers {
   test("6.6.3 expects a retransmission of the frame, unchanged") {
     def passes(procedure: ProcedureDefinition, retry: LinkFrame) = {
       val dut = new Dut663(retry)
-      scala.util.Try(procedure.configure(Options.from(Map())).steps.foreach(_.step.run(dut))).isSuccess
+      Run.passes(procedure, dut)
     }
     for (procedure <- List(Procedure6631, Procedure6632, Procedure6633, Procedure6634)) withClue(procedure.id) {
       passes(procedure, frame(true)) should be(true)
