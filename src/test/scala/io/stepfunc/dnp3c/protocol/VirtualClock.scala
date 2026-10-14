@@ -16,4 +16,6 @@ class VirtualClock extends Clock {
     advance(ms)
   }
   def advance(ms: Long): Unit = now += ms * 1000000L
+  // to a time, in nanoseconds, if it's later
+  def advanceTo(nanos: Long): Unit = now = math.max(now, nanos)
 }

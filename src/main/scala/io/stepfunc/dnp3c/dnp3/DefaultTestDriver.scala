@@ -9,7 +9,7 @@ import io.stepfunc.dnp3c.dnp3.link._
 import io.stepfunc.dnp3c.dnp3.transport.{ SegmentWriter, TransportReader }
 import io.stepfunc.dnp3c.dnp3
 import io.stepfunc.dnp3c.protocol.channel.{
-  ChannelFactory, ReadableWritableChannel, SocketReadWriteChannel, TcpClientChannelFactory, UdpChannel
+  ChannelFactory, ReadableWritableChannel, SerialChannel, SocketReadWriteChannel, TcpClientChannelFactory, UdpChannel
 }
 import io.stepfunc.dnp3c.protocol.Clock
 import io.stepfunc.dnp3c.protocol.parsing.UInt16LE
@@ -217,6 +217,17 @@ class DefaultTestDriver(
     message.foreach(reporter.receive)
     message.foreach(policies.check)
     message
+  }
+
+  override def readFrameTimed(timeout: Option[Int] = None): Option[(LinkFrame, Long)] = getConnection { c =>
+    c.parser.read(reporter)(timeout.getOrElse(defaultLinkTimeoutMs)).map(f => (f, c.parser.lastFrameStart))
+  }
+
+  override def setRts(asserted: Boolean): Unit = getConnection { c =>
+    c.channel match {
+      case serial: SerialChannel => serial.setRts(asserted)
+      case _ => throw new IllegalStateException("RTS needs a serial connection (serial.enabled)")
+    }
   }
 
   override def readFrame(timeout: Option[Int] = None): Option[LinkFrame] = getConnection { c =>

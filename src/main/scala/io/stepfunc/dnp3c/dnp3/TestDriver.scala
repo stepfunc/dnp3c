@@ -6,6 +6,7 @@ package io.stepfunc.dnp3c.dnp3
 import io.stepfunc.dnp3c.dnp3.link.FrameValidator
 import io.stepfunc.dnp3c.dnp3.app._
 import io.stepfunc.dnp3c.dnp3.link._
+import io.stepfunc.dnp3c.dnp3.transport.SegmentWriter
 import io.stepfunc.dnp3c.protocol.{ Clock, Hex }
 import io.stepfunc.dnp3c.protocol.parsing.UInt16LE
 
@@ -160,6 +161,25 @@ trait TestDriver {
   def writeFrame(frame: LinkFrame): Unit
 
   def readFrame(timeout: Option[Int] = None): Option[LinkFrame]
+
+  // reads a frame, with when its first byte arrived, by the clock, in nanoseconds
+  def readFrameTimed(timeout: Option[Int] = None): Option[(LinkFrame, Long)] =
+    throw new UnsupportedOperationException("this driver can't time frames")
+
+  // asserts or clears RTS on a serial line
+  def setRts(asserted: Boolean): Unit =
+    throw new UnsupportedOperationException("this driver has no serial line")
+
+  // the bytes writeMessage sends for the message: its link frames
+  def frameBytes(message: Message, options: LinkOverride = LinkOverride.default): List[Byte] = {
+    val bytes = scala.collection.mutable.ListBuffer.empty[Byte]
+    SegmentWriter.write(message.toBytes, 0, reporter) { segment =>
+      LinkWriter.write(local, options.destination.getOrElse(remote), true, options.controlBlock, reporter)(segment) {
+        frame => bytes ++= frame
+      }
+    }
+    bytes.toList
+  }
 
   // ---- application layer ----
 
