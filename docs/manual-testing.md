@@ -26,6 +26,7 @@ Each option has a comment explaining it. The ones to set first:
 | Option | What it is |
 |---|---|
 | `outstation.subset.level` | The DNP3 subset level the DUT is configured for. It has no default: `-write` leaves it commented out, and every command that uses procedures fails until you set it. Revision 2.7 tests level 2. |
+| `binaryInput.defaultEventVariation`, `doubleBitInput.defaultEventVariation` | The Device Profile's default variation for binary and double-bit input events (1, 2 or 3). 3.1r1 needs them, with no default, for the inputs whose events the DUT reports. |
 | `test.deviceUnderTest` | The DUT's name in the report, e.g. its vendor, model and firmware version |
 | `test.output.directory` | Where results and the report are written |
 | `tcp.device.address`, `tcp.device.port` | Where the DUT listens |

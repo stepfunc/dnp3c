@@ -20,6 +20,9 @@ sealed abstract class InputType(val name: String, val support: SupportOptions.In
   def withTime: BooleanOption
   def withRelativeTime: BooleanOption
 
+  // the Device Profile's default variation for the events, which 3.1r1's rules need
+  def defaultEventVariation: RequiredIntegerOption
+
   def anyVariation: Variation
   def noTimeVariation: Variation
   def absoluteTimeVariation: Variation
@@ -34,11 +37,20 @@ sealed abstract class InputType(val name: String, val support: SupportOptions.In
   def verifyFirstEvent: MessageValidation
   def verifyRestEvents: MessageValidation
   def verifyOldAndNewEvents: MessageValidation
+
+  // the event variation numbered n: 1 without time, 2 with absolute time, 3 with relative time
+  def eventVariation(n: Int): Variation = n match {
+    case 1 => noTimeVariation
+    case 2 => absoluteTimeVariation
+    case 3 => relativeTimeVariation
+    case _ => throw new IllegalArgumentException(s"No event variation $n")
+  }
 }
 
 object InputType {
   object BinaryInput extends InputType("binary input", SupportOptions.Inputs.binary) {
     def numEventsGenerated: IntegerOption = BinaryInputOptions.numBinaryEventsGenerated
+    def defaultEventVariation: RequiredIntegerOption = BinaryInputOptions.defaultEventVariation
     def withTime: BooleanOption = TimeSyncOptions.binaryInputChangeWithTime
     def withRelativeTime: BooleanOption = TimeSyncOptions.binaryInputChangeWithRelativeTime
 
@@ -61,6 +73,7 @@ object InputType {
 
   object DoubleBitBinaryInput extends InputType("double-bit input", SupportOptions.Inputs.doubleBit) {
     def numEventsGenerated: IntegerOption = DoubleBitInputOptions.numDoubleBitEventsGenerated
+    def defaultEventVariation: RequiredIntegerOption = DoubleBitInputOptions.defaultEventVariation
     def withTime: BooleanOption = TimeSyncOptions.doubleBitInputChangeWithTime
     def withRelativeTime: BooleanOption = TimeSyncOptions.doubleBitInputChangeWithRelativeTime
 

@@ -257,9 +257,10 @@ class DefaultIntegrationPlugin extends IntegrationPlugin {
       "generated the events"
 
   private def verifyEventsQuestion(events: String, expectation: EventExpectation): String = expectation match {
-    case EventExpectation.LatestBatch => s"Verify that the response holds all the $events generated"
+    case EventExpectation.LatestBatch =>
+      s"Verify that the response holds all the $events generated, in the order they occurred"
     case EventExpectation.RemainingLatestBatch =>
-      s"Verify that the response holds the $events generated that weren't reported before"
+      s"Verify that the response holds the $events generated that weren't reported before, in the order they occurred"
     case EventExpectation.AllGeneratedBatches =>
       s"Verify that the response carries all the $events generated and not yet confirmed: those reported earlier, and " +
         "any generated since, in the order they occurred"

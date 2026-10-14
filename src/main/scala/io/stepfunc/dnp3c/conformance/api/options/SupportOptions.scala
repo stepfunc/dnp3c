@@ -55,7 +55,16 @@ object SupportOptions extends OptionGroup {
       true,
       s"Does the DUT support $longName change events?")
 
-    override def allOptions: List[BooleanOption] = List(points, disabling, events)
+    // 3.1r1: a subset level 1 device needn't support reading the event objects, and then answers with an error
+    val eventReads: BooleanOption = OptionTypes.boolean(
+      SupportOptions,
+      s"${shortName}EventReads",
+      true,
+      s"Can the DUT's $longName change events be read? A subset level 1 device needn't support it; at levels 2 and " +
+        "3 it must"
+    )
+
+    override def allOptions: List[BooleanOption] = List(points, disabling, events, eventReads)
 
     // the DUT has these points and their events (events without the points can't be tested)
     def withEvents: List[OptionCondition] = List(points, events)
