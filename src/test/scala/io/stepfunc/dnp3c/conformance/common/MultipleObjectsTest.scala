@@ -25,8 +25,7 @@ import scala.collection.mutable
 class MultipleObjectsTest extends AnyFunSuite with Matchers {
 
   private class Plugin extends DefaultIntegrationPlugin {
-    override def checkBinaryOutputOperate(reporter: CheckReporter, index: Int): Option[DeferredCheck] = None
-    override def checkAnalogOutputOperate(reporter: CheckReporter, index: Int): Option[DeferredCheck] = None
+    override def checkOperate(reporter: CheckReporter, kind: OutputKind, index: Int): Option[DeferredCheck] = None
   }
 
   // records each header of each request as (function, number of objects)

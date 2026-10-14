@@ -3,7 +3,9 @@
 
 package io.stepfunc.dnp3c.conformance.api
 
-import io.stepfunc.dnp3c.dnp3.{ ActionResult, ActionTiming, DefaultIntegrationPlugin, PluginReporter, StubDriver }
+import io.stepfunc.dnp3c.dnp3.{
+  ActionResult, ActionTiming, DefaultIntegrationPlugin, PluginReporter, PointKind, StubDriver
+}
 import io.stepfunc.dnp3c.dnp3.app.EventClass
 import org.junit.runner.RunWith
 import org.scalatestplus.junit.JUnitRunner
@@ -18,7 +20,7 @@ class PluginStepsTest extends AnyFunSuite with Matchers {
   private class Plugin extends DefaultIntegrationPlugin {
     val calls = mutable.ListBuffer.empty[String]
     val timings = mutable.ListBuffer.empty[ActionTiming]
-    override def uninstallBinaryOutputs(reporter: PluginReporter): Unit = calls += "uninstall"
+    override def uninstall(reporter: PluginReporter, kind: PointKind): Unit = calls += "uninstall"
     override def generateClassEvents(reporter: PluginReporter, eventClass: EventClass): Unit =
       calls += eventClass.toString
     override def generateUnsolicitedEvents(reporter: PluginReporter, timing: ActionTiming): ActionResult = {

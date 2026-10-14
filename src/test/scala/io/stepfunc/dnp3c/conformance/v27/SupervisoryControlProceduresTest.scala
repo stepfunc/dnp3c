@@ -73,11 +73,13 @@ class SupervisoryControlProceduresTest extends AnyFunSuite with Matchers {
     override def setGlobalRemoteSupervisoryControl(reporter: PluginReporter): Unit = outstation.local ++= 0 to 2
     override def setIndividualRemoteSupervisoryControl(reporter: PluginReporter, index: Int): Unit =
       outstation.local += index
-    override def checkBinaryOutputOperate(reporter: CheckReporter, index: Int): Option[DeferredCheck] = {
+    override def checkOperate(reporter: CheckReporter, kind: OutputKind, index: Int): Option[DeferredCheck] = {
+      require(kind == PointKind.BinaryOutputStatus, s"checked a ${kind.name}")
       if (operations != List(index)) throw new Exception(s"binary output $index didn't operate")
       None
     }
-    override def checkBinaryOutputNotOperate(reporter: CheckReporter): Option[DeferredCheck] = {
+    override def checkNotOperate(reporter: CheckReporter, kind: OutputKind): Option[DeferredCheck] = {
+      require(kind == PointKind.BinaryOutputStatus, s"checked a ${kind.name}")
       if (operations.nonEmpty) throw new Exception("a binary output operated")
       None
     }

@@ -45,20 +45,21 @@ object PluginSteps {
 
   def uninstallBinaryOutputs: TestStep = action("Uninstall or disable every binary output point on the DUT") {
     (plugin, reporter) =>
-      plugin.uninstallBinaryOutputs(reporter)
+      plugin.uninstall(reporter, PointKind.BinaryOutputStatus)
   }
 
   def checkBinaryOutputsOperate(indices: Iterable[Int]): PluginCheck =
     PluginCheck(indices.map(idx => Comment(s"Check that binary control point $idx operate")).toSeq*)(
-      (plugin, reporter) => indices.toList.flatMap(idx => plugin.checkBinaryOutputOperate(reporter, idx)))
+      (plugin, reporter) =>
+        indices.toList.flatMap(idx => plugin.checkOperate(reporter, PointKind.BinaryOutputStatus, idx)))
 
   def checkBinaryOutputOperate(index: Int): PluginCheck =
     PluginCheck(s"Check that binary control point $index operate")((plugin, reporter) =>
-      plugin.checkBinaryOutputOperate(reporter, index))
+      plugin.checkOperate(reporter, PointKind.BinaryOutputStatus, index))
 
   def checkBinaryOutputNotOperate(): PluginCheck =
     PluginCheck("Check that no binary control point operated")((plugin, reporter) =>
-      plugin.checkBinaryOutputNotOperate(reporter))
+      plugin.checkNotOperate(reporter, PointKind.BinaryOutputStatus))
 
   def reinstallPoints: TestStep =
     action("Reinstall or re-enable the points that were uninstalled or disabled, so later procedures can use them") {
@@ -68,20 +69,21 @@ object PluginSteps {
 
   def uninstallAnalogOutputs: TestStep = action("Uninstall or disable every analog output point on the DUT") {
     (plugin, reporter) =>
-      plugin.uninstallAnalogOutputs(reporter)
+      plugin.uninstall(reporter, PointKind.AnalogOutputStatus)
   }
 
   def checkAnalogOutputsOperate(indices: Iterable[Int]): PluginCheck =
     PluginCheck(indices.map(idx => Comment(s"Check that analog control point $idx operate")).toSeq*)(
-      (plugin, reporter) => indices.toList.flatMap(idx => plugin.checkAnalogOutputOperate(reporter, idx)))
+      (plugin, reporter) =>
+        indices.toList.flatMap(idx => plugin.checkOperate(reporter, PointKind.AnalogOutputStatus, idx)))
 
   def checkAnalogOutputOperate(index: Int): PluginCheck =
     PluginCheck(s"Check that analog control point $index operate")((plugin, reporter) =>
-      plugin.checkAnalogOutputOperate(reporter, index))
+      plugin.checkOperate(reporter, PointKind.AnalogOutputStatus, index))
 
   def checkAnalogOutputNotOperate(): PluginCheck =
     PluginCheck("Check that no analog control point operated")((plugin, reporter) =>
-      plugin.checkAnalogOutputNotOperate(reporter))
+      plugin.checkNotOperate(reporter, PointKind.AnalogOutputStatus))
 
   def generateClassEvents(eventClass: EventClass): TestStep = action(s"Generate known ${eventClass} event data") {
     (plugin, reporter) =>
@@ -105,65 +107,65 @@ object PluginSteps {
   // Binary Inputs
   def uninstallBinaryInputs: TestStep = action("Uninstall or disable every binary input point on the DUT") {
     (plugin, reporter) =>
-      plugin.uninstallBinaryInputs(reporter)
+      plugin.uninstall(reporter, PointKind.BinaryInput)
   }
 
   def generateBinaryInputPattern(): TestStep = action("Set the binary inputs to a known pattern") {
     (plugin, reporter) =>
-      plugin.generateBinaryInputPattern(reporter)
+      plugin.generatePattern(reporter, PointKind.BinaryInput)
   }
 
   def generateBinaryInputChangeEvents(): TestStep =
     action("Change binary inputs several times, one or more of them, to create events") {
       (plugin, reporter) =>
-        plugin.generateInputChanges(reporter, InputKind.BinaryInput)
+        plugin.generateInputChanges(reporter, PointKind.BinaryInput)
     }
 
   def generateExactBinaryInputChangeEvents(numEvents: Int): TestStep =
     action(s"Generate ${numEvents} Binary Input Change Event(s)") { (plugin, reporter) =>
-      plugin.generateExactInputEvents(reporter, InputKind.BinaryInput, numEvents)
+      plugin.generateExactInputEvents(reporter, PointKind.BinaryInput, numEvents)
     }
 
   // Double-bit Binary Inputs
   def uninstallDoubleBitBinaryInputs: TestStep =
     action("Uninstall or disable every double-bit binary input point on the DUT") { (plugin, reporter) =>
-      plugin.uninstallDoubleBitBinaryInputs(reporter)
+      plugin.uninstall(reporter, PointKind.DoubleBitInput)
     }
 
   def generateDoubleBitBinaryInputPattern(): TestStep = action("Set the double-bit inputs to a known pattern") {
     (plugin, reporter) =>
-      plugin.generateDoubleBitBinaryInputPattern(reporter)
+      plugin.generatePattern(reporter, PointKind.DoubleBitInput)
   }
 
   def generateDoubleBitBinaryInputChangeEvents(): TestStep =
     action("Change double-bit binary inputs several times, one or more of them, to create events") {
       (plugin, reporter) =>
-        plugin.generateInputChanges(reporter, InputKind.DoubleBitInput)
+        plugin.generateInputChanges(reporter, PointKind.DoubleBitInput)
     }
 
   def generateExactDoubleBitBinaryInputChangeEvents(numEvents: Int): TestStep =
     action(s"Generate ${numEvents} Double-bit Binary Input Change Event(s)") { (plugin, reporter) =>
-      plugin.generateExactInputEvents(reporter, InputKind.DoubleBitInput, numEvents)
+      plugin.generateExactInputEvents(reporter, PointKind.DoubleBitInput, numEvents)
     }
 
   // Counters
   def uninstallFrozenCounters: TestStep = action("Uninstall or disable every frozen counter on the DUT") {
     (plugin, reporter) =>
-      plugin.uninstallFrozenCounters(reporter)
+      plugin.uninstall(reporter, PointKind.FrozenCounter)
   }
 
   def uninstallAnalogInputs: TestStep = action("Uninstall or disable every analog input on the DUT") {
     (plugin, reporter) =>
-      plugin.uninstallAnalogInputs(reporter)
+      plugin.uninstall(reporter, PointKind.AnalogInput)
   }
 
   def uninstallCounterInputs: TestStep = action("Uninstall or disable every counter point on the DUT") {
     (plugin, reporter) =>
-      plugin.uninstallCounters(reporter)
+      plugin.uninstall(reporter, PointKind.Counter)
   }
 
   def generateCounterInputData(): TestStep = action("Make every binary counter count up") { (plugin, reporter) =>
-    plugin.generateInputChanges(reporter, InputKind.Counter)
+    plugin.generateInputChanges(reporter, PointKind.Counter)
   }
 
   def recordCurrentCounterValues(): TestStep = action("Note the counters' current values, for a later check") {
@@ -173,23 +175,23 @@ object PluginSteps {
 
   def generateExactCounterChangeEvents(numEvents: Int): TestStep =
     action(s"Generate ${numEvents} Counter Change Event(s)") { (plugin, reporter) =>
-      plugin.generateExactInputEvents(reporter, InputKind.Counter, numEvents)
+      plugin.generateExactInputEvents(reporter, PointKind.Counter, numEvents)
     }
 
   // Analog Inputs
   def generateAnalogInputPattern(): TestStep = action("Input analog data") { (plugin, reporter) =>
-    plugin.generateAnalogInputPattern(reporter)
+    plugin.generatePattern(reporter, PointKind.AnalogInput)
   }
 
   def generateAnalogInputChangeEvents(): TestStep = action(
     "Raise an analog input by more than its configured deadband and hold it steady, so that an event is generated") {
     (plugin, reporter) =>
-      plugin.generateInputChanges(reporter, InputKind.AnalogInput)
+      plugin.generateInputChanges(reporter, PointKind.AnalogInput)
   }
 
   def generateExactAnalogInputChangeEvents(numEvents: Int): TestStep =
     action(s"Generate ${numEvents} Analog Input Change Event(s)") { (plugin, reporter) =>
-      plugin.generateExactInputEvents(reporter, InputKind.AnalogInput, numEvents)
+      plugin.generateExactInputEvents(reporter, PointKind.AnalogInput, numEvents)
     }
 
   def generateExactSmallAnalogInputEvents(numEvents: Int): TestStep =

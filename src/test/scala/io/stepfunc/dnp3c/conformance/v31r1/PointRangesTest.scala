@@ -21,7 +21,7 @@ class PointRangesTest extends AnyFunSuite with Matchers {
 
   private class Plugin extends DefaultIntegrationPlugin {
     var uninstalled = false
-    override def uninstallBinaryInputs(reporter: PluginReporter): Unit = uninstalled = true
+    override def uninstall(reporter: PluginReporter, kind: PointKind): Unit = uninstalled = true
     override def reinstallPoints(reporter: PluginReporter): Unit = uninstalled = false
   }
 

@@ -25,9 +25,7 @@ class CleanupTest extends AnyFunSuite with Matchers {
     val calls = mutable.ListBuffer.empty[String]
     override def cyclePower(reporter: PluginReporter): Unit = calls += "cyclePower"
     override def setLinkLayerConfirm(reporter: PluginReporter, value: Boolean): Unit = calls += s"confirms $value"
-    override def uninstallBinaryInputs(reporter: PluginReporter): Unit = calls += "uninstall"
-    override def uninstallDoubleBitBinaryInputs(reporter: PluginReporter): Unit = calls += "uninstall"
-    override def uninstallBinaryOutputs(reporter: PluginReporter): Unit = calls += "uninstall"
+    override def uninstall(reporter: PluginReporter, kind: PointKind): Unit = calls += "uninstall"
     override def reinstallPoints(reporter: PluginReporter): Unit = calls += "reinstall"
   }
 

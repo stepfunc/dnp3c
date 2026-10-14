@@ -85,27 +85,27 @@ object PluginValidations {
   // Binary Input validations
   def verifyAllBinaryInputCurrentValues(): PluginValidation =
     inputCurrentValues(
-      InputKind.BinaryInput,
+      PointKind.BinaryInput,
       "Verify that the response contains the expected values for the binary inputs")
 
   def verifyLatestBinaryInputChangeEvents(): PluginValidation = inputEvents(
-    InputKind.BinaryInput,
+    PointKind.BinaryInput,
     EventExpectation.LatestBatch,
     "Verify that the response holds every Binary Input event generated",
     timestamps)
 
   def verifyFirstBinaryInputChangeEvent(): PluginValidation =
-    firstInputEvent(InputKind.BinaryInput, "Verify the device responds with the first Binary Input event", timestamps)
+    firstInputEvent(PointKind.BinaryInput, "Verify the device responds with the first Binary Input event", timestamps)
 
   def verifyRestBinaryInputChangeEvents(): PluginValidation = inputEvents(
-    InputKind.BinaryInput,
+    PointKind.BinaryInput,
     EventExpectation.RemainingLatestBatch,
     "Verify that the response holds the Binary Input events generated that weren't reported before",
     timestamps
   )
 
   def verifyOldAndNewBinaryInputChangeEvents(): PluginValidation = inputEvents(
-    InputKind.BinaryInput,
+    PointKind.BinaryInput,
     EventExpectation.AllGeneratedBatches,
     "Verify that the response carries every Binary Input event generated and not yet confirmed, in the order they " +
       "occurred",
@@ -114,29 +114,29 @@ object PluginValidations {
 
   // Double-bit Binary validations
   def verifyAllDoubleBitBinaryInputCurrentValues(): PluginValidation = inputCurrentValues(
-    InputKind.DoubleBitInput,
+    PointKind.DoubleBitInput,
     "Verify that the response contains the expected values for the double-bit binary inputs")
 
   def verifyLatestDoubleBitBinaryInputChangeEvents(): PluginValidation = inputEvents(
-    InputKind.DoubleBitInput,
+    PointKind.DoubleBitInput,
     EventExpectation.LatestBatch,
     "Verify that the response holds every Double-bit Binary event generated",
     timestamps)
 
   def verifyFirstDoubleBitBinaryInputChangeEvent(): PluginValidation = firstInputEvent(
-    InputKind.DoubleBitInput,
+    PointKind.DoubleBitInput,
     "Verify the device responds with the first Double-bit Binary event",
     timestamps)
 
   def verifyRestDoubleBitBinaryInputChangeEvents(): PluginValidation = inputEvents(
-    InputKind.DoubleBitInput,
+    PointKind.DoubleBitInput,
     EventExpectation.RemainingLatestBatch,
     "Verify that the response holds the Double-bit Binary events generated that weren't reported before",
     timestamps
   )
 
   def verifyOldAndNewDoubleBitBinaryInputChangeEvents(): PluginValidation = inputEvents(
-    InputKind.DoubleBitInput,
+    PointKind.DoubleBitInput,
     EventExpectation.AllGeneratedBatches,
     "Verify that the response carries every Double-bit Binary event generated and not yet confirmed, in the order " +
       "they occurred",
@@ -145,7 +145,7 @@ object PluginValidations {
 
   // Counter validations
   def verifyAllCountersCurrentValues(): PluginValidation = inputCurrentValues(
-    InputKind.Counter,
+    PointKind.Counter,
     "Verify that each counter equals its recorded value plus the counts generated since that value was recorded")
 
   def verifyRecordedCounterValues(): PluginValidation =
@@ -154,20 +154,20 @@ object PluginValidations {
     }
 
   def verifyLatestCounterChangeEvents(): PluginValidation = inputEvents(
-    InputKind.Counter,
+    PointKind.Counter,
     EventExpectation.LatestBatch,
     "Verify that the response holds every counter event generated")
 
   def verifyFirstCounterChangeEvent(): PluginValidation =
-    firstInputEvent(InputKind.Counter, "Verify the device responds with the first counter event")
+    firstInputEvent(PointKind.Counter, "Verify the device responds with the first counter event")
 
   def verifyRestCounterChangeEvents(): PluginValidation = inputEvents(
-    InputKind.Counter,
+    PointKind.Counter,
     EventExpectation.RemainingLatestBatch,
     "Verify that the response holds the counter events generated that weren't reported before")
 
   def verifyCounterEventsForCurrentValues(): PluginValidation = inputEvents(
-    InputKind.Counter,
+    PointKind.Counter,
     EventExpectation.CurrentValuesWithOptionalEarlier,
     "Verify the device responds with values representing the current state of the counters",
     "The DUT may also report the previous state before the present one"
@@ -175,11 +175,11 @@ object PluginValidations {
 
   // Analog Input validations
   def verifyAllAnalogInputsCurrentValues(): PluginValidation = inputCurrentValues(
-    InputKind.AnalogInput,
+    PointKind.AnalogInput,
     "Verify that the DUT reports the applied value for each analog input tested")
 
   def verifyAnalogInputEventsForCurrentValues(): PluginValidation = inputEvents(
-    InputKind.AnalogInput,
+    PointKind.AnalogInput,
     EventExpectation.CurrentValuesWithOptionalEarlier,
     "Verify that the reported value is the one the analog input was set to",
     "The DUT may also report the state applied in the first step before reporting the present state."
@@ -192,7 +192,7 @@ object PluginValidations {
     }
 
   def verifyLatestAnalogInputChangeEvents(): PluginValidation = inputEvents(
-    InputKind.AnalogInput,
+    PointKind.AnalogInput,
     EventExpectation.LatestBatch,
     "Verify that the reported value is the one the analog input was set to")
 

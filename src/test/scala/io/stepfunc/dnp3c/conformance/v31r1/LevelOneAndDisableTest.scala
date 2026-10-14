@@ -22,7 +22,7 @@ class LevelOneAndDisableTest extends AnyFunSuite with Matchers {
 
   private class Plugin extends DefaultIntegrationPlugin {
     val calls = mutable.ListBuffer.empty[String]
-    override def uninstallDoubleBitBinaryInputs(reporter: PluginReporter): Unit = calls += "uninstall"
+    override def uninstall(reporter: PluginReporter, kind: PointKind): Unit = calls += "uninstall"
     override def reinstallPoints(reporter: PluginReporter): Unit = calls += "reinstall"
   }
 
