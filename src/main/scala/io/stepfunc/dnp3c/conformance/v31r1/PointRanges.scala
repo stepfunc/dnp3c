@@ -72,10 +72,10 @@ object PointRanges {
   }
 
   // across the fragments: only objects of the group, in start/stop ranges, reporting exactly the points of indices
-  private def onlyPoints(t: RangedPoints, expected: => Set[Int], description: String): ResponseValidation =
+  private def onlyPoints(t: RangedPoints, expected: => Set[Int], which: String): ResponseValidation =
     new ResponseValidation {
       def description: List[Comment] = List(
-        s"Verify that the response uses an 8-bit (0x00) or a 16-bit (0x01) start/stop range, for $description")
+        s"Verify that the response uses an 8-bit (0x00) or a 16-bit (0x01) start/stop range, for $which")
       def validate(reporter: ProcedureReporter, responses: List[Message]): List[DeferredCheck] = {
         val headers = responses.flatMap(_.headers)
         headers.find(h =>
