@@ -335,8 +335,11 @@ object Tree {
         )
       ),
       section("8.15", "Common Time of Occurrence")(
-        notYet("8.15.2", "Read for relative time binary change events; Relative time not supported"),
-        notYet("8.15.3", "Read for Relative Time; Relative time supported")
+        test(
+          "8.15.2",
+          "Read for relative time binary change events; Relative time not supported",
+          CommonTime.readWithRelativeTime),
+        test("8.15.3", "Read for Relative Time; Relative time supported", CommonTime.relativeTimeSupported)
       ),
       section("8.16", "Binary Counters Specific Object Requests")(
         section("8.16.1", "Binary Counters, Running")(

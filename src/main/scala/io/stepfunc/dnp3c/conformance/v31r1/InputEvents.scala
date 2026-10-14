@@ -218,8 +218,9 @@ object InputEvents {
   }
 
   // the note on a device that answers a read of events with relative time with IIN2.1
-  private val relativeCompliantWith2012Only = "the DUT answers a read of events with relative time with IIN2.1: it " +
-    "complies with IEEE 1815-2012, but not with IEEE 1815-202x"
+  private[v31r1] val relativeCompliantWith2012Only =
+    "the DUT answers a read of events with relative time with IIN2.1: it " +
+      "complies with IEEE 1815-2012, but not with IEEE 1815-202x"
 
   /**
    * With relative time, qualifier 0x06 (8.14.2-13), in three phases: after a restart, while the clock is
