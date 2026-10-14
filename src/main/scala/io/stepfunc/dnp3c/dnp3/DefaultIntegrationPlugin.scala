@@ -124,6 +124,16 @@ class DefaultIntegrationPlugin extends IntegrationPlugin {
     ManualSteps.UserAction(reporter, "Uninstall or disable every analog input on the DUT")
   }
 
+  override def setFlagsNormal(reporter: PluginReporter, kind: PointKind): Unit = {
+    ManualSteps.UserAction(reporter, s"Set every ${kind.name} point's flags normal: ONLINE set, all others clear")
+  }
+
+  override def setFlagAbnormal(reporter: PluginReporter, kind: PointKind, indices: Seq[Int]): AbnormalFlag = {
+    val index = indices.headOption.getOrElse(throw new Exception(s"No ${kind.name} to set a flag abnormal on"))
+    ManualSteps.UserAction(reporter, s"Set one of the flags of ${kind.name} $index abnormal, e.g. clear ONLINE")
+    AbnormalFlag(index, None)
+  }
+
   override def setAnalogInput(reporter: PluginReporter, index: Int, value: Double): Unit = {
     ManualSteps.UserAction(reporter, s"Apply a stable input of $value to analog input $index")
   }

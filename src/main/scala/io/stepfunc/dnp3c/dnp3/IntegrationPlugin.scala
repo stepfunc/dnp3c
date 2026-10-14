@@ -27,6 +27,24 @@ object ActionResult {
  */
 sealed abstract class InputKind[P <: MeasurementPoint](val name: String)(using val pointClass: ClassTag[P])
 
+// a kind of static point, whose flags 3.1r1's 8.24 sets
+sealed abstract class PointKind(val name: String)
+object PointKind {
+  case object BinaryInput extends PointKind("binary input")
+  case object DoubleBitInput extends PointKind("double-bit binary input")
+  case object BinaryOutputStatus extends PointKind("binary output status")
+  case object Counter extends PointKind("counter")
+  case object FrozenCounter extends PointKind("frozen counter")
+  case object AnalogInput extends PointKind("analog input")
+  case object AnalogOutputStatus extends PointKind("analog output status")
+}
+
+/**
+ * The point setFlagAbnormal changed, and the flags it should now report, where the plugin knows them (masked to the flag
+ * bits, without a binary point's state)
+ */
+final case class AbnormalFlag(index: Int, flags: Option[Int])
+
 object InputKind {
   case object BinaryInput extends InputKind[BinaryPoint]("binary input")
   case object DoubleBitInput extends InputKind[DoubleBitPoint]("double-bit binary input")
@@ -146,6 +164,13 @@ trait IntegrationPlugin {
     throw new UnsupportedOperationException("this plugin doesn't implement uninstallFrozenCounters")
   def uninstallAnalogInputs(reporter: PluginReporter): Unit =
     throw new UnsupportedOperationException("this plugin doesn't implement uninstallAnalogInputs")
+  // every point of the kind with its flags normal: ONLINE set, all others clear (3.1r1's 8.24)
+  def setFlagsNormal(reporter: PluginReporter, kind: PointKind): Unit =
+    throw new UnsupportedOperationException("this plugin doesn't implement setFlagsNormal")
+  // one of the flags of the first of the points, in order, where that's allowed, abnormal, e.g. ONLINE clear, or
+  // COMM_LOST set (3.1r1's 8.24)
+  def setFlagAbnormal(reporter: PluginReporter, kind: PointKind, indices: Seq[Int]): AbnormalFlag =
+    throw new UnsupportedOperationException("this plugin doesn't implement setFlagAbnormal")
 
   // ===================
   // Message validations
