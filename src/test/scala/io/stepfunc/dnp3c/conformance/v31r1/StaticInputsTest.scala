@@ -21,8 +21,7 @@ import org.scalatest.funsuite.AnyFunSuite
 class StaticInputsTest extends AnyFunSuite with Matchers {
 
   private class Plugin extends DefaultIntegrationPlugin {
-    override def uninstallBinaryInputs(reporter: PluginReporter): Unit = ()
-    override def uninstallCounters(reporter: PluginReporter): Unit = ()
+    override def uninstall(reporter: PluginReporter, kind: PointKind): Unit = ()
     override def reinstallPoints(reporter: PluginReporter): Unit = ()
   }
 

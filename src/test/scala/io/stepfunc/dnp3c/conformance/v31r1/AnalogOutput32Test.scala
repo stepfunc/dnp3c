@@ -19,7 +19,8 @@ class AnalogOutput32Test extends AnyFunSuite with Matchers {
 
   private class Plugin extends DefaultIntegrationPlugin {
     var operated: List[Int] = Nil
-    override def checkAnalogOutputOperate(reporter: CheckReporter, index: Int): Option[DeferredCheck] = {
+    override def checkOperate(reporter: CheckReporter, kind: OutputKind, index: Int): Option[DeferredCheck] = {
+      require(kind == PointKind.AnalogOutputStatus, s"checked a ${kind.name}")
       operated :+= index
       None
     }

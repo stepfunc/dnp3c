@@ -19,7 +19,10 @@ class ControlCodeSupportTest extends AnyFunSuite with Matchers {
 
   // operated outputs are checked by the plugin, which is satisfied here
   private object Plugin extends DefaultIntegrationPlugin {
-    override def checkBinaryOutputOperate(reporter: CheckReporter, index: Int): Option[DeferredCheck] = None
+    override def checkOperate(reporter: CheckReporter, kind: OutputKind, index: Int): Option[DeferredCheck] = {
+      require(kind == PointKind.BinaryOutputStatus, s"checked a ${kind.name}")
+      None
+    }
   }
 
   // answers each DIRECT OPERATE by echoing it, or with whatever `answer` makes of it

@@ -27,12 +27,10 @@ class FollowDocumentTest extends AnyFunSuite with Matchers {
   private class Plugin extends DefaultIntegrationPlugin {
     val calls = mutable.ListBuffer.empty[String]
     override def cyclePower(reporter: PluginReporter): Unit = calls += "cyclePower"
-    override def uninstallBinaryInputs(reporter: PluginReporter): Unit = calls += "uninstall"
-    override def uninstallDoubleBitBinaryInputs(reporter: PluginReporter): Unit = calls += "uninstall"
-    override def uninstallCounters(reporter: PluginReporter): Unit = calls += "uninstall"
+    override def uninstall(reporter: PluginReporter, kind: PointKind): Unit = calls += "uninstall"
     override def reinstallPoints(reporter: PluginReporter): Unit = calls += "reinstall"
+    override def checkNotOperate(reporter: CheckReporter, kind: OutputKind): Option[DeferredCheck] = None
     override def generateInputChanges(reporter: PluginReporter, kind: InputKind[?]): Unit = ()
-    override def checkBinaryOutputNotOperate(reporter: CheckReporter): Option[DeferredCheck] = None
   }
 
   // answers every request with a Null Response with IIN2.1 (object unknown); records the requests

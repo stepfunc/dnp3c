@@ -22,21 +22,26 @@ object ActionResult {
   case class Armed(withinMs: Int) extends ActionResult
 }
 
+/** A kind of point */
+sealed abstract class PointKind(val name: String)
+
 /**
  * A kind of input point, with the type of its points: matching on the kind gives a plugin typed points
  */
-sealed abstract class InputKind[P <: MeasurementPoint](val name: String)(using val pointClass: ClassTag[P])
+sealed abstract class InputKind[P <: MeasurementPoint](name: String)(using val pointClass: ClassTag[P])
+    extends PointKind(name)
 
-// a kind of static point, whose flags 3.1r1's 8.24 sets
-sealed abstract class PointKind(val name: String)
+/** A kind of output: its status points, and the commands that operate it */
+sealed abstract class OutputKind(name: String) extends PointKind(name)
+
 object PointKind {
-  case object BinaryInput extends PointKind("binary input")
-  case object DoubleBitInput extends PointKind("double-bit binary input")
-  case object BinaryOutputStatus extends PointKind("binary output status")
-  case object Counter extends PointKind("counter")
+  case object BinaryInput extends InputKind[BinaryPoint]("binary input")
+  case object DoubleBitInput extends InputKind[DoubleBitPoint]("double-bit binary input")
+  case object BinaryOutputStatus extends OutputKind("binary output status")
+  case object Counter extends InputKind[CounterPoint]("counter")
   case object FrozenCounter extends PointKind("frozen counter")
-  case object AnalogInput extends PointKind("analog input")
-  case object AnalogOutputStatus extends PointKind("analog output status")
+  case object AnalogInput extends InputKind[AnalogPoint]("analog input")
+  case object AnalogOutputStatus extends OutputKind("analog output status")
 }
 
 /**
@@ -122,13 +127,6 @@ final case class CollisionDelays(fixedMs: Int, maxRandomMs: Int)
 /** A DUT's delays between raising carrier (RTS) and transmitting, and between transmitting and dropping it */
 final case class RtsDelays(beforeMs: Int, afterMs: Int)
 
-object InputKind {
-  case object BinaryInput extends InputKind[BinaryPoint]("binary input")
-  case object DoubleBitInput extends InputKind[DoubleBitPoint]("double-bit binary input")
-  case object Counter extends InputKind[CounterPoint]("counter")
-  case object AnalogInput extends InputKind[AnalogPoint]("analog input")
-}
-
 /**
  * What a check of events expects of them, relative to the events generated since the procedure started. The procedures
  * use these combinations, which are all a plugin needs to support (it should fail any other rather than pass it):
@@ -173,10 +171,10 @@ trait IntegrationPlugin {
 
   // Control validations: like the message validations below, each returns None once it has checked, or, when
   // reporter.timing is Deferrable, may return a check to run after the procedure's steps
-  def checkBinaryOutputOperate(reporter: CheckReporter, index: Int): Option[DeferredCheck]
-  def checkBinaryOutputNotOperate(reporter: CheckReporter): Option[DeferredCheck]
-  def checkAnalogOutputOperate(reporter: CheckReporter, index: Int): Option[DeferredCheck]
-  def checkAnalogOutputNotOperate(reporter: CheckReporter): Option[DeferredCheck]
+  // the output of the kind at the index operated
+  def checkOperate(reporter: CheckReporter, kind: OutputKind, index: Int): Option[DeferredCheck]
+  // no output of the kind operated
+  def checkNotOperate(reporter: CheckReporter, kind: OutputKind): Option[DeferredCheck]
 
   // Event generation
   // Each generation is a new batch, which later event checks compare with. A plugin that checks timestamps notes when
@@ -188,16 +186,13 @@ trait IntegrationPlugin {
   def generateExactInputEvents(reporter: PluginReporter, kind: InputKind[?], numEvents: Int): Unit
   def generateClassEvents(reporter: PluginReporter, eventClass: EventClass): Unit
   def generateExactClassEvents(reporter: PluginReporter, eventClass: EventClass, numEvents: Int): Unit
-  def generateBinaryInputPattern(reporter: PluginReporter): Unit
-  def generateDoubleBitBinaryInputPattern(reporter: PluginReporter): Unit
-  def generateAnalogInputPattern(reporter: PluginReporter): Unit
+  // sets the inputs of the kind to a known pattern: binary, double-bit and analog inputs
+  def generatePattern(reporter: PluginReporter, kind: InputKind[?]): Unit
 
   // Uninstallation of points
-  def uninstallBinaryInputs(reporter: PluginReporter): Unit
-  def uninstallDoubleBitBinaryInputs(reporter: PluginReporter): Unit
-  def uninstallCounters(reporter: PluginReporter): Unit
-  def uninstallBinaryOutputs(reporter: PluginReporter): Unit
-  def uninstallAnalogOutputs(reporter: PluginReporter): Unit
+  // uninstalls or disables every point of the kind, until reinstallPoints; 2.7 uses binary, double-bit and counter
+  // inputs and binary and analog outputs, and 3.1r1 frozen counters and analog inputs too (8.23)
+  def uninstall(reporter: PluginReporter, kind: PointKind): Unit
   def reinstallPoints(reporter: PluginReporter): Unit // undo the uninstallation done earlier in the procedure
 
   // Remote Supervisory Control
@@ -236,11 +231,6 @@ trait IntegrationPlugin {
   // applies a stable input of the value to the analog input, so the DUT reports it (3.1r1's 8.19.2.4)
   def setAnalogInput(reporter: PluginReporter, index: Int, value: Double): Unit =
     throw new UnsupportedOperationException("this plugin doesn't implement setAnalogInput")
-  // uninstall or disable every frozen counter, or every analog input, until reinstallPoints (3.1r1's 8.23)
-  def uninstallFrozenCounters(reporter: PluginReporter): Unit =
-    throw new UnsupportedOperationException("this plugin doesn't implement uninstallFrozenCounters")
-  def uninstallAnalogInputs(reporter: PluginReporter): Unit =
-    throw new UnsupportedOperationException("this plugin doesn't implement uninstallAnalogInputs")
   // exactly numEvents frozen counter events, as a new batch (3.1r1's 8.25)
   def generateExactFrozenCounterEvents(reporter: PluginReporter, numEvents: Int): Unit =
     throw new UnsupportedOperationException("this plugin doesn't implement generateExactFrozenCounterEvents")

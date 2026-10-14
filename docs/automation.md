@@ -100,7 +100,7 @@ The supported API is `Harness`, `Revision` and `Revisions`, the configuration, r
 `IntegrationPlugin` (`io.stepfunc.dnp3c.dnp3`) has two kinds of methods:
 
 - **Actions** change the device: `cyclePower`, `generateInputChanges`, `enableUnsolicitedResponse`, `setMasterAddress`, and so on.
-- **Verifications** check what the device did, or what it reported: `checkBinaryOutputOperate`, `verifyInputCurrentValues`, `verifyTimestamp`, and so on. They receive what dnp3c parsed from the device's responses, such as the points and their values, to compare with what the device actually holds.
+- **Verifications** check what the device did, or what it reported: `checkOperate`, `verifyInputCurrentValues`, `verifyTimestamp`, and so on. They receive what dnp3c parsed from the device's responses, such as the points and their values, to compare with what the device actually holds.
 
 Verifications return `Option[DeferredCheck]`, and `generateUnsolicitedEvents` returns an `ActionResult`: an automated plugin checks or acts immediately and returns `None` or `ActionResult.Performed`. The timing that verifications and `generateUnsolicitedEvents` are given, and `prepare`, let `DefaultIntegrationPlugin` fit a person's pace; an automated plugin can ignore them.
 

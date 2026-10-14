@@ -21,25 +21,20 @@ class DefaultIntegrationPlugin extends IntegrationPlugin {
     ManualSteps.UserAction(reporter, s"${enableDisable(value)} self address support")
   }
 
-  override def checkBinaryOutputOperate(reporter: CheckReporter, index: Int): Option[DeferredCheck] = {
-    ManualSteps.verification(reporter, s"Check that binary control point $index operate", Nil)
-  }
+  override def checkOperate(reporter: CheckReporter, kind: OutputKind, index: Int): Option[DeferredCheck] =
+    ManualSteps.verification(reporter, s"Check that ${control(kind)} point $index operate", Nil)
 
-  override def checkBinaryOutputNotOperate(reporter: CheckReporter): Option[DeferredCheck] = {
-    ManualSteps.verification(reporter, "Check that NO binary control point operated", Nil)
-  }
+  override def checkNotOperate(reporter: CheckReporter, kind: OutputKind): Option[DeferredCheck] =
+    ManualSteps.verification(reporter, s"Check that NO ${control(kind)} point operated", Nil)
 
-  override def checkAnalogOutputOperate(reporter: CheckReporter, index: Int): Option[DeferredCheck] = {
-    ManualSteps.verification(reporter, s"Check that analog output point $index operate", Nil)
-  }
-
-  override def checkAnalogOutputNotOperate(reporter: CheckReporter): Option[DeferredCheck] = {
-    ManualSteps.verification(reporter, "Check that NO analog output point operated", Nil)
+  private def control(kind: OutputKind): String = kind match {
+    case PointKind.BinaryOutputStatus => "binary control"
+    case PointKind.AnalogOutputStatus => "analog output"
   }
 
   override def generateInputChanges(reporter: PluginReporter, kind: InputKind[?]): Unit = {
     val action = kind match {
-      case InputKind.Counter => "Make every counter count up, generating counter change events"
+      case PointKind.Counter => "Make every counter count up, generating counter change events"
       case _ => s"Generate ${kind.name} change events"
     }
     generate(reporter, action)
@@ -57,16 +52,8 @@ class DefaultIntegrationPlugin extends IntegrationPlugin {
     generate(reporter, s"Generate $numEvents $eventClass event(s)")
   }
 
-  override def generateBinaryInputPattern(reporter: PluginReporter): Unit = {
-    generate(reporter, "Set the binary inputs to a known pattern")
-  }
-
-  override def generateDoubleBitBinaryInputPattern(reporter: PluginReporter): Unit = {
-    generate(reporter, "Set the double-bit binary inputs to a known pattern")
-  }
-
-  override def generateAnalogInputPattern(reporter: PluginReporter): Unit = {
-    generate(reporter, "Set the analog inputs to a known pattern")
+  override def generatePattern(reporter: PluginReporter, kind: InputKind[?]): Unit = {
+    generate(reporter, s"Set the ${kind.name}s to a known pattern")
   }
 
   override def recordCurrentCounterValues(reporter: PluginReporter): Unit = {
@@ -83,26 +70,13 @@ class DefaultIntegrationPlugin extends IntegrationPlugin {
       "Trigger an event of a supported timestamped type, recording when it occurs for the timestamp check")
   }
 
-  override def uninstallBinaryInputs(reporter: PluginReporter): Unit = {
-    ManualSteps.UserAction(reporter, "Uninstall or disable every binary input point on the DUT")
-  }
-
-  override def uninstallDoubleBitBinaryInputs(reporter: PluginReporter): Unit = {
-    ManualSteps.UserAction(
-      reporter,
-      "Uninstall or disable every double-bit binary input point on the DUT")
-  }
-
-  override def uninstallBinaryOutputs(reporter: PluginReporter): Unit = {
-    ManualSteps.UserAction(reporter, "Uninstall or disable every binary output point on the DUT")
-  }
-
-  override def uninstallCounters(reporter: PluginReporter): Unit = {
-    ManualSteps.UserAction(reporter, "Uninstall or disable every counter point on the DUT")
-  }
-
-  override def uninstallAnalogOutputs(reporter: PluginReporter): Unit = {
-    ManualSteps.UserAction(reporter, "Uninstall or disable every analog output point on the DUT")
+  override def uninstall(reporter: PluginReporter, kind: PointKind): Unit = {
+    val points = kind match {
+      case PointKind.BinaryOutputStatus => "binary output"
+      case PointKind.AnalogOutputStatus => "analog output"
+      case _ => kind.name
+    }
+    ManualSteps.UserAction(reporter, s"Uninstall or disable every $points point on the DUT")
   }
 
   override def reinstallPoints(reporter: PluginReporter): Unit = {
@@ -114,14 +88,6 @@ class DefaultIntegrationPlugin extends IntegrationPlugin {
   // Unsolicited responses
   override def setColdRestartSupport(reporter: PluginReporter, enabled: Boolean): Unit = {
     ManualSteps.UserAction(reporter, s"${enableDisable(enabled)} the DUT's support for cold restart (function code 13)")
-  }
-
-  override def uninstallFrozenCounters(reporter: PluginReporter): Unit = {
-    ManualSteps.UserAction(reporter, "Uninstall or disable every frozen counter on the DUT")
-  }
-
-  override def uninstallAnalogInputs(reporter: PluginReporter): Unit = {
-    ManualSteps.UserAction(reporter, "Uninstall or disable every analog input on the DUT")
   }
 
   override def generateExactFrozenCounterEvents(reporter: PluginReporter, numEvents: Int): Unit = {
@@ -295,9 +261,9 @@ class DefaultIntegrationPlugin extends IntegrationPlugin {
       kind: InputKind[P],
       points: Seq[GenIndexedPoint[P]]): Option[DeferredCheck] = {
     val question = kind match {
-      case InputKind.Counter =>
+      case PointKind.Counter =>
         "Verify that each counter equals its recorded value plus the counts generated since that value was recorded"
-      case InputKind.AnalogInput => "Verify that the DUT reports the applied value for each analog input tested"
+      case PointKind.AnalogInput => "Verify that the DUT reports the applied value for each analog input tested"
       case _ => s"Verify that the response contains the expected values for the ${kind.name}s"
     }
     ManualSteps.verification(reporter, question, ManualSteps.points("Points in the response", points))
@@ -318,9 +284,9 @@ class DefaultIntegrationPlugin extends IntegrationPlugin {
       expectation: EventExpectation,
       points: Seq[GenIndexedPoint[P]]): Option[DeferredCheck] = {
     val question = (kind, expectation) match {
-      case (InputKind.Counter, EventExpectation.CurrentValuesWithOptionalEarlier) =>
+      case (PointKind.Counter, EventExpectation.CurrentValuesWithOptionalEarlier) =>
         "Verify that the counter events report the current counts; earlier counts may precede them"
-      case (InputKind.AnalogInput, EventExpectation.CurrentValuesWithOptionalEarlier) =>
+      case (PointKind.AnalogInput, EventExpectation.CurrentValuesWithOptionalEarlier) =>
         "Verify that the analog events report the newly applied values; earlier values may precede them"
       case _ => verifyEventsQuestion(s"${kind.name} events", expectation)
     }

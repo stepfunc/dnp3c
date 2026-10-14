@@ -78,8 +78,8 @@ class SelectExpiryTest extends AnyFunSuite with Matchers {
       dut.events += "notice"
       super.prepare(reporter, notice)
     }
-    override def checkBinaryOutputNotOperate(reporter: CheckReporter): Option[DeferredCheck] = {
-      val deferred = super.checkBinaryOutputNotOperate(reporter)
+    override def checkNotOperate(reporter: CheckReporter, kind: OutputKind): Option[DeferredCheck] = {
+      val deferred = super.checkNotOperate(reporter, kind)
       if (deferred.isEmpty) dut.events += "question"
       deferred.map(c =>
         c.copy(check = () => {
@@ -111,7 +111,7 @@ class SelectExpiryTest extends AnyFunSuite with Matchers {
     // what the old flow did: answer at step 6, taking longer than the select timeout
     val slow = new DefaultIntegrationPlugin {
       override def prepare(reporter: PluginReporter, notice: String): Unit = ()
-      override def checkBinaryOutputNotOperate(reporter: CheckReporter): Option[DeferredCheck] = {
+      override def checkNotOperate(reporter: CheckReporter, kind: OutputKind): Option[DeferredCheck] = {
         dut.nowMs += selectTimeoutMs + 1000
         None
       }

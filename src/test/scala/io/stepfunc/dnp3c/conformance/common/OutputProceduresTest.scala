@@ -27,11 +27,14 @@ class OutputProceduresTest extends AnyFunSuite with Matchers {
   private class Plugin extends DefaultIntegrationPlugin {
     val calls = mutable.ListBuffer.empty[String]
     override def cyclePower(reporter: PluginReporter): Unit = calls += "cyclePower"
-    override def uninstallBinaryOutputs(reporter: PluginReporter): Unit = calls += "uninstall binary"
-    override def uninstallAnalogOutputs(reporter: PluginReporter): Unit = calls += "uninstall analog"
+    override def uninstall(reporter: PluginReporter, kind: PointKind): Unit = calls +=
+      (kind match {
+        case PointKind.BinaryOutputStatus => "uninstall binary"
+        case PointKind.AnalogOutputStatus => "uninstall analog"
+        case other => s"uninstall ${other.name}"
+      })
     override def reinstallPoints(reporter: PluginReporter): Unit = calls += "reinstall"
-    override def checkBinaryOutputNotOperate(reporter: CheckReporter): Option[DeferredCheck] = None
-    override def checkAnalogOutputNotOperate(reporter: CheckReporter): Option[DeferredCheck] = None
+    override def checkNotOperate(reporter: CheckReporter, kind: OutputKind): Option[DeferredCheck] = None
   }
 
   // answers each request with answer(request), and records the requests
