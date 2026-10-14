@@ -116,6 +116,9 @@ final case class NetworkSetup(
   }
 }
 
+/** A DUT's delays between raising carrier (RTS) and transmitting, and between transmitting and dropping it */
+final case class RtsDelays(beforeMs: Int, afterMs: Int)
+
 object InputKind {
   case object BinaryInput extends InputKind[BinaryPoint]("binary input")
   case object DoubleBitInput extends InputKind[DoubleBitPoint]("double-bit binary input")
@@ -268,6 +271,9 @@ trait IntegrationPlugin {
   // restores the DUT's usual network setup, the one it had when the procedure started (3.1r1's section 9)
   def restoreNetwork(reporter: PluginReporter): Unit =
     throw new UnsupportedOperationException("this plugin doesn't implement restoreNetwork")
+  // sets the DUT's RTS delays, or restores its usual ones (3.1r1's 8.10.2)
+  def setRtsDelays(reporter: PluginReporter, delays: Option[RtsDelays]): Unit =
+    throw new UnsupportedOperationException("this plugin doesn't implement setRtsDelays")
 
   // ===================
   // Message validations
@@ -350,6 +356,15 @@ trait IntegrationPlugin {
   // Check that the time of an output command event is reasonable for a command sent at sentMs (3.1r1's 10.3.4, 10.4.4)
   def verifyCommandEventTime(reporter: CheckReporter, sentMs: Long, eventMs: Long): Option[DeferredCheck] =
     throw new UnsupportedOperationException("this plugin doesn't implement verifyCommandEventTime")
+
+  // Check, on the line, that the DUT didn't transmit, raise carrier or assert RTS since the last request, which wasn't
+  // to it (3.1r1's 8.10.2)
+  def verifyNoCarrier(reporter: CheckReporter): Option[DeferredCheck] =
+    throw new UnsupportedOperationException("this plugin doesn't implement verifyNoCarrier")
+  // Check, on the line, that the DUT raised carrier (asserted RTS) an appropriate time before the first bit of its
+  // response, and dropped it an appropriate time after the last, the delays it was set to if given (3.1r1's 8.10.2)
+  def verifyCarrierTiming(reporter: CheckReporter, delays: Option[RtsDelays]): Option[DeferredCheck] =
+    throw new UnsupportedOperationException("this plugin doesn't implement verifyCarrierTiming")
 
   // Check that the DUT noticed that the master closed its TCP connection (3.1r1's 9.5.1)
   def verifyDisconnectNoticed(reporter: CheckReporter): Option[DeferredCheck] =

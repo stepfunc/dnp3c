@@ -306,7 +306,7 @@ object Tree {
         )
       ),
       section("8.10", "Multi-Drop Support")(
-        notYet("8.10.2", "Test Procedure")
+        test("8.10.2", "Test Procedure", MultiDrop.multiDrop)
       ),
       section("8.11", "Unsolicited Responses")(
         section("8.11.2", "Test Procedure")(
