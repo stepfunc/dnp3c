@@ -124,7 +124,7 @@ object AssignClass {
           def run(driver: TestDriver): List[DeferredCheck] = {
             if (reassigned) {
               driver.writeMessage(assign(seqs(60), Nil, Group60Var2 -> c1.points, Group60Var3 -> c2.points))
-              driver.readAllResponses(seqs(60), AutoConfirm.Yes, AppFunction.response)
+              driver.readAllResponses(seqs(60), AutoConfirm.Yes)
               reassigned = false
             }
             Nil
@@ -152,7 +152,7 @@ object AssignClass {
           def run(driver: TestDriver): List[DeferredCheck] =
             if (levelThree) full.run(driver)
             else {
-              val responses = driver.readAllResponses(seqs(4), AutoConfirm.Yes, AppFunction.response)
+              val responses = driver.readAllResponses(seqs(4), AutoConfirm.Yes)
               val notImplemented = responses.size == 1 &&
                 scala.util.Try(isNullErrorResponse(IIN.FUNC_NOT_SUPPORTED).validate(driver.reporter, responses.head))
                   .isSuccess

@@ -143,7 +143,7 @@ class DefaultTestDriver(
     try {
       reporter.transmit(message)
       SegmentWriter.write(message.toBytes, 0, reporter) { segment =>
-        LinkWriter.write(this.local, options.destination.getOrElse(this.remote), true, options.controlBlock, reporter)(
+        LinkWriter.write(this.local, options.destination.getOrElse(this.remote), options.controlBlock, reporter)(
           segment) { bytes =>
           reporter.transmit(bytes)
           channel.write(ByteBuffer.wrap(bytes.toArray))
@@ -196,7 +196,6 @@ class DefaultTestDriver(
       LinkWriter.write(
         local,
         options.destination.getOrElse(remote),
-        true,
         options.controlBlock,
         reporter)(segment)(writeToChannel(c))
     }

@@ -130,20 +130,6 @@ sealed trait PrefixedPayload extends HeaderPayload {
 
 object PrefixedPayload {
 
-  def apply(prefix: Prefix.U8) = U8(prefix)
-  def apply(prefix: Prefix.U16) = U16(prefix)
-
-  def applyU8(prefix: List[Prefix.U8]) = U8(prefix)
-  def applyU16(prefix: List[Prefix.U16]) = U16(prefix)
-
-  object U8 {
-    def apply(prefix: Prefix.U8): U8 = U8(List(prefix))
-  }
-
-  object U16 {
-    def apply(prefix: Prefix.U16): U16 = U16(List(prefix))
-  }
-
   case class U8(objects: List[Prefix.U8]) extends PrefixedPayload with HasFieldCollection {
     override def toBytes: List[Byte] = objects.flatMap(_.bytes)
     override def descriptions: Iterable[String] = objects.map(_.description)

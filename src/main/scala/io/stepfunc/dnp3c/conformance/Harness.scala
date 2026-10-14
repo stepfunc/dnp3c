@@ -3,14 +3,11 @@
 
 package io.stepfunc.dnp3c.conformance
 
-import java.nio.file.{ Files, Path, Paths }
-
-import scala.jdk.CollectionConverters._
-import scala.util.Using
+import java.nio.file.{ Files, Path }
 
 import io.stepfunc.dnp3c.conformance.api.{ Options, RunSummary }
 import io.stepfunc.dnp3c.conformance.api.options.TestOptions
-import io.stepfunc.dnp3c.conformance.application.{ TestResult, TestRunner, TextFile }
+import io.stepfunc.dnp3c.conformance.application.{ TestRunner, TextFile }
 import io.stepfunc.dnp3c.conformance.application.report.{ Report, Resources }
 import io.stepfunc.dnp3c.dnp3.IntegrationPlugin
 import io.stepfunc.dnp3c.protocol.logging.Colors
@@ -42,8 +39,8 @@ final class Harness(options: Options, plugin: IntegrationPlugin, revision: Revis
    * @param id a procedure or section of the revision, e.g. "8.6.5.4" or "8.6", or "all"
    * @throws IllegalArgumentException if the revision has no procedure or section with the id, before anything runs
    * @throws api.ConfigurationException if the configuration has no subset level, or one the revision doesn't test, or
-   *                                    the device lacks what a procedure mandatory at that level needs, before
-   *                                    anything runs
+   *                                    lacks what the revision, or a procedure that will run, needs configured,
+   *                                    before anything runs
    * @throws HarnessExecutionException if the harness or the plugin fails around a procedure, e.g. when
    *                                   `startProcedure` throws or the capture can't be opened; it holds the
    *                                   results so far. An interruption propagates as it is.
@@ -79,8 +76,7 @@ object Harness {
     val path = revision.runDirectory(options)
     Files.createDirectories(path)
 
-    val report =
-      Report.create(path, revision, level, legacyNotice(Paths.get(options.get(TestOptions.outputDirectory))).toList)
+    val report = Report.create(path, revision, level)
 
     Colors.text.printLine("creating HTML report...")
     val file = path.resolve("report.html")
@@ -91,32 +87,6 @@ object Harness {
     Resources.extract("report.css", path.resolve("report.css").toFile)
 
     file
-  }
-
-  // dnp3c 0.1.0 wrote each 2.7 procedure's folder straight into the output directory, not into a revision's folder:
-  // folders named after 2.7 procedures, holding what a run writes, and no result that records a revision
-  private def legacyNotice(outputDirectory: Path): Option[String] = {
-    val ids = Revisions.v2_7.flatMapProcedures(p => Some(p.id)).toSet
-    def legacy(folder: Path): Boolean = {
-      val results = folder.resolve("results.properties")
-      val ran = List("results.properties", "log.html", "dump.pcap").exists(f => Files.isRegularFile(folder.resolve(f)))
-      val recordsRevision = Files.isRegularFile(results) &&
-        scala.util.Try(TestResult.read(results.toFile))
-          .toOption
-          .exists(_.revision.isDefined)
-      ids.contains(folder.getFileName.toString) && ran && !recordsRevision
-    }
-    val folders =
-      if (!Files.isDirectory(outputDirectory)) Nil
-      else
-        Using.resource(Files.list(outputDirectory))(_.iterator.asScala.toList)
-          .filter(f => Files.isDirectory(f) && legacy(f))
-          .map(_.getFileName.toString)
-          .sorted
-    Option.when(folders.nonEmpty) {
-      s"$outputDirectory holds ${folders.size} folders named after 2.7 procedures (e.g. ${folders.head}), as dnp3c " +
-        "0.1.0 wrote them before results were kept by revision. They aren't part of this report."
-    }
   }
 
 }

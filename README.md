@@ -1,6 +1,6 @@
 # dnp3c
 
-A DNP3 conformance test harness from [Step Function I/O](https://stepfunc.io). It runs the outstation test procedures of the DNP3 IED Certification Procedure, Subset Level 2, version 2.7, against a device and produces an HTML report of the results.
+A DNP3 conformance test harness from [Step Function I/O](https://stepfunc.io). It runs the outstation test procedures of the DNP3 IED Certification Procedure, versions 3.1 rev 1 and 2.7, against a device and produces an HTML report of the results.
 
 dnp3c can be used in two ways:
 
@@ -25,9 +25,12 @@ Commercial DNP3 test tools save their results in proprietary formats. dnp3c writ
 
 ## Test procedures
 
-dnp3c implements the DNP Users Group's *DNP3 IED Certification Procedure, Subset Level 2*, version 2.7 (2 March 2016). The section, procedure and step numbers in the tool, its logs and the report are those of 2.7. Where a technical bulletin replaces a 2.7 test outright, dnp3c runs the replacement: TB2017-001's 8.6.4.2 and 8.6.4.3, whose steps are numbered 1.a, 1.b, and so on.
+dnp3c implements two revisions of the DNP Users Group's *DNP3 IED Certification Procedure*, chosen with `-rev` (`-revs` lists them):
 
-Later editions, 3.0 (December 2020) and 3.1 rev 1 (September 2022), cover Subset Levels 1 to 3. They renumber some tests, leave many tests without a number, and change what some tests send or accept, often to apply technical bulletins published after 2.7. A result from dnp3c can therefore differ from what those editions would give. Support for 3.1 rev 1 alongside 2.7 is in progress: `-rev 3.1r1` has its whole tree of tests, by its own numbers. The ones whose steps match a 2.7 test already run; the rest show as not implemented, and are skipped.
+- **3.1 rev 1** (`3.1r1`, 13 September 2022) covers Subset Levels 1 to 3. Its tests have the numbers it gives them. One it leaves without a number is named after its section and its place among that section's unnumbered tests, e.g. 8.6.5-2.
+- **2.7** (`2.7`, 2 March 2016) covers Subset Level 2. Where a technical bulletin replaces a 2.7 test outright, dnp3c runs the replacement: TB2017-001's 8.6.4.2 and 8.6.4.3, whose steps are numbered 1.a, 1.b, and so on.
+
+The section, procedure and step numbers in the tool, its logs and the report are those of the revision being run. Each revision is run as published, so a result under 2.7 can differ from one under 3.1 rev 1, which changes what some tests send or accept, often to apply technical bulletins published after 2.7.
 
 ## Requirements
 

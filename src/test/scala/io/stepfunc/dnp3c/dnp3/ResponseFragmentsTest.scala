@@ -42,7 +42,7 @@ class ResponseFragmentsTest extends AnyFunSuite with Matchers {
   }
 
   private def readAll(dut: Dut, autoConfirm: AutoConfirm = AutoConfirm.Yes): List[Message] =
-    dut.readAllResponses(Sequence(14), autoConfirm, AppFunction.response)
+    dut.readAllResponses(Sequence(14), autoConfirm)
 
   test("reads fragments until FIN, with FIR only on the first and the sequence incrementing, wrapping at 16") {
     val fragments = List(

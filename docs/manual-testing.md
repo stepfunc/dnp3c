@@ -1,6 +1,6 @@
 # Testing a device by hand
 
-The dnp3c command-line tool runs the DNP3 IED Level 2 outstation test procedures against a device, the device under test (DUT), and records the results in an HTML report. dnp3c acts as the master and connects to the DUT over TCP, or over a serial port.
+The dnp3c command-line tool runs the outstation test procedures of the DNP3 IED Certification Procedure against a device, the device under test (DUT), and records the results in an HTML report. dnp3c acts as the master and connects to the DUT over TCP, or over a serial port.
 
 Most steps are performed by dnp3c itself. Some can't be done over DNP3, such as cycling the DUT's power, generating events on its inputs, or checking that an output operated. For those, dnp3c tells you what to do and waits for you.
 
@@ -53,11 +53,11 @@ dnp3c can hold more than one revision of the certification procedure, and every 
 dnp3c -revs
 ```
 
-There are two: `2.7`, the DNP3 IED Certification Procedure, Subset Level 2, version 2.7; and `3.1r1`, Subset Levels 1, 2 and 3, version 3.1 rev 1. 3.1r1 is in progress: its tests that aren't implemented yet are skipped. 3.1r1 also has rules for every response, which every 3.1r1 test checks: a response asks for confirmation only when it carries events or another fragment follows (its Section 2, Note 7). Where 3.1r1 doesn't number a test, its id is its section's number and its place among that section's unnumbered tests, e.g. `8.6.5-2`.
+There are two: `2.7`, the DNP3 IED Certification Procedure, Subset Level 2, version 2.7; and `3.1r1`, Subset Levels 1, 2 and 3, version 3.1 rev 1. 3.1r1 also has rules for every response, which every 3.1r1 test checks: a response asks for confirmation only when it carries events or another fragment follows (its Section 2, Note 7). Where 3.1r1 doesn't number a test, its id is its section's number and its place among that section's unnumbered tests, e.g. `8.6.5-2`.
 
 ## See what will run
 
-The procedures are organized in sections: 6 (link layer), 7 (transport layer) and 8 (application layer), each with subsections. `dnp3c -rev 2.7 -help` lists the top-level sections.
+The procedures are organized in sections: 6 (link layer), 7 (transport layer) and 8 (application layer), each with subsections, and in 3.1r1 also 9 (network). `dnp3c -rev 2.7 -help` lists the top-level sections.
 
 ```
 dnp3c -rev 2.7 -config device.ini -describe 8.6       # the procedures in a section
@@ -108,7 +108,7 @@ A procedure that won't run, because the DUT lacks a feature it needs, it doesn't
 
 The report is rebuilt after every run, including runs that fail. It names the revision and the subset level, and shows every procedure: the ones you've run with their result (and, for one that was skipped, why, or for one that passed, anything it noted, such as a device that complies with IEEE 1815-2012 but not 1815-202x), and the rest as not run. To rebuild it without running anything, use `dnp3c -rev 2.7 -config device.ini -report`.
 
-The report counts only results saved under its revision and level. It lists anything else it finds at the top and leaves it out: a result saved under another revision or level, a procedure whose last run didn't finish (it has a log but no result), or procedure folders straight in the output directory from dnp3c 0.1.0, which didn't keep results by revision.
+The report counts only results saved under its revision and level. It lists anything else it finds at the top and leaves it out: a result saved under another revision or level, or a procedure whose last run didn't finish (it has a log but no result).
 
 ## Working incrementally
 

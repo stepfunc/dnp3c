@@ -13,8 +13,11 @@ import scala.util.Try
 // then its cleanup
 object Run {
 
-  def outcome(definition: ProcedureDefinition, driver: TestDriver, options: OptionSource): ProcedureOutcome =
+  def outcome(definition: ProcedureDefinition, driver: TestDriver, options: OptionSource): ProcedureOutcome = {
+    // a run skips a procedure the configuration disables, without running it
+    definition.disabledBy(options).foreach(unmet => throw new IllegalArgumentException(s"disabled: ${unmet.message}"))
     TestRunner.runSteps(TestProcedure("test", "test", definition), options, driver)
+  }
 
   def outcome(
       definition: ProcedureDefinition,

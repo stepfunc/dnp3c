@@ -108,7 +108,7 @@ class MessageFormatingTest extends AnyFunSuite with Matchers {
     val header = OneByteCountAndIndexHeader(
       Group12Var1,
       UInt8(1),
-      PrefixedPayload.applyU8(List(Prefix(UInt8(0), crob.toFixedSizeObject))))
+      PrefixedPayload.U8(List(Prefix(UInt8(0), crob.toFixedSizeObject))))
     val message = Message(Control.request(Sequence.zero), AppFunction.response, Some(IIN.empty), List(header))
     Hex.convert(message.toBytes) should equal(hex)
     Message.parse(Hex.from(hex)) should equal(message)

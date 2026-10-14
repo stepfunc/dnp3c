@@ -14,7 +14,6 @@ object Fields {
   val flagsWithBinary: FieldParser[Byte] = FieldParser.flagsWithBinary
   val flagsWithDoubleBit: FieldParser[Byte] = FieldParser.flagsWithDoubleBit
 
-  val index8: FieldParser[Byte] = FieldParser.u8x10("index")
   val index16: FieldParser[UInt16LE] = FieldParser.u16("index", false)
 
   val count8: FieldParser[Byte] = FieldParser.u8x10("count")

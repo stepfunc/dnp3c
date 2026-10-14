@@ -34,7 +34,7 @@ object OutputEvents {
       def loop(n: Int): Unit = {
         val s = seq()
         driver.writeMessage(Requests.readClass1230(s))
-        val responses = driver.readAllResponses(s, AutoConfirm.Yes, AppFunction.response)
+        val responses = driver.readAllResponses(s, AutoConfirm.Yes)
         statics = responses.flatMap(_.headers).filter(_.variation.group == group).flatMap(h =>
           h.iterate.collect { case IndexedPayloadItem(Indexed(i), p: MeasurementPoint) => i -> p }).toMap
         if (responses.exists(hasEvents)) {
@@ -406,7 +406,7 @@ object OutputEvents {
       val checks = expectSingleResponse(s1, echoes(selected)).run(driver)
       val s2 = seq()
       driver.writeMessage(Message.request(s2, AppFunction.operate, List(header)))
-      val responses = driver.readAllResponses(s2, AutoConfirm.No, AppFunction.response)
+      val responses = driver.readAllResponses(s2, AutoConfirm.No)
       responses.headOption.foreach(onOperate)
       checks
     }
@@ -504,7 +504,7 @@ object OutputEvents {
         15 --> new TestStep {
           def description: List[Comment] = List("Verify that the response has status TIMEOUT (1)")
           def run(driver: TestDriver): List[DeferredCheck] = {
-            val responses = driver.readAllResponses(s, AutoConfirm.No, AppFunction.response)
+            val responses = driver.readAllResponses(s, AutoConfirm.No)
             operateStatus = responses.headOption.map(echoedStatus).getOrElse(throw new Exception("No response"))
             if (operateStatus != CommandStatus.TIMEOUT.value)
               throw new Exception(s"Expected status TIMEOUT (1), but the response has $operateStatus")

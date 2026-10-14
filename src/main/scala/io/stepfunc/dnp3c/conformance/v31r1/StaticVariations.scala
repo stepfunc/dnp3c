@@ -203,7 +203,7 @@ object StaticVariations {
                   "If the DUT, which isn't tested at subset level 3, answers with a Null Error Response with IIN2.1 " +
                     "or IIN2.2, it passes, and the rest of the test is skipped" :: full.description
                 def run(driver: TestDriver): List[DeferredCheck] = {
-                  val responses = driver.readAllResponses(seq, AutoConfirm.Yes, AppFunction.response)
+                  val responses = driver.readAllResponses(seq, AutoConfirm.Yes)
                   if (responses.size == 1 &&
                     scala.util.Try(nullError.validate(driver.reporter, responses.head)).isSuccess) {
                     driver.reporter.note(s"the DUT answers a read of ${read.variation} with IIN2.1 or IIN2.2, as a " +

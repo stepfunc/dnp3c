@@ -142,12 +142,6 @@ object SupportOptions extends OptionGroup {
   val selfAddress: BooleanOption =
     OptionTypes.boolean(this, "selfAddress", false, "Does the DUT support link-layer self addressing?")
 
-  val noClassAssignment: BooleanOption = OptionTypes.boolean(
-    this,
-    "noClassAssignment",
-    true,
-    "Is the DUT configurable such that points can be removed from all Classes (i.e. points belong to no Class)?")
-
   val globalRemoteSupervisoryControl: BooleanOption = OptionTypes.boolean(
     this,
     "globalRemoteSupervisoryControl",
@@ -204,7 +198,6 @@ object SupportOptions extends OptionGroup {
     counterEventsQueuedPerPoint,
     multiFragmentResponses,
     selfAddress,
-    noClassAssignment,
     globalRemoteSupervisoryControl,
     individualRemoteSupervisoryControl,
     configurableFragmentSize,

@@ -199,18 +199,14 @@ trait ProcedureDefinition {
 }
 
 /**
- * A procedure as a revision's tree places it: its number and title there, its definition, the subset levels it
- * applies to if they differ from its section's, and the levels at which it's mandatory.
- *
- * @param mandatoryAt the subset levels at which the device must meet the definition's requirement: there, a device
- *                    that doesn't has an invalid configuration, rather than lacking an optional feature
+ * A procedure as a revision's tree places it: its number and title there, its definition, and the subset levels it
+ * applies to if they differ from its section's.
  */
 final class TestProcedure(
     val id: String,
     val description: String,
     val definition: ProcedureDefinition,
-    override val levels: Option[Set[Int]] = None,
-    val mandatoryAt: Set[Int] = Set.empty)
+    override val levels: Option[Set[Int]] = None)
     extends TestElement {
 
   def incomplete: Boolean = definition.incomplete
@@ -235,9 +231,8 @@ object TestProcedure {
       id: String,
       description: String,
       definition: ProcedureDefinition,
-      levels: Option[Set[Int]] = None,
-      mandatoryAt: Set[Int] = Set.empty): TestProcedure =
-    new TestProcedure(id, description, definition, levels, mandatoryAt)
+      levels: Option[Set[Int]] = None): TestProcedure =
+    new TestProcedure(id, description, definition, levels)
 
   private[api] def enabledBy(requirement: Requirement): Iterable[LabeledStep] = {
 

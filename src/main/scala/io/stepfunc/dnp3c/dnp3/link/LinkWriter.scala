@@ -4,18 +4,17 @@
 package io.stepfunc.dnp3c.dnp3.link
 
 import io.stepfunc.dnp3c.dnp3.TestReporter
-import io.stepfunc.dnp3c.protocol.parsing.{ UInt16LE, UInt8 }
+import io.stepfunc.dnp3c.protocol.parsing.UInt16LE
 
 object LinkWriter {
 
   def write(
       src: UInt16LE,
       dest: UInt16LE,
-      isMaster: Boolean,
       block: Option[Byte],
       reporter: TestReporter)(data: List[Byte])(fun: List[Byte] => Unit): Unit = {
     val control =
-      block.map(Control.apply).getOrElse(Control(isMaster, false, false, LinkFunction.UNCONFIRMED_USER_DATA))
+      block.map(Control.apply).getOrElse(Control(true, false, false, LinkFunction.UNCONFIRMED_USER_DATA))
     val frame = LinkFrame.withData(control, dest, src, data)
     reporter.transmit(frame)
     fun(frame.toBytes)

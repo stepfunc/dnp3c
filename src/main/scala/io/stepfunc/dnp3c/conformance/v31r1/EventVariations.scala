@@ -102,7 +102,7 @@ object EventVariations {
         def run(driver: TestDriver): List[DeferredCheck] =
           if (has && supported && levelThree) full.run(driver)
           else {
-            val responses = driver.readAllResponses(Sequence.one, AutoConfirm.Yes, AppFunction.response)
+            val responses = driver.readAllResponses(Sequence.one, AutoConfirm.Yes)
             val answer = responses.headOption.filter(_ => responses.size == 1)
             def answers(v: MessageValidation): Boolean =
               answer.exists(m => scala.util.Try(v.validate(driver.reporter, m)).isSuccess)

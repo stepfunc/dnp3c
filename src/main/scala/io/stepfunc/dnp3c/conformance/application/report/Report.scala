@@ -143,9 +143,8 @@ object Report {
    * The report of a revision's results at a subset level
    *
    * @param path the folder of the revision's results at the level
-   * @param notices anything else to tell the reader, e.g. results found outside the folder
    */
-  def create(path: Path, revision: Revision, level: Int, notices: List[String] = Nil): Report = {
+  def create(path: Path, revision: Revision, level: Int): Report = {
     val ignored = List.newBuilder[String]
 
     def convert(section: TestSection): Section =
@@ -181,7 +180,7 @@ object Report {
     }
 
     val sections = revision.sections.map(convert)
-    Report(revision, level, sections, notices ++ ignored.result())
+    Report(revision, level, sections, ignored.result())
   }
 
 }

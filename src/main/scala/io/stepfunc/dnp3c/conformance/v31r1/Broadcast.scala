@@ -84,7 +84,7 @@ object Broadcast {
             // anything short of a valid response with IIN1.0 calls for the second broadcast; a response that breaks
             // one of 3.1r1's rules is a failure in itself
             val first =
-              try Some(driver.readAllResponses(sequencer.now, AutoConfirm.Yes, AppFunction.response))
+              try Some(driver.readAllResponses(sequencer.now, AutoConfirm.Yes))
               catch {
                 case ex: PolicyViolation => throw ex
                 case NonFatal(ex) =>
@@ -101,7 +101,7 @@ object Broadcast {
                   send(freeze(sequencer.next()), LinkOverride.destination(allStations)).run(driver)
                   expectNoAnswer(options).run(driver)
                   send(readClass1(sequencer.next())).run(driver)
-                  driver.readAllResponses(sequencer.now, AutoConfirm.Yes, AppFunction.response)
+                  driver.readAllResponses(sequencer.now, AutoConfirm.Yes)
               }
             if (!broadcastSet(responses)) throw new Exception("Expected IIN1.0 (all stations) set in the response")
             responses.foreach(without(IIN.errors).validate(driver.reporter, _))
@@ -139,7 +139,7 @@ object Broadcast {
             // the procedure sets no limit; this one only keeps a DUT that never stops from hanging the run
             val limit = 1000
             def drained(n: Int): Unit = {
-              val responses = driver.readAllResponses(sequencer.now, AutoConfirm.Yes, AppFunction.response)
+              val responses = driver.readAllResponses(sequencer.now, AutoConfirm.Yes)
               if (responses.exists(m => m.headers.nonEmpty && m.ctrl.con.value)) {
                 if (n >= limit) throw new Exception(s"The DUT still asks for confirmation of data after $limit reads")
                 send(readClass012(sequencer.next())).run(driver)
