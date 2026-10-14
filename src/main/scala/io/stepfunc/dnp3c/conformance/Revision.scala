@@ -81,7 +81,8 @@ final class Revision private[conformance] (
 
   /**
    * Check that the configuration is one this revision can test: it gives a subset level the revision tests, and it has
-   * what the revision needs configured, whatever procedures run, and what the procedures selected need.
+   * what the revision needs configured, whatever procedures run, and what each procedure selected needs, if it will run:
+   * it's implemented, applies at that level and is enabled.
    *
    * @param selected the procedures a run will run; all of them unless given
    * @return the subset level
@@ -90,7 +91,8 @@ final class Revision private[conformance] (
   def validate(options: OptionSource, selected: Iterable[TestProcedure] = flatMapProcedures(Some(_))): Int = {
     val level = subsetLevel(options)
     // what the procedures that will run need, each problem once
-    val procedures = selected.filter(p => !p.incomplete && p.disabledBy(options).isEmpty)
+    val procedures =
+      selected.filter(p => !p.incomplete && levelsOf(p).contains(level) && p.disabledBy(options).isEmpty)
     val problems =
       (configurationProblems(options) ++ procedures.flatMap(_.definition.configurationProblems(options))).distinct
     if (problems.nonEmpty) throw new ConfigurationException("configuration", problems)
