@@ -22,13 +22,13 @@ import io.stepfunc.dnp3c.dnp3.{ Comment, DeferredCheck, MessageValidation, Reque
 object StaticInputs {
 
   /**
-   * 8.13.2-1, 8.16.1.2.1, 8.16.2.2.1 and 8.18.2-1: a subset level 1 device that can't read the inputs answers each read
+   * 8.13.2a, 8.16.1.2.1, 8.16.2.2.1 and 8.18.2a: a subset level 1 device that can't read the inputs answers each read
    * of them with a Null Error Response, IIN2.0, 2.1 or 2.2, which is noted. (8.16.1.2.1 accepts "any error
    * indication", which these are.)
    *
    * @param variations what it reads, one request each: 8.16.1.2.1 reads g20v0 and g20v1
    * @param condition whether step 1 states the condition the test runs on, as 8.16.1.2.1 and 8.16.2.2.1 do
-   * @param events whether it's the input's events the device can't read, as in 8.14.2-1, 8.17.2-1 and 8.19.2-1, not
+   * @param events whether it's the input's events the device can't read, as in 8.14.2a, 8.17.2a and 8.19.2a, not
    *               its points
    * @param lastStep the last step's text, where it isn't that no further tests of the points or events apply
    */
@@ -76,7 +76,7 @@ object StaticInputs {
     }
   }
 
-  /** 8.13.2-2: a device without the inputs answers a read of them with an error response, IIN2.1 or IIN2.2 */
+  /** 8.13.2b: a device without the inputs answers a read of them with an error response, IIN2.1 or IIN2.2 */
   final class WithoutInputs(input: InputOptions, variation: Variation) extends ProcedureDefinition {
     override protected def requirement: Requirement =
       Requirement.all(!input.points, OptionCondition(input.reads))
@@ -87,8 +87,8 @@ object StaticInputs {
   }
 
   /**
-   * 8.16.1.2.2, 8.16.2.2.2 and 8.18.2-2: a device without the points answers a read of them with a Null Error Response,
-   * IIN2.1 or IIN2.2 (8.13.2-2 allows an Error Response with data)
+   * 8.16.1.2.2, 8.16.2.2.2 and 8.18.2b: a device without the points answers a read of them with a Null Error Response,
+   * IIN2.1 or IIN2.2 (8.13.2b allows an Error Response with data)
    */
   final class WithoutPoints(input: InputOptions, variation: Variation) extends ProcedureDefinition {
     override protected def requirement: Requirement =
@@ -99,7 +99,7 @@ object StaticInputs {
     )
   }
 
-  /** 8.13.2-4 and 8.16.1.2.4: with every point uninstalled or disabled, a read gets a Null Error Response with IIN2.1 or IIN2.2 */
+  /** 8.13.2d and 8.16.1.2.4: with every point uninstalled or disabled, a read gets a Null Error Response with IIN2.1 or IIN2.2 */
   final class Configurable(
       input: InputOptions,
       points: String,

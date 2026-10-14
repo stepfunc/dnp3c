@@ -57,7 +57,7 @@ object Broadcast {
   private def readClass1(seq: Sequence): Message = Requests.readClass1(seq)
 
   /**
-   * 8.6.5-1: the broadcast to 0xFFFF asks for a link layer confirmation. A DUT that doesn't act on it, as a broadcast
+   * 8.6.5a: the broadcast to 0xFFFF asks for a link layer confirmation. A DUT that doesn't act on it, as a broadcast
    * should only be sent as unconfirmed user data (TB2013-002), gets it again without one (step 5).
    */
   val allStationsIndication: ProcedureDefinition = new ProcedureDefinition {
@@ -115,7 +115,7 @@ object Broadcast {
   }
 
   /**
-   * 8.6.5-2: broadcasts as unconfirmed user data, to 0xFFFE, which has the DUT ask for its response with IIN1.0 to be
+   * 8.6.5b: broadcasts as unconfirmed user data, to 0xFFFE, which has the DUT ask for its response with IIN1.0 to be
    * confirmed and keep IIN1.0 until it is, and to 0xFFFD, which has it not ask
    */
   val confirmedResponseOptions: ProcedureDefinition = new ProcedureDefinition {

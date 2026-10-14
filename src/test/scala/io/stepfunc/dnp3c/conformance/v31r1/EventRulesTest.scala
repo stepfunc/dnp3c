@@ -102,14 +102,14 @@ class EventRulesTest extends AnyFunSuite with Matchers {
     Revisions.v3_1r1.validate(level, procedures(linkLayer)) should equal(2)
   }
 
-  test("8.14.2-13 needs the manufacturer's time to an unsynchronized clock, where its third phase runs") {
+  test("8.14.2m needs the manufacturer's time to an unsynchronized clock, where its third phase runs") {
     val base = Map(
       OutstationOptions.subsetLevel.id -> "2",
       BinaryInputOptions.defaultEventVariation.id -> "1",
       io.stepfunc.dnp3c.conformance.api.options.DoubleBitInputOptions.defaultEventVariation.id -> "1"
     )
     val test =
-      List(Revisions.v3_1r1.elements("8.14.2-13").asInstanceOf[io.stepfunc.dnp3c.conformance.api.TestProcedure])
+      List(Revisions.v3_1r1.elements("8.14.2m").asInstanceOf[io.stepfunc.dnp3c.conformance.api.TestProcedure])
     an[ConfigurationException] should be thrownBy Revisions.v3_1r1.validate(Options.from(base), test)
     Revisions.v3_1r1.validate(
       Options.from(base + (TimeSyncOptions.timeToUnsynchronizedMs.id -> "0") +

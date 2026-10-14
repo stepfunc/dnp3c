@@ -37,10 +37,10 @@ class Revision31r1Test extends AnyFunSuite with Matchers {
   test("8.6.4 runs TB2017-001's tests with 3.1r1's step numbers") {
     val options = Options.from(Map())
     def labels(id: String) = procedure(id).configure(options).steps.map(_.label).toList
-    labels("8.6.4-1").filter(_.startsWith("step")).head should equal("step: 1.1")
-    labels("8.6.4-1").last should equal("step: 1.18")
-    labels("8.6.4-2").filter(_.startsWith("step")).head should equal("step: 2")
-    labels("8.6.4-2").last should equal("step: 23")
+    labels("8.6.4a").filter(_.startsWith("step")).head should equal("step: 1.1")
+    labels("8.6.4a").last should equal("step: 1.18")
+    labels("8.6.4b").filter(_.startsWith("step")).head should equal("step: 2")
+    labels("8.6.4b").last should equal("step: 23")
     // 2.7 runs the same test, numbered as TB2017-001 numbers it
     Revisions.v2_7.elements("8.6.4.2").asInstanceOf[TestProcedure].configure(options).steps.map(_.label).last should
       equal("step: 1.r")
@@ -54,8 +54,8 @@ class Revision31r1Test extends AnyFunSuite with Matchers {
   }
 
   test("the same definition can have a different number in each revision") {
-    // 2.7's 8.11.2.6 is 3.1r1's 8.11.2-5: 3.1r1 doesn't number it
-    procedure("8.11.2-5").definition should be theSameInstanceAs
+    // 2.7's 8.11.2.6 is 3.1r1's 8.11.2e: 3.1r1 doesn't number it
+    procedure("8.11.2e").definition should be theSameInstanceAs
       Revisions.v2_7
         .elements("8.11.2.6")
         .asInstanceOf[TestProcedure]
@@ -63,8 +63,8 @@ class Revision31r1Test extends AnyFunSuite with Matchers {
   }
 
   test("unnumbered tests are named by section and place, and the double-bit tests by the test they follow") {
-    procedure("8.6.5-2").description should include("Confirmed Response Options")
-    procedure("8.22-8.14.2-3").description should include("double-bit")
+    procedure("8.6.5b").description should include("Confirmed Response Options")
+    procedure("8.22c").description should include("Double-bit")
   }
 
   test("a test keeps the number 3.1r1 gives it in its text, even without an anchor of its own") {
@@ -78,7 +78,7 @@ class Revision31r1Test extends AnyFunSuite with Matchers {
   }
 
   test("the unsolicited class tests share 2.7's, under 3.1r1's rule that an unsolicited response carries only events") {
-    procedure("8.11.2-2").definition should be theSameInstanceAs v27.Procedure8_11_2_2
+    procedure("8.11.2b").definition should be theSameInstanceAs v27.Procedure8_11_2_2
     revision.policies should contain(v31r1.Rules.unsolicitedOnlyEvents)
   }
 
@@ -88,7 +88,7 @@ class Revision31r1Test extends AnyFunSuite with Matchers {
   }
 
   test("tests that apply at some levels only say so; the rest apply at every level") {
-    revision.levelsOf(procedure("8.13.2-1")) should equal(Set(1))
+    revision.levelsOf(procedure("8.13.2a")) should equal(Set(1))
     revision.levelsOf(procedure("8.26.3")) should equal(Set(3))
     revision.levelsOf(procedure("6.1.2")) should equal(Set(1, 2, 3))
   }

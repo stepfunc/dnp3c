@@ -31,7 +31,7 @@ class CounterAnalogEventsTest extends AnyFunSuite with Matchers {
     lastStep(CounterAnalogEvents.analogChange) should equal("15")
   }
 
-  test("8.17.2-3 leaves the first response with the events unconfirmed, which 2.7 confirms") {
+  test("8.17.2c leaves the first response with the events unconfirmed, which 2.7 confirms") {
     lastStep(v27.Procedure8_17_2_2) should equal("16")
     lastStep(CounterAnalogEvents.counterAll) should equal("17")
     describes(v27.Procedure8_17_2_2, "8 to 12") should include("Confirm each response")

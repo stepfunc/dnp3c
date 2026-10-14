@@ -16,7 +16,7 @@ import org.scalatestplus.junit.JUnitRunner
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.funsuite.AnyFunSuite
 
-// 3.1r1's 6.6.2-4: an application layer confirm to another address, then with no gap a READ to the DUT
+// 3.1r1's 6.6.2d: an application layer confirm to another address, then with no gap a READ to the DUT
 @RunWith(classOf[JUnitRunner])
 class NoInterFrameGapTest extends AnyFunSuite with Matchers {
 

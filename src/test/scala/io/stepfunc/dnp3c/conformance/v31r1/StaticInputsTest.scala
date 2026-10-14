@@ -32,19 +32,19 @@ class StaticInputsTest extends AnyFunSuite with Matchers {
       Run.passes(procedure, dut, options))
   }
 
-  test("8.13.2-2: a device without binary inputs answers with IIN2.1 or IIN2.2, not a Null Response") {
+  test("8.13.2b: a device without binary inputs answers with IIN2.1 or IIN2.2, not a Null Response") {
     val none = Options.from(Map(Inputs.binary.points.id -> "false"))
     passes(StaticInputs.binaryWithout, none, IIN.OBJECT_UNKNOWN) should equal(true)
     passes(StaticInputs.binaryWithout, none, IIN.PARAM_ERROR) should equal(true)
     passes(StaticInputs.binaryWithout, none, IIN.empty) should equal(false)
   }
 
-  test("8.13.2-4: with the binary inputs uninstalled, a Null Error Response with IIN2.1 or IIN2.2") {
+  test("8.13.2d: with the binary inputs uninstalled, a Null Error Response with IIN2.1 or IIN2.2") {
     passes(StaticInputs.binaryConfigurable, Options.from(Map()), IIN.OBJECT_UNKNOWN) should equal(true)
     passes(StaticInputs.binaryConfigurable, Options.from(Map()), IIN.empty) should equal(false)
   }
 
-  test("8.13.2-1 runs for a level 1 device that can't read binary inputs, and 8.13.2-3 doesn't") {
+  test("8.13.2a runs for a level 1 device that can't read binary inputs, and 8.13.2c doesn't") {
     val noReads = Options.from(Map(Inputs.binary.reads.id -> "false"))
     StaticInputs.binaryLevelOne.disabledBy(noReads) should equal(None)
     StaticInputs.binaryHas.disabledBy(noReads) should not equal None
@@ -81,7 +81,7 @@ class StaticInputsTest extends AnyFunSuite with Matchers {
     passes(StaticInputs.counterLevelOne, noReads, IIN.empty) should equal(false)
   }
 
-  test("8.20.2-1 runs where the DUT can read none of its input types on their own, and 8.20.2-2 elsewhere") {
+  test("8.20.2a runs where the DUT can read none of its input types on their own, and 8.20.2b elsewhere") {
     val inputs = List(Inputs.binary, Inputs.doubleBit, Inputs.counter, Inputs.frozenCounter, Inputs.analog)
     // and no output statuses, which can always be read
     val outputs = List(SupportOptions.Outputs.binary.statusPoints, SupportOptions.Outputs.analog.statusPoints)
@@ -102,7 +102,7 @@ class StaticInputsTest extends AnyFunSuite with Matchers {
     passes(MultipleReads.levelOne, noReads, IIN.empty) should equal(false)
   }
 
-  test("8.20.2-2 asks only that events come before static objects, and requests only what the DUT can read") {
+  test("8.20.2b asks only that events come before static objects, and requests only what the DUT can read") {
     def describes(procedure: ProcedureDefinition, options: Options): String =
       procedure.configure(options).steps.flatMap(_.step.description).mkString("\n")
     val level2 = Options.from(Map(OutstationOptions.subsetLevel.id -> "2"))

@@ -57,25 +57,25 @@ class BroadcastTest extends AnyFunSuite with Matchers {
     Console.withIn(new StringReader(""))(
       Run.passes(procedure, dut))
 
-  test("8.6.5-1 passes an outstation that acts on a broadcast sent as confirmed user data") {
+  test("8.6.5a passes an outstation that acts on a broadcast sent as confirmed user data") {
     passes(Broadcast.allStationsIndication, new Outstation(actsOnConfirmed = true)) should equal(true)
   }
 
-  test("8.6.5-1 passes one that acts only on unconfirmed user data, by sending the broadcast again (step 5)") {
+  test("8.6.5a passes one that acts only on unconfirmed user data, by sending the broadcast again (step 5)") {
     passes(Broadcast.allStationsIndication, new Outstation(actsOnConfirmed = false)) should equal(true)
   }
 
-  test("8.6.5-1 fails a response with IIN1.0 that also has an error bit") {
+  test("8.6.5a fails a response with IIN1.0 that also has an error bit") {
     passes(
       Broadcast.allStationsIndication,
       new Outstation(actsOnConfirmed = true, errors = IIN.FUNC_NOT_SUPPORTED)) should equal(false)
   }
 
-  test("8.6.5-2 passes an outstation that asks for confirmation after 0xFFFE, and not after 0xFFFD") {
+  test("8.6.5b passes an outstation that asks for confirmation after 0xFFFE, and not after 0xFFFD") {
     passes(Broadcast.confirmedResponseOptions, new Outstation(actsOnConfirmed = false)) should equal(true)
   }
 
-  test("8.6.5-2 fails one that doesn't ask for confirmation after 0xFFFE") {
+  test("8.6.5b fails one that doesn't ask for confirmation after 0xFFFE") {
     passes(Broadcast.confirmedResponseOptions, new Outstation(actsOnConfirmed = true, confirmFFFE = false)) should
       equal(false)
   }

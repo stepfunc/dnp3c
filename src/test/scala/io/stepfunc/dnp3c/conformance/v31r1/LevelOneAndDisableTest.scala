@@ -36,7 +36,7 @@ class LevelOneAndDisableTest extends AnyFunSuite with Matchers {
 
   private val levelOne = Options.from(Map(Inputs.binary.eventReads.id -> "false"))
 
-  test("8.14.2-1: a level 1 device that can't read events answers with an error IIN, which the result notes") {
+  test("8.14.2a: a level 1 device that can't read events answers with an error IIN, which the result notes") {
     val (passed, notes, _) = run(InputEvents.binaryLevelOne, levelOne, IIN.OBJECT_UNKNOWN)
     passed should equal(true)
     notes.head should include("ObjectUnknown")
@@ -44,7 +44,7 @@ class LevelOneAndDisableTest extends AnyFunSuite with Matchers {
     run(InputEvents.binaryLevelOne, levelOne, IIN.empty)._1 should equal(false)
   }
 
-  test("8.14.2-1 runs only for a device that can't read events") {
+  test("8.14.2a runs only for a device that can't read events") {
     InputEvents.binaryLevelOne.disabledBy(Options.from(Map())) should not equal None
     InputEvents.binaryLevelOne.disabledBy(levelOne) should equal(None)
   }

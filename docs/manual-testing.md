@@ -53,7 +53,7 @@ dnp3c can hold more than one revision of the certification procedure, and every 
 dnp3c -revs
 ```
 
-There are two: `2.7`, the DNP3 IED Certification Procedure, Subset Level 2, version 2.7; and `3.1r1`, Subset Levels 1, 2 and 3, version 3.1 rev 1. 3.1r1 also has rules for every response, which every 3.1r1 test checks: a response asks for confirmation only when it carries events or another fragment follows (its Section 2, Note 7). Where 3.1r1 doesn't number a test, its id is its section's number and its place among that section's unnumbered tests, e.g. `8.6.5-2`.
+There are two: `2.7`, the DNP3 IED Certification Procedure, Subset Level 2, version 2.7; and `3.1r1`, Subset Levels 1, 2 and 3, version 3.1 rev 1. 3.1r1 also has rules for every response, which every 3.1r1 test checks: a response asks for confirmation only when it carries events or another fragment follows (its Section 2, Note 7). Where 3.1r1 doesn't number a test, its id is its section's number followed by a letter for its place among the section's unnumbered tests, e.g. `8.6.5b` for the second.
 
 ## See what will run
 

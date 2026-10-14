@@ -52,7 +52,7 @@ class ClassDataTest extends AnyFunSuite with Matchers {
 
   test("the tests whose steps are 2.7's share its definitions") {
     def definition(id: String) = Revisions.v3_1r1.elements(id).asInstanceOf[TestProcedure].definition
-    definition("8.5.1-1") should be theSameInstanceAs v27.Procedure8_5_1_2
+    definition("8.5.1a") should be theSameInstanceAs v27.Procedure8_5_1_2
     definition("8.5.3.2.4") should be theSameInstanceAs v27.Procedure8_5_3_2_4
     definition("8.5.5.2.2") should be theSameInstanceAs v27.Procedure8_5_5_2_2
   }

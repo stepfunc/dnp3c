@@ -85,9 +85,21 @@ class ProcedureConfigurationTest extends AnyFunSuite with Matchers {
 
   test("every element's id extends its parent's") {
     def check(parent: TestElement): Unit = parent.subElements.foreach { child =>
-      // a numbered child extends its parent's number with "."; one that 3.1r1 doesn't number, with "-"
-      List(parent.id + ".", parent.id + "-").exists(child.id.startsWith) should equal(true)
+      // a numbered child extends its parent's number with "."; one that 3.1r1 doesn't number, with a letter
+      (child.id.startsWith(parent.id + ".") || unnumbered(parent, child)) should equal(true)
       check(child)
+    }
+    Revisions.list.foreach(_.sections.foreach(check))
+  }
+
+  private def unnumbered(parent: TestElement, child: TestElement): Boolean =
+    child.id.length == parent.id.length + 1 && child.id.startsWith(parent.id) && child.id.last.isLower
+
+  test("a section's unnumbered tests are lettered a, b, c and on, in order, which is enough for every section") {
+    def check(section: TestElement): Unit = {
+      val letters = section.subElements.filter(unnumbered(section, _)).map(_.id.last).toList
+      letters should equal(('a' to 'z').take(letters.size).toList)
+      section.subElements.foreach(check)
     }
     Revisions.list.foreach(_.sections.foreach(check))
   }
