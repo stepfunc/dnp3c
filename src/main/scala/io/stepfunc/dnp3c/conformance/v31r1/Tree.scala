@@ -63,6 +63,17 @@ object Tree {
     val analogOutputStatus = new RangeTests(PointRanges.analogOutputStatus)
   }
 
+  // 8.24's test of each point type
+  private object staticVariations {
+    val binaryInputs: ProcedureDefinition = StaticVariations.test(StaticVariations.binaryInputs)
+    val doubleBitInputs: ProcedureDefinition = StaticVariations.test(StaticVariations.doubleBitInputs)
+    val binaryOutputStatus: ProcedureDefinition = StaticVariations.test(StaticVariations.binaryOutputStatus)
+    val counters: ProcedureDefinition = StaticVariations.test(StaticVariations.counters)
+    val frozenCounters: ProcedureDefinition = StaticVariations.test(StaticVariations.frozenCounters)
+    val analogInputs: ProcedureDefinition = StaticVariations.test(StaticVariations.analogInputs)
+    val analogOutputStatus: ProcedureDefinition = StaticVariations.test(StaticVariations.analogOutputStatus)
+  }
+
   val sections: List[TestSection] = List(
     section("6", "Link Layer")(
       section("6.1", "Reset Link and Passive Confirm support")(
@@ -568,13 +579,13 @@ object Tree {
       ),
       section("8.24", "Specific variations for Static Inputs")(
         section("8.24.2", "Test Procedure")(
-          notYet("8.24.2-1", "Binary Inputs"),
-          notYet("8.24.2-2", "Double-Bit Binary Inputs"),
-          notYet("8.24.2-3", "Binary Output Status"),
-          notYet("8.24.2-4", "Counters"),
-          notYet("8.24.2-5", "Frozen Counters"),
-          notYet("8.24.2-6", "Analog Inputs"),
-          notYet("8.24.2-7", "Analog Output Status")
+          test("8.24.2-1", "Binary Inputs", staticVariations.binaryInputs),
+          test("8.24.2-2", "Double-Bit Binary Inputs", staticVariations.doubleBitInputs),
+          test("8.24.2-3", "Binary Output Status", staticVariations.binaryOutputStatus),
+          test("8.24.2-4", "Counters", staticVariations.counters),
+          test("8.24.2-5", "Frozen Counters", staticVariations.frozenCounters),
+          test("8.24.2-6", "Analog Inputs", staticVariations.analogInputs),
+          test("8.24.2-7", "Analog Output Status", staticVariations.analogOutputStatus)
         )
       ),
       section("8.25", "Specific Variations for Events")(

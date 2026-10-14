@@ -31,6 +31,13 @@ object AnalogOutputOptions extends OptionGroup {
     false,
     "Does the DUT accept 32-bit analog output commands (g41v1)? Subset level 3 requires it"
   )
+  val statusOnly32Bit: IndexListOption = OptionTypes.indexList(
+    this,
+    "status.only32Bit",
+    "Analog output status points the DUT keeps and reports only as 32-bit values, which 3.1r1's 8.24 accepts in a " +
+      "32-bit variation where a 16-bit one is requested. Empty for none",
+    Nil
+  )
   val index32Bit: OptionalIndexOption = OptionTypes.optionalIndex(
     this,
     "index32Bit",
@@ -41,7 +48,7 @@ object AnalogOutputOptions extends OptionGroup {
   def prefix: String = "analogOutput"
   def description: String = "Options related to analog outputs (g41)"
   def options: List[TestOption] = uninstalledIndex :: installedPoints :: maxAnalogOutputsInSingleRequest ::
-    commands32Bit :: index32Bit ::
+    commands32Bit :: index32Bit :: statusOnly32Bit ::
     primary.options ::: alternate.options
 
   case class Options(group: OptionGroup, id: String, defaultIndex: Index, defaultValue: Int) {
