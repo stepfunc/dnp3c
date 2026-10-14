@@ -116,6 +116,9 @@ final case class NetworkSetup(
   }
 }
 
+/** A DUT's collision avoidance delays: a backoff is the fixed delay plus a random one of up to maxRandomMs */
+final case class CollisionDelays(fixedMs: Int, maxRandomMs: Int)
+
 /** A DUT's delays between raising carrier (RTS) and transmitting, and between transmitting and dropping it */
 final case class RtsDelays(beforeMs: Int, afterMs: Int)
 
@@ -271,6 +274,9 @@ trait IntegrationPlugin {
   // restores the DUT's usual network setup, the one it had when the procedure started (3.1r1's section 9)
   def restoreNetwork(reporter: PluginReporter): Unit =
     throw new UnsupportedOperationException("this plugin doesn't implement restoreNetwork")
+  // sets the DUT's collision avoidance delays, or restores its usual ones (3.1r1's 8.12.2)
+  def setCollisionDelays(reporter: PluginReporter, delays: Option[CollisionDelays]): Unit =
+    throw new UnsupportedOperationException("this plugin doesn't implement setCollisionDelays")
   // sets the DUT's RTS delays, or restores its usual ones (3.1r1's 8.10.2)
   def setRtsDelays(reporter: PluginReporter, delays: Option[RtsDelays]): Unit =
     throw new UnsupportedOperationException("this plugin doesn't implement setRtsDelays")

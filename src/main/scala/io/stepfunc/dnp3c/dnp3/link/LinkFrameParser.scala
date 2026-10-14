@@ -110,8 +110,35 @@ class LinkFrameParser(channel: ReadableChannel, clock: Clock) {
   private val received = mutable.ArrayBuffer.empty[Byte]
   private val buffer = ByteBuffer.allocate(if (channel.datagrams) 65535 else 4096)
 
-  // the frames of the last datagram not yet read
-  private val frames = mutable.Queue.empty[LinkFrame]
+  // the frames of the last datagram not yet read, each with when its first byte arrived
+  private val frames = mutable.Queue.empty[(LinkFrame, Long)]
+
+  // when the received bytes arrived: how many came in each read, and the clock's time then, in nanoseconds
+  private val arrivals = mutable.Queue.empty[(Int, Long)]
+
+  // when the first byte of the last frame read arrived, by the clock, in nanoseconds
+  private var frameStart = 0L
+
+  /** when the first byte of the frame the last read returned arrived, by the clock, in nanoseconds */
+  def lastFrameStart: Long = frameStart
+
+  // drops the first count received bytes, and returns when the first of them arrived
+  private def consume(count: Int): Long = {
+    val first = arrivals.headOption.map(_._2).getOrElse(clock.nanoTime())
+    received.remove(0, count)
+    var left = count
+    while (left > 0 && arrivals.nonEmpty) {
+      val (n, at) = arrivals.dequeue()
+      if (n > left) arrivals.prepend((n - left, at))
+      left -= n
+    }
+    first
+  }
+
+  private def clearReceived(): Unit = {
+    received.clear()
+    arrivals.clear()
+  }
 
   // the next frame, read until one arrives or the timeout runs out; a frame can arrive over several reads, unless the
   // channel's reads are datagrams
@@ -126,16 +153,15 @@ class LinkFrameParser(channel: ReadableChannel, clock: Clock) {
     @tailrec
     def decodeAll(): Unit = LinkFrameParser.decode(received, reporter) match {
       case LinkFrameParser.Decoded.Frame(frame, length) =>
-        received.remove(0, length)
-        frames.enqueue(frame)
+        frames.enqueue((frame, consume(length)))
         decodeAll()
       case LinkFrameParser.Decoded.Skip(count) =>
-        received.remove(0, count)
+        consume(count)
         decodeAll()
       case LinkFrameParser.Decoded.Incomplete =>
         if (received.nonEmpty) {
           val count = received.size
-          received.clear()
+          clearReceived()
           frames.clear()
           throw new Exception(
             s"A datagram from the DUT ends with $count byte(s) of a link frame that doesn't end there")
@@ -145,7 +171,8 @@ class LinkFrameParser(channel: ReadableChannel, clock: Clock) {
     @tailrec
     def next(): Option[LinkFrame] =
       if (frames.nonEmpty) {
-        val frame = frames.dequeue()
+        val (frame, start) = frames.dequeue()
+        frameStart = start
         reporter.receive(frame)
         Some(frame)
       } else {
@@ -165,11 +192,11 @@ class LinkFrameParser(channel: ReadableChannel, clock: Clock) {
     @tailrec
     def next(): Option[LinkFrame] = LinkFrameParser.decode(received, reporter) match {
       case LinkFrameParser.Decoded.Frame(frame, length) =>
-        received.remove(0, length)
+        frameStart = consume(length)
         reporter.receive(frame)
         Some(frame)
       case LinkFrameParser.Decoded.Skip(count) =>
-        received.remove(0, count)
+        consume(count)
         next()
       case LinkFrameParser.Decoded.Incomplete =>
         val left = clock.msLeft(deadline)
@@ -187,6 +214,7 @@ class LinkFrameParser(channel: ReadableChannel, clock: Clock) {
       catch { case _: SocketTimeoutException => 0 }
     if (num < 0) throw new EOFException("The DUT closed the connection")
     buffer.flip()
+    if (buffer.hasRemaining) arrivals.enqueue((buffer.remaining(), channel.lastReadAt.getOrElse(clock.nanoTime())))
     while (buffer.hasRemaining) received += buffer.get()
     num > 0
   }

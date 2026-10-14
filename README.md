@@ -53,7 +53,8 @@ The library jar, `io.stepfunc:dnp3c`, is published to Maven Central. See [Automa
 
 ## Known limitations
 
-- **Not implemented:** 8.12.2 (collision avoidance), and in 2.7, 8.10.2 (multi-drop support). The report shows them struck through.
+- **Not implemented** in 2.7: 8.10.2 (multi-drop support) and 8.12.2 (collision avoidance). The report shows them struck through.
+- **3.1r1's 8.12.2** (collision avoidance) runs over serial, and times the device's answers on the host running dnp3c: from the end of the noise (when a write starts plus its bytes' time on the line, or when the write returns, if later) to when the adapter hands over the answer's first byte, which a thread reading the port all the time records. A USB serial adapter adds latency both ways, e.g. an FTDI adapter's latency timer, 16 ms unless set lower, so `serial.timingToleranceMs` must allow for it, and the test means most where the device's delays are long beside it.
 - **3.1r1's 8.10.2** (multi-drop support) runs over serial, with the DUT on a drop with other devices (`serial.otherDevices`). The tool checks what the DUT sends; whether it raised carrier or asserted RTS, and when, the plugin checks on the line, e.g. by asking the tester to read an oscilloscope.
 - **Report by exception** isn't verified: where a procedure requires a device whose class 0 response spans several link frames to also report by exception, the log notes it but the tool doesn't check it.
 - **8.11.2.5.8** covers a device that holds unsolicited responses until it has a minimum number of events, not one that holds them for a time.

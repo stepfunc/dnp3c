@@ -58,8 +58,84 @@ object SerialOptions extends OptionGroup {
       "where they aren't configurable"
   )
 
-  def options: List[TestOption] =
-    List(enabled, port, baudRate, dataBits, parity, stopBits, multiDrop, otherDevices, rtsDelays)
+  val collisionAvoidance: BooleanOption = OptionTypes.boolean(
+    this,
+    "collisionAvoidance",
+    false,
+    "Does the DUT's Device Profile claim collision avoidance? 3.1r1's 8.12.2 tests it over serial, timing its " +
+      "responses against noise on the line"
+  )
+
+  val collisionDetection: StringOption = OptionTypes.choice(
+    this,
+    "collisionDetection",
+    "data",
+    "How the DUT tells the line is in use: by the data on it, or by carrier (DCD), which the harness drives with RTS " +
+      "while it sends noise",
+    List("data", "carrier")
+  )
+
+  val fixedDelayMs: IntegerOption = OptionTypes.integer(
+    this,
+    "fixedDelayMs",
+    0,
+    "The DUT's collision avoidance fixed delay, in ms, as it's set for 3.1r1's 8.12.2",
+    Some(0),
+    None)
+
+  val maxRandomDelayMs: IntegerOption = OptionTypes.integer(
+    this,
+    "maxRandomDelayMs",
+    0,
+    "The DUT's collision avoidance maximum random delay, in ms, as it's set for 3.1r1's 8.12.2",
+    Some(0),
+    None)
+
+  val otherFixedDelayMs: IntegerOption = OptionTypes.integer(
+    this,
+    "otherFixedDelayMs",
+    0,
+    "A different fixed delay, in ms, that 3.1r1's 8.12.2 sets the DUT to at step 10, with serial.otherMaxRandomDelayMs",
+    Some(0),
+    None
+  )
+
+  val otherMaxRandomDelayMs: IntegerOption = OptionTypes.integer(
+    this,
+    "otherMaxRandomDelayMs",
+    0,
+    "A different maximum random delay, in ms, that 3.1r1's 8.12.2 sets the DUT to at step 10",
+    Some(0),
+    None)
+
+  val timingToleranceMs: IntegerOption = OptionTypes.integer(
+    this,
+    "timingToleranceMs",
+    20,
+    "How far a time measured on the serial line may be off, in ms: what the adapter adds, e.g. a USB adapter's " +
+      "latency timer, both ways. 3.1r1's 8.12.2 allows it on each delay it measures",
+    Some(0),
+    None
+  )
+
+  def options: List[TestOption] = List(
+    enabled,
+    port,
+    baudRate,
+    dataBits,
+    parity,
+    stopBits,
+    multiDrop,
+    otherDevices,
+    rtsDelays,
+    collisionAvoidance,
+    collisionDetection,
+    fixedDelayMs,
+    maxRandomDelayMs,
+    otherFixedDelayMs,
+    otherMaxRandomDelayMs,
+    timingToleranceMs
+  )
 
   def settings(source: OptionSource): SerialSettings = SerialSettings(
     source.get(port),

@@ -4,6 +4,7 @@
 package io.stepfunc.dnp3c.protocol.channel
 
 import java.nio.ByteBuffer
+import java.util.concurrent.{ LinkedBlockingQueue, TimeUnit }
 
 import com.fazecast.jSerialComm.SerialPort
 
@@ -19,7 +20,10 @@ final case class SerialSettings(port: String, baudRate: Int, dataBits: Int, pari
   def describe: String = s"$port, $baudRate baud, $dataBits data bits, parity $parity, $stopBits stop bit(s)"
 }
 
-/** Talks to the DUT over a serial port */
+/**
+ * Talks to the DUT over a serial port. A thread reads the port all the time, so that each byte's arrival is timed when
+ * it comes, whatever the harness is doing, e.g. writing; reads take what it has read.
+ */
 final class SerialChannel private (port: SerialPort) extends ReadableWritableChannel {
 
   private def name: String = port.getSystemPortName
@@ -28,7 +32,38 @@ final class SerialChannel private (port: SerialPort) extends ReadableWritableCha
   private def failed(what: String): Nothing =
     throw new BenchException(s"$what serial port $name failed (error ${port.getLastErrorCode})", null)
 
-  // writes everything, failing if the port takes nothing for writeStallMs: jSerialComm can report an error as 0
+  // what the reader has read, with when it arrived, by System.nanoTime
+  private val chunks = new LinkedBlockingQueue[(Array[Byte], Long)]()
+  // the rest of a chunk that a read's buffer had no room for
+  private var leftover: Option[(Array[Byte], Long)] = None
+  @volatile private var running = true
+  @volatile private var readFailed = false
+  private var arrival: Option[Long] = None
+
+  private val reader = new Thread(
+    () => {
+      val bytes = new Array[Byte](4096)
+      try
+        while (running) {
+          val n = port.readBytes(bytes, bytes.length)
+          if (n < 0) {
+            if (running) readFailed = true
+            running = false
+          } else if (n > 0) chunks.put((bytes.take(n), System.nanoTime()))
+        }
+      catch {
+        case _: Throwable =>
+          if (running) readFailed = true
+          running = false
+      }
+    },
+    s"dnp3c serial reader ($name)"
+  )
+  reader.setDaemon(true)
+  reader.start()
+
+  // writes everything, returning once it's sent; fails if the port takes nothing for writeStallMs, as jSerialComm can
+  // report an error as 0
   override def write(buffer: ByteBuffer): Unit = {
     val bytes = new Array[Byte](buffer.remaining())
     buffer.get(bytes)
@@ -44,36 +79,40 @@ final class SerialChannel private (port: SerialPort) extends ReadableWritableCha
     }
   }
 
-  // what arrives within the timeout; 0 if nothing does. jSerialComm rounds a timeout to tenths of a second, and on
-  // Linux wraps one over 25.5 s, so the wait is made of bounded slices until the deadline.
+  // what arrives within the timeout; 0 if nothing does
   override def read(buffer: ByteBuffer, timeoutMs: Int): Int = {
-    val deadline = System.nanoTime() + timeoutMs * 1000000L
-    val bytes = new Array[Byte](buffer.remaining())
-    var n = 0
-    var left = timeoutMs.toLong
-    while (n == 0 && left > 0) {
-      val slice = math.min(math.max(left, SerialChannel.minSliceMs), SerialChannel.maxSliceMs).toInt
-      port.setComPortTimeouts(SerialPort.TIMEOUT_READ_SEMI_BLOCKING | SerialPort.TIMEOUT_WRITE_BLOCKING, slice, 0)
-      n = port.readBytes(bytes, bytes.length)
-      if (n < 0) failed("Reading from")
-      left = (deadline - System.nanoTime()) / 1000000L
+    val next = leftover.orElse(Option(chunks.poll(math.max(timeoutMs, 0).toLong, TimeUnit.MILLISECONDS)))
+    leftover = None
+    next match {
+      case None =>
+        if (readFailed) failed("Reading from")
+        0
+      case Some((bytes, at)) =>
+        val n = math.min(bytes.length, buffer.remaining())
+        buffer.put(bytes, 0, n)
+        if (n < bytes.length) leftover = Some((bytes.drop(n), at))
+        arrival = Some(at)
+        n
     }
-    buffer.put(bytes, 0, n)
-    n
   }
+
+  override def lastReadAt: Option[Long] = arrival
 
   // asserts or clears RTS, which the DUT may see as carrier (DCD)
   def setRts(asserted: Boolean): Unit =
     if (!(if (asserted) port.setRTS() else port.clearRTS())) failed("Setting RTS on")
 
-  override def close(): Unit = port.closePort()
+  override def close(): Unit = {
+    running = false
+    port.closePort()
+    reader.join(1000)
+  }
 }
 
 object SerialChannel {
 
-  // a read waits in slices of at least a tenth of a second, the timeout's resolution, and at most a second
-  private val minSliceMs = 100L
-  private val maxSliceMs = 1000L
+  // how long the reader waits on the port at a time, before it checks whether the channel has closed
+  private val readSliceMs = 100
 
   // how long a write may make no progress
   private val writeStallMs = 5000L
@@ -97,6 +136,8 @@ object SerialChannel {
     val stopBits = if (settings.stopBits == 2) SerialPort.TWO_STOP_BITS else SerialPort.ONE_STOP_BIT
     port.setComPortParameters(settings.baudRate, settings.dataBits, stopBits, parity)
     port.setFlowControl(SerialPort.FLOW_CONTROL_DISABLED)
+    // reads wait a slice at most; writes block until the bytes are sent
+    port.setComPortTimeouts(SerialPort.TIMEOUT_READ_SEMI_BLOCKING | SerialPort.TIMEOUT_WRITE_BLOCKING, readSliceMs, 0)
     if (!port.openPort())
       throw new BenchException(
         s"Can't open serial port ${settings.port} (error ${port.getLastErrorCode}): is it there, and free?",

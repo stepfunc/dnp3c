@@ -319,7 +319,7 @@ object Tree {
         )
       ),
       section("8.12", "Collision Avoidance")(
-        notYet("8.12.2", "Test Procedure")
+        test("8.12.2", "Test Procedure", CollisionAvoidance.collisionAvoidance)
       ),
       section("8.13", "Binary Inputs Specific Object Requests")(
         section("8.13.2", "Test Procedure")(

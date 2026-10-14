@@ -165,6 +165,16 @@ class DefaultIntegrationPlugin extends IntegrationPlugin {
     ManualSteps.UserAction(reporter, "Restore the DUT's usual network setup, the one it had before this procedure")
   }
 
+  override def setCollisionDelays(reporter: PluginReporter, delays: Option[CollisionDelays]): Unit = {
+    val what = delays match {
+      case Some(d) =>
+        s"Set the DUT's collision avoidance fixed delay to ${d.fixedMs} ms and its maximum random delay to " +
+          s"${d.maxRandomMs} ms"
+      case None => "Restore the DUT's usual collision avoidance delays"
+    }
+    ManualSteps.UserAction(reporter, what)
+  }
+
   override def setRtsDelays(reporter: PluginReporter, delays: Option[RtsDelays]): Unit = {
     val what = delays match {
       case Some(d) =>

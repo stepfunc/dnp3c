@@ -162,7 +162,8 @@ object Revisions {
     (options, selected) =>
       v31r1.EventRules.configurationProblems(options, selected) ++
         v31r1.Network.configurationProblems(options, selected) ++
-        v31r1.MultiDrop.configurationProblems(options, selected)
+        v31r1.MultiDrop.configurationProblems(options, selected) ++
+        v31r1.CollisionAvoidance.configurationProblems(options, selected)
   )
 
   /** every revision, oldest first */

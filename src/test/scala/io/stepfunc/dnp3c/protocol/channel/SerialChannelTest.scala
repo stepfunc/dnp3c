@@ -74,6 +74,20 @@ class SerialChannelTest extends AnyFunSuite with Matchers {
     }
   }
 
+  test("bytes are timed when they arrive, not when they're read") {
+    withPair { (a, b) =>
+      val sent = System.nanoTime()
+      b.write(ByteBuffer.wrap(Array[Byte](1, 2, 3)))
+      Thread.sleep(1000)
+      val reading = System.nanoTime()
+      a.read(ByteBuffer.allocate(16), 1000) should be > 0
+      val arrived = a.lastReadAt.get
+      arrived should be >= sent
+      // well before the read, a second after: the bridge and the reader have most of a second to pass them on
+      (reading - arrived) / 1000000 should be >= 200L
+    }
+  }
+
   test("a read that gets nothing within its timeout returns nothing, once the whole timeout has passed") {
     withPair { (a, _) =>
       for (timeoutMs <- List(250, 1500)) {

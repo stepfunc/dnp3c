@@ -80,6 +80,30 @@ class LinkFrameParserTest extends AnyFunSuite with Matchers {
     decode(userData.updated(userData.size - 1, 0x1F.toByte)) should equal(Decoded.Skip(userData.size))
   }
 
+  test("each frame has the time its first byte arrived, past noise before it and over reads it spans") {
+    val clock = new VirtualClock
+    // each read comes 10 ms after the one before
+    val chunks = List(Hex.from("FF FF") ::: reset ::: userData.take(5), userData.drop(5) ::: reset)
+    var pending = chunks
+    val channel = new ReadableChannel {
+      override def read(buffer: ByteBuffer, timeoutMs: Int): Int = pending match {
+        case chunk :: rest =>
+          clock.advance(10)
+          pending = rest
+          buffer.put(chunk.toArray)
+          chunk.size
+        case Nil => 0
+      }
+    }
+    val parser = new LinkFrameParser(channel, clock)
+    val times = Iterator
+      .continually(parser.read(reporter)(1000).map(_ => parser.lastFrameStart / 1000000))
+      .takeWhile(_.isDefined)
+      .flatten
+      .toList
+    times should equal(List(10L, 10L, 20L))
+  }
+
   test("reads a frame that arrives over several reads") {
     frames(new Chunks(userData.take(3), userData.slice(3, 11), userData.drop(11))()) should equal(List(userDataFrame))
   }
