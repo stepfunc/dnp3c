@@ -35,7 +35,14 @@ object SupportOptions extends OptionGroup {
       false,
       s"Does the DUT support $longName change events?")
 
-    override def allOptions: List[BooleanOption] = List(statusPoints, commands, disabling, events)
+    // output command events (g13, g43), also outside the subsets
+    val commandEvents: BooleanOption = OptionTypes.boolean(
+      SupportOptions,
+      s"${shortName}CommandEvents",
+      false,
+      s"Does the DUT support $longName command events?")
+
+    override def allOptions: List[BooleanOption] = List(statusPoints, commands, disabling, events, commandEvents)
 
   }
 

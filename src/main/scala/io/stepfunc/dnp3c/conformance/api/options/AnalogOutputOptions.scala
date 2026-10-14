@@ -38,6 +38,30 @@ object AnalogOutputOptions extends OptionGroup {
       "32-bit variation where a 16-bit one is requested. Empty for none",
     Nil
   )
+  val statusFlags: IndexListOption = OptionTypes.indexList(
+    this,
+    "status.changeableFlags",
+    "The analog output status flags, by bit number (0 ONLINE to 6 REFERENCE_ERR), that the plugin can change, which " +
+      "3.1r1's 10.4.3 changes one at a time. Empty for none",
+    Nil
+  )
+  val statusValueEvents: BooleanOption = OptionTypes.boolean(
+    this,
+    "status.valueChangeEvents",
+    false,
+    "Does the DUT generate analog output status events on a significant change of value (3.1r1's 10.4.3)?")
+  val statusDeadband: IntegerOption = OptionTypes.integer(
+    this,
+    "status.deadband",
+    1,
+    "The change of an analog output status value that generates an event, which 3.1r1's 10.4.3 exceeds",
+    Some(1),
+    None)
+  val commandResetsBase: BooleanOption = OptionTypes.boolean(
+    this,
+    "status.commandResetsBase",
+    false,
+    "Does an analog output command reset the base value its status events are declared against (3.1r1's 10.4.3)?")
   val index32Bit: OptionalIndexOption = OptionTypes.optionalIndex(
     this,
     "index32Bit",
@@ -48,7 +72,8 @@ object AnalogOutputOptions extends OptionGroup {
   def prefix: String = "analogOutput"
   def description: String = "Options related to analog outputs (g41)"
   def options: List[TestOption] = uninstalledIndex :: installedPoints :: maxAnalogOutputsInSingleRequest ::
-    commands32Bit :: index32Bit :: statusOnly32Bit ::
+    commands32Bit :: index32Bit :: statusOnly32Bit :: statusFlags :: statusValueEvents :: statusDeadband ::
+    commandResetsBase ::
     primary.options ::: alternate.options
 
   case class Options(group: OptionGroup, id: String, defaultIndex: Index, defaultValue: Int) {

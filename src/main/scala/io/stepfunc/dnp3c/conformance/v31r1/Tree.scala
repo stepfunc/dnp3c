@@ -648,24 +648,24 @@ object Tree {
     section("10", "Output Control Events")(
       section("10.3", "Binary")(
         section("10.3.2", "Binary Status in Group 0")(
-          notYet("10.3.2-1", "Test Procedure")
+          test("10.3.2-1", "Test Procedure", OutputEvents.binaryStatusInClassZero)
         ),
         section("10.3.3", "Binary Output Status Events")(
-          notYet("10.3.3-1", "Test Procedure")
+          test("10.3.3-1", "Test Procedure", OutputEvents.binaryStatusEvents)
         ),
         section("10.3.4", "Binary Command Events")(
-          notYet("10.3.4-1", "Test Procedure")
+          test("10.3.4-1", "Test Procedure", OutputEvents.binaryCommandEvents)
         )
       ),
       section("10.4", "Analog")(
         section("10.4.2", "Analog Status in Group 0")(
-          notYet("10.4.2-1", "Test Procedure")
+          test("10.4.2-1", "Test Procedure", OutputEvents.analogStatusInClassZero)
         ),
         section("10.4.3", "Analog Output Status Events")(
-          notYet("10.4.3-1", "Test Procedure")
+          test("10.4.3-1", "Test Procedure", OutputEvents.analogStatusEvents)
         ),
         section("10.4.4", "Analog Command Events")(
-          notYet("10.4.4-1", "Test Procedure")
+          test("10.4.4-1", "Test Procedure", OutputEvents.analogCommandEvents)
         )
       )
     )

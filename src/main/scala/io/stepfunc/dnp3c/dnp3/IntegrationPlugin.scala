@@ -174,6 +174,15 @@ trait IntegrationPlugin {
   // the change of one point that generates an event for it, if its class lets it, as a new batch (3.1r1's 8.26)
   def generateEventOn(reporter: PluginReporter, kind: PointKind, index: Int): Unit =
     throw new UnsupportedOperationException("this plugin doesn't implement generateEventOn")
+  // changes one flag of an output status point, by its bit number, from its present state (3.1r1's 10.3.3, 10.4.3)
+  def changeOutputFlag(reporter: PluginReporter, kind: PointKind, index: Int, flag: Int): Unit =
+    throw new UnsupportedOperationException("this plugin doesn't implement changeOutputFlag")
+  // changes a binary output's state by other means than a command, as would generate an event (3.1r1's 10.3.3)
+  def changeBinaryOutputState(reporter: PluginReporter, index: Int): Unit =
+    throw new UnsupportedOperationException("this plugin doesn't implement changeBinaryOutputState")
+  // sets an analog output's status value by other means than a command (3.1r1's 10.4.3)
+  def setAnalogOutputValue(reporter: PluginReporter, index: Int, value: Double): Unit =
+    throw new UnsupportedOperationException("this plugin doesn't implement setAnalogOutputValue")
   // every point of the kind with its flags normal: ONLINE set, all others clear (3.1r1's 8.24)
   def setFlagsNormal(reporter: PluginReporter, kind: PointKind): Unit =
     throw new UnsupportedOperationException("this plugin doesn't implement setFlagsNormal")
@@ -259,6 +268,10 @@ trait IntegrationPlugin {
       reporter: CheckReporter,
       points: Seq[GenIndexedPoint[CounterPoint]]): Option[DeferredCheck] =
     throw new UnsupportedOperationException("this plugin doesn't implement verifyFrozenCounterEvents")
+
+  // Check that the time of an output command event is reasonable for a command sent at sentMs (3.1r1's 10.3.4, 10.4.4)
+  def verifyCommandEventTime(reporter: CheckReporter, sentMs: Long, eventMs: Long): Option[DeferredCheck] =
+    throw new UnsupportedOperationException("this plugin doesn't implement verifyCommandEventTime")
 
   // Misc validations
   def verifyDelayMeasurementAccuracy(reporter: CheckReporter, delayMs: Long): Option[DeferredCheck]
