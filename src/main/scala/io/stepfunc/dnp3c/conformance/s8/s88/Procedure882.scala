@@ -10,24 +10,49 @@ import io.stepfunc.dnp3c.dnp3.app._
 import io.stepfunc.dnp3c.dnp3.app.objects.{ Group52Var1, Group52Var2 }
 import io.stepfunc.dnp3c.dnp3._
 
-object Procedure882 extends ProcedureDefinition {
+/**
+ * 8.8.2
+ *
+ * @param configures whether the DUT is configured to support cold restart first (step 1), and after the restart, to
+ *   reject it (steps 10 to 12), as in 3.1r1; 2.7 only restarts it, so its steps are one earlier
+ */
+class ColdRestart(configures: Boolean) extends ProcedureDefinition {
 
   override protected def steps(options: OptionSource): Iterable[LabeledStep] = {
 
-    val restart = new RestartDelay
-    List(
-      1 --> send(AppFunction.coldRestart, Sequence.zero, List.empty),
-      (2 to 3) --> expectSingleResponse(Sequence.zero, AutoConfirm.Yes, restart.record),
-      // the DUT may drop the connection as it restarts, so step 5 connects again
-      4 --> disconnect + restart.waitOut,
-      5 --> send(Requests.readClass0(Sequence.one)),
-      6 --> expectAtLeastOneResponse(Sequence.one, containing(IIN.DEVICE_RESTART)),
-      7 --> send(Requests.clearRestartIIN(Sequence.two)),
-      8 --> expectSingleResponse(Sequence.two, isNull && without(IIN.DEVICE_RESTART))
+    val restart = new Procedure882.RestartDelay
+    val s = if (configures) 1 else 0
+    val restarts = List(
+      1 + s --> send(AppFunction.coldRestart, Sequence.zero, List.empty),
+      (2 + s to 3 + s) --> expectSingleResponse(Sequence.zero, AutoConfirm.Yes, restart.record),
+      // the DUT may drop the connection as it restarts, so the read that follows connects again
+      4 + s --> disconnect + restart.waitOut,
+      5 + s --> send(Requests.readClass0(Sequence.one)),
+      6 + s --> expectAtLeastOneResponse(Sequence.one, containing(IIN.DEVICE_RESTART)),
+      7 + s --> send(Requests.clearRestartIIN(Sequence.two)),
+      8 + s --> expectSingleResponse(Sequence.two, isNull && without(IIN.DEVICE_RESTART))
     )
+    if (configures)
+      List(1 --> PluginSteps.setColdRestartSupport(true)) ++ restarts ++ List(
+        10 --> PluginSteps.setColdRestartSupport(false),
+        11 --> send(AppFunction.coldRestart, Sequence.three, List.empty),
+        // cold restart is turned back on whether or not the step passes
+        12 --> new TestStep {
+          private val expect = expectSingleResponse(Sequence.three, containing(IIN.FUNC_NOT_SUPPORTED))
+          private val restore = PluginSteps.setColdRestartSupport(true)
+          def description: List[Comment] = expect.description ++ restore.description
+          def run(driver: TestDriver): List[DeferredCheck] =
+            try expect.run(driver)
+            finally restore.run(driver)
+        }
+      )
+    else restarts
   }
+}
 
-  // the delay the DUT reports in its response to the restart (steps 2-3), which step 4 waits out, with a margin
+object Procedure882 extends ColdRestart(configures = false) {
+
+  // the delay the DUT reports in its response to the restart, which the step after it waits out, with a margin
   private[s88] class RestartDelay {
     private val marginMs = 1000
     private var delayMs = 0L

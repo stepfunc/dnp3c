@@ -133,6 +133,12 @@ trait IntegrationPlugin {
   // when its second response is only two fragments (step 15)
   def generateMultiFragmentResponse(reporter: PluginReporter): Unit
 
+  // Actions only 3.1r1 uses. Each throws until a plugin overrides it, so an existing plugin keeps compiling, and needs
+  // to only where its device runs a test that uses the action.
+  // enables or disables the DUT's support for cold restart (function code 13) (3.1r1's 8.8.2)
+  def setColdRestartSupport(reporter: PluginReporter, enabled: Boolean): Unit =
+    throw new UnsupportedOperationException("this plugin doesn't implement setColdRestartSupport")
+
   // ===================
   // Message validations
   // ===================
