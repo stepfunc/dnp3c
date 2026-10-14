@@ -174,7 +174,7 @@ trait TestDriver {
   def frameBytes(message: Message, options: LinkOverride = LinkOverride.default): List[Byte] = {
     val bytes = scala.collection.mutable.ListBuffer.empty[Byte]
     SegmentWriter.write(message.toBytes, 0, reporter) { segment =>
-      LinkWriter.write(local, options.destination.getOrElse(remote), true, options.controlBlock, reporter)(segment) {
+      LinkWriter.write(local, options.destination.getOrElse(remote), options.controlBlock, reporter)(segment) {
         frame => bytes ++= frame
       }
     }
@@ -196,7 +196,6 @@ trait TestDriver {
   def readAllResponses(
       seq: Sequence,
       autoConfirm: AutoConfirm,
-      func: app.AppFunction,
       validator: FrameValidator = FrameValidator.none): List[Message] = {
 
     @tailrec
@@ -205,7 +204,7 @@ trait TestDriver {
       case Some(message) =>
         if (message.ctrl.con.value) autoConfirm.execute(message, this)
 
-        TestDriver.checkSolicited(message, seq, func)
+        TestDriver.checkSolicited(message, seq)
         if (message.ctrl.fir.value != list.isEmpty) throw new Exception("Unexpected fir bit: " + message.ctrl.fir)
 
         if (message.ctrl.fin.value) message :: list else recurse(message :: list, seq.next)
@@ -218,9 +217,9 @@ trait TestDriver {
 object TestDriver {
 
   // what every fragment of a solicited response must carry
-  def checkSolicited(message: Message, seq: Sequence, function: AppFunction = AppFunction.response): Unit = {
+  def checkSolicited(message: Message, seq: Sequence): Unit = {
     if (message.ctrl.uns.value) throw new Exception("Unexpected unsolicited response")
     if (message.ctrl.seq != seq) throw new Exception("Unexpected sequence: " + message.ctrl.seq)
-    if (message.function != function) throw new Exception("Unexpected function code: " + message.function)
+    if (message.function != AppFunction.response) throw new Exception("Unexpected function code: " + message.function)
   }
 }

@@ -169,8 +169,6 @@ object TypeTraits {
     final def objectType: ObjectType = StaticVariationZero
   }
 
-  trait CTOEvent extends Event
-
   trait Event extends Variation {
     final def objectType: ObjectType = Event
   }

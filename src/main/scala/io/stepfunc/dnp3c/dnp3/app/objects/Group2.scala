@@ -22,4 +22,4 @@ object Group2Var2 extends FixedSize(Group2, 2, List(flagsWithBinary, time48), Ev
     with TypeTraits.Level1
 
 object Group2Var3 extends FixedSize(Group2, 3, List(flagsWithBinary, timeCTO), EventBinaryBuilder)
-    with TypeTraits.CTOEvent with TypeTraits.Level1
+    with TypeTraits.Event with TypeTraits.Level1

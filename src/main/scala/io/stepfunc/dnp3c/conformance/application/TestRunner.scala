@@ -263,7 +263,8 @@ object TestRunner {
   // e.g. "8.11.2.5.3": a label that names a subsection, rather than a step
   private val subsection = """\d+(\.\d+)+""".r
 
-  // the procedure's steps, then their deferred checks, then its cleanup; tests run procedures through it too
+  // the procedure's steps, then their deferred checks, then its cleanup, for a procedure that's implemented, applies at
+  // the run's level and is enabled; tests run procedures through it too
   private[conformance] def runSteps(
       procedure: TestProcedure,
       options: OptionSource,
@@ -303,14 +304,8 @@ object TestRunner {
         p.check.check()
       }
 
-      config.disabledBy match {
-        case Some(unmet) =>
-          driver.reporter.info("Skipped procedure: " + procedure.id)
-          ProcedureOutcome.Skipped(s"disabled because ${unmet.message}")
-        case None =>
-          driver.reporter.info("Passed procedure: " + procedure.id)
-          ProcedureOutcome.Passed
-      }
+      driver.reporter.info("Passed procedure: " + procedure.id)
+      ProcedureOutcome.Passed
 
     } catch {
       case ex: BenchException =>
@@ -323,12 +318,8 @@ object TestRunner {
         val unevaluated = pending.size - started
         if (unevaluated > 0) driver.reporter.warn(s"$unevaluated deferred check(s) weren't evaluated")
 
-        if (!procedure.incomplete) {
-          driver.reporter.error("Failed procedure: " + procedure.id)
-          ProcedureOutcome.Failed(ErrorText.of(ex))
-        } else {
-          ProcedureOutcome.Skipped(s"incomplete procedure: ${ErrorText.of(ex)}")
-        }
+        driver.reporter.error("Failed procedure: " + procedure.id)
+        ProcedureOutcome.Failed(ErrorText.of(ex))
       case ex: Throwable =>
         // an interruption, or a fatal error: restore the DUT if it can be, then let it propagate
         try cleanUpDevice(cleanup, driver)

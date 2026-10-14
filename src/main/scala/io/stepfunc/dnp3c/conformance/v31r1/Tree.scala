@@ -3,7 +3,7 @@
 
 package io.stepfunc.dnp3c.conformance.v31r1
 
-import io.stepfunc.dnp3c.conformance.api.{ TestProcedure, TestSection, section, unimplemented }
+import io.stepfunc.dnp3c.conformance.api.{ TestProcedure, TestSection, section }
 import io.stepfunc.dnp3c.conformance.v27
 import io.stepfunc.dnp3c.conformance.api.ProcedureDefinition
 import io.stepfunc.dnp3c.conformance.common.SupervisoryControl.Numbering
@@ -14,13 +14,13 @@ import io.stepfunc.dnp3c.conformance.common.SupervisoryControl.Numbering
  *
  * A test 3.1r1 numbers has its number, whether in a heading or on its "Test Procedure" line. One it doesn't has its
  * section's number and its place among that section's unnumbered tests, e.g. 8.6.5-2, except for Unsolicited and
- * Polled Responses, one test in sections, whose numbers 8.11.2.5.1 to 8.11.2.5.9 give it 8.11.2.5. Material that isn't a test, such
- * as desired behavior, terminology and setup, isn't in the tree. 3.1r1's 8.21 and 8.22 run the 8.13 and 8.14 tests with double-bit inputs, so their
- * tests are named after those, e.g. 8.22-8.14.2-3.
+ * Polled Responses, one test in sections, whose numbers 8.11.2.5.1 to 8.11.2.5.9 give it 8.11.2.5. Material that isn't
+ * a test, such as desired behavior, terminology and setup, isn't in the tree. 3.1r1's 8.21 and 8.22 run the 8.13 and
+ * 8.14 tests with double-bit inputs, so their tests are named after those, e.g. 8.22-8.14.2-3.
  *
  * A test whose steps are the same as a 2.7 test's, or differ only in wording, places that test's definition, which is
- * named after its 2.7 number, e.g. `v27.Procedure8_2_1_2_1`; 3.1r1's rules for every test apply to it as to any other. Where only the step numbers differ, the definition takes 3.1r1's
- * numbering (8.6.4). The rest aren't implemented yet.
+ * named after its 2.7 number, e.g. `v27.Procedure8_2_1_2_1`; 3.1r1's rules for every test apply to it as to any other.
+ * Where only the step numbers differ, the definition takes 3.1r1's numbering (8.6.4).
  */
 object Tree {
 
@@ -30,9 +30,6 @@ object Tree {
       definition: ProcedureDefinition,
       levels: Option[Set[Int]] = None): TestProcedure =
     TestProcedure(id, title, definition, levels)
-
-  private def notYet(id: String, title: String, levels: Option[Set[Int]] = None): TestProcedure =
-    unimplemented(id, title, levels)
 
   // the tests TB2017-001 gave 2.7, with 3.1r1's step numbers
   private val global8641 = new v27.GlobalRemoteSupervisoryControl(Numbering.dotted)

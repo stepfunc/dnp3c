@@ -267,17 +267,8 @@ object Main {
       Colors.text.printLine(s"    Not applicable at subset level $level")
     }
 
-    // a mandatory procedure isn't optional: a run refuses this configuration
-    val mandatory = revision.unmetMandatory(options, level).map(_._1.id).toSet
-    revision.unmetMandatory(options, level).foreach { (p, unmet) =>
-      Colors.error.printLine("Procedure: " + p.id)
-      Colors.error.printLine(
-        s"    Mandatory at subset level $level, so a run refuses this configuration: it needs ${unmet.requirement.describe}")
-    }
-
     val disabled: Iterable[(TestProcedure, Unmet)] =
-      revision.flatMapProcedures(p =>
-        Option.unless(mandatory(p.id))(p).flatMap(p => p.disabledBy(options).map(u => (p, u))))
+      revision.flatMapProcedures(p => p.disabledBy(options).map(u => (p, u)))
 
     disabled.foreach { (p, unmet) =>
       Colors.text.printLine("Procedure: " + p.id)

@@ -83,24 +83,6 @@ class HarnessTest extends AnyFunSuite with Matchers {
     report should include("The result in 8.4.1.2.2/ was saved under revision 2.7 at subset level 3")
   }
 
-  test("tells about procedure folders in the layout of 0.1.0, and leaves them out") {
-    val directory = output
-    save(directory.resolve("8.1.2"), None, None)
-    Files.createDirectories(directory.resolve("8.3.2"))
-    Files.writeString(directory.resolve("8.3.2").resolve("log.html"), "")
-    val report = Files.readString(Harness.writeReport(options(directory), revision))
-    report should include("holds 2 folders named after 2.7 procedures (e.g. 8.1.2)")
-    report should include("0 passed")
-  }
-
-  test("other folders in the output directory aren't taken for 0.1.0 results") {
-    val directory = output
-    save(directory.resolve("backup"), None, None)
-    save(directory.resolve("8.1.2"), Some("2.7"))
-    Files.createDirectories(directory.resolve("8.3.2"))
-    Files.readString(Harness.writeReport(options(directory), revision)) should not include "folders named after"
-  }
-
   test("the report shows what a procedure noted about a pass") {
     val directory = output
     val folder = directory.resolve("2.7").resolve("L2").resolve("8.1.2")

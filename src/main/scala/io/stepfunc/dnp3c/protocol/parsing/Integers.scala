@@ -20,9 +20,6 @@ object UInt8 {
   private val minValue = 0
   private val maxValue = 255
 
-  val min = UInt8(minValue)
-  val max = UInt8(maxValue)
-
   def fromByte(byte: Byte): UInt8 = UInt8(byteToShort(byte))
 
   def byteToShort(byte: Byte): Short = if (byte < 0) (byte.toShort + 256).toShort else byte.toShort
@@ -41,9 +38,6 @@ object UInt16LE {
 
   private val minValue = 0
   private val maxValue = 65535
-
-  val min = UInt16LE(minValue)
-  val max = UInt16LE(maxValue)
 
   def from(short: Short): UInt16LE = {
     val i = short.toInt
@@ -98,9 +92,6 @@ object UInt32LE {
   private val minValue = 0
   private val maxValue = 4294967295L
 
-  val min = UInt32LE(minValue)
-  val max = UInt32LE(maxValue)
-
   def apply(b1: Byte, b2: Byte, b3: Byte, b4: Byte): UInt32LE = {
     val sb1 = UInt8.byteToShort(b1)
     val sb2 = UInt8.byteToShort(b2)
@@ -121,9 +112,6 @@ object UInt48LE {
 
   private val minValue = 0
   private val maxValue = 281474976710655L
-
-  val min = UInt48LE(minValue)
-  val max = UInt48LE(maxValue)
 
   def apply(b1: Byte, b2: Byte, b3: Byte, b4: Byte, b5: Byte, b6: Byte): UInt48LE = {
     val sb1 = UInt8.byteToShort(b1)

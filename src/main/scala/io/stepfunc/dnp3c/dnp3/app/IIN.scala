@@ -27,8 +27,6 @@ object IIN {
   val RESERVED1 = IIN(0, 0x40.toByte)
   val RESERVED2 = IIN(0, 0x80.toByte)
 
-  // values that might be set at restart for devices
-  val startupBits: IIN = NEED_TIME | DEVICE_RESTART
   val errors: IIN = FUNC_NOT_SUPPORTED | OBJECT_UNKNOWN | PARAM_ERROR
   val iin2x: IIN = IIN(0, 0xFF.toByte)
 

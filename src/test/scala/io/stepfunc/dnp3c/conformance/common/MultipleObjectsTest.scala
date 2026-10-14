@@ -65,7 +65,7 @@ class MultipleObjectsTest extends AnyFunSuite with Matchers {
       TwoByteCountAndIndexHeader(
         header._1,
         header._2,
-        PrefixedPayload.applyU16(header._3.map { case (index, status) =>
+        PrefixedPayload.U16(header._3.map { case (index, status) =>
           Prefix(index, output.withStatus(command, status).toFixedSizeObject)
         }))
     }

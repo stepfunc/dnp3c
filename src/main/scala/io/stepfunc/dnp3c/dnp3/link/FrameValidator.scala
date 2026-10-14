@@ -16,7 +16,6 @@ object FrameValidator {
 trait FrameValidator {
   def description: List[Comment]
   def validate(frame: LinkFrame): Unit
-  def function: LinkFrame => Unit = (f: LinkFrame) => validate(f)
 
   def &&(other: FrameValidator): FrameValidator = {
     val self = this

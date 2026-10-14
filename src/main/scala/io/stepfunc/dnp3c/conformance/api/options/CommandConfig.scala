@@ -33,11 +33,7 @@ case class CommandConfig[T <: FixedSizeSerializable](index: Index, command: T) {
     OneByteCountAndIndexHeader(
       command.variation,
       UInt8(1),
-      PrefixedPayload(
-        Prefix(
-          UInt8(mods.index.getOrElse(index).value),
-          mods.modify(command).toFixedSizeObject)
-      )
+      PrefixedPayload.U8(List(Prefix(UInt8(mods.index.getOrElse(index).value), mods.modify(command).toFixedSizeObject)))
     )
   }
 
@@ -45,10 +41,8 @@ case class CommandConfig[T <: FixedSizeSerializable](index: Index, command: T) {
     TwoByteCountAndIndexHeader(
       command.variation,
       UInt16LE(1),
-      PrefixedPayload(
-        Prefix(
-          UInt16LE(mods.index.getOrElse(index).value),
-          mods.modify(command).toFixedSizeObject)))
+      PrefixedPayload.U16(
+        List(Prefix(UInt16LE(mods.index.getOrElse(index).value), mods.modify(command).toFixedSizeObject))))
   }
 
 }

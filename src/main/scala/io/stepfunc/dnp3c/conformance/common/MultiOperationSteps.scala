@@ -25,7 +25,7 @@ class MultiOperationSteps(output: OperationType) {
       TwoByteCountAndIndexHeader(
         config.command.variation,
         UInt16LE(points.size),
-        PrefixedPayload.applyU16(points.zip(statuses).map { case (index, status) =>
+        PrefixedPayload.U16(points.zip(statuses).map { case (index, status) =>
           Prefix(UInt16LE(index.value), output.withStatus(config.command, status).toFixedSizeObject)
         })
       )

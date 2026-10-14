@@ -136,7 +136,7 @@ object GenericSteps {
         s"Read a single fragment response w/ $seq" :: validation.description ::: autoConfirm.description
 
       override def run(driver: TestDriver): List[DeferredCheck] = {
-        driver.readAllResponses(seq, autoConfirm, AppFunction.response) match {
+        driver.readAllResponses(seq, autoConfirm) match {
           case message :: Nil =>
             validation.validate(driver.reporter, message)
           case x =>
@@ -172,7 +172,7 @@ object GenericSteps {
     }
 
     override def run(driver: TestDriver): List[DeferredCheck] = {
-      val responses = driver.readAllResponses(seq, AutoConfirm.Yes, AppFunction.response, frameValidator)
+      val responses = driver.readAllResponses(seq, AutoConfirm.Yes, frameValidator)
 
       // perform aggregate response validation
       responseValidator.validate(driver.reporter, responses)

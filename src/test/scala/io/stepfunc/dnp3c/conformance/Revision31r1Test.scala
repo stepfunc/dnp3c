@@ -30,6 +30,10 @@ class Revision31r1Test extends AnyFunSuite with Matchers {
     implemented.count(p => !twoSeven.contains(p.definition)) should be > 0
   }
 
+  test("every 3.1r1 test is implemented") {
+    procedures(revision).filter(_.incomplete).map(_.id) should equal(Nil)
+  }
+
   test("8.6.4 runs TB2017-001's tests with 3.1r1's step numbers") {
     val options = Options.from(Map())
     def labels(id: String) = procedure(id).configure(options).steps.map(_.label).toList
