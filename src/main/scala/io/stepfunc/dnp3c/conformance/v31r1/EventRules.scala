@@ -5,9 +5,9 @@ package io.stepfunc.dnp3c.conformance.v31r1
 
 import scala.util.Try
 
-import io.stepfunc.dnp3c.conformance.api.{ ConfigProblem, OptionSource, TestProcedure }
+import io.stepfunc.dnp3c.conformance.api.{ ConfigProblem, OptionSource, ProcedureDefinition, TestProcedure }
 import io.stepfunc.dnp3c.conformance.api.options.{ OutstationOptions, TimeSyncOptions }
-import io.stepfunc.dnp3c.conformance.api.options.{ AnalogInputOptions, AnalogOutputOptions }
+import io.stepfunc.dnp3c.conformance.api.options.{ AnalogInputOptions, AnalogOutputOptions, ClassOptions }
 import io.stepfunc.dnp3c.conformance.api.options.SupportOptions
 import io.stepfunc.dnp3c.conformance.api.options.SupportOptions.{ Inputs, Outputs }
 import io.stepfunc.dnp3c.conformance.s8.helpers.{ InputType, Validations }
@@ -149,8 +149,30 @@ object EventRules {
         SupportOptions.rangeReads.id,
         "false",
         "a subset level 3 device must read input points with start/stop ranges (8.23)"))
+    // 8.26 assigns the classes of binary inputs the configuration names
+    // a device without classes 1, 2 and 3 skips 8.26.2, noting it
+    val allClasses = List(ClassOptions.supportClass1, ClassOptions.supportClass2, ClassOptions.supportClass3)
+      .forall(options.get(_))
+    def runs(definition: ProcedureDefinition): Boolean =
+      allClasses && selected.exists(p => p.definition == definition && p.definition.disabledBy(options).isEmpty)
+    val classPoints =
+      (if (runs(AssignClass.assignClass))
+         List(ClassOptions.class1BinaryInputs -> 1, ClassOptions.class2BinaryInputs -> 2)
+       else Nil) ++
+        (if (runs(AssignClass.noClass))
+           List(
+             ClassOptions.class1BinaryInputs -> 2,
+             ClassOptions.class2BinaryInputs -> 2,
+             ClassOptions.class3BinaryInputs -> 2)
+         else Nil)
+    val assignClass = classPoints.groupMapReduce(_._1)(_._2)(math.max).toList.flatMap((option, needed) =>
+      Option.when(options.get(option).size < needed)(
+        ConfigProblem(
+          option.id,
+          options.get(option).map(_.value).mkString(", "),
+          s"3.1r1's 8.26 needs at least $needed")))
     unreadable ++ unreadableStatic ++ defaults ++ rejected ++ relativeRejected ++ expiry ++ frozenCounterEvents ++
-      analogOutputs32Bit ++ deadband ++ rangeReads
+      analogOutputs32Bit ++ deadband ++ rangeReads ++ assignClass
   }
 
   /** the preferred variation for a read of `requested`: itself, or for variation 0 the Device Profile's default */

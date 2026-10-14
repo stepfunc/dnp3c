@@ -162,6 +162,14 @@ object SupportOptions extends OptionGroup {
   val deviceAttributes: BooleanOption =
     OptionTypes.boolean(this, "deviceAttributes", true, "Does the DUT support device attributes (group 0)?")
 
+  val assignNoClass: BooleanOption = OptionTypes.boolean(
+    this,
+    "assignNoClass",
+    false,
+    "Does the DUT assign points to no class with an Assign Class request whose point headers come before any class " +
+      "object (TB2021-001)? 3.1r1's 8.26.3 tests it where the DUT claims it"
+  )
+
   val rangeReads: BooleanOption = OptionTypes.boolean(
     this,
     "rangeReads",
@@ -196,6 +204,7 @@ object SupportOptions extends OptionGroup {
     unsolicitedResponse,
     deviceAttributes,
     rangeReads,
+    assignNoClass,
     multipleAddresses
   )
 }

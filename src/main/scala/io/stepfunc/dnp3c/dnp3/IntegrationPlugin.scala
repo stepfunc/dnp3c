@@ -171,6 +171,9 @@ trait IntegrationPlugin {
   // them, as a new batch (3.1r1's 8.25)
   def generateExactSmallAnalogInputEvents(reporter: PluginReporter, numEvents: Int): Unit =
     throw new UnsupportedOperationException("this plugin doesn't implement generateExactSmallAnalogInputEvents")
+  // the change of one point that generates an event for it, if its class lets it, as a new batch (3.1r1's 8.26)
+  def generateEventOn(reporter: PluginReporter, kind: PointKind, index: Int): Unit =
+    throw new UnsupportedOperationException("this plugin doesn't implement generateEventOn")
   // every point of the kind with its flags normal: ONLINE set, all others clear (3.1r1's 8.24)
   def setFlagsNormal(reporter: PluginReporter, kind: PointKind): Unit =
     throw new UnsupportedOperationException("this plugin doesn't implement setFlagsNormal")
