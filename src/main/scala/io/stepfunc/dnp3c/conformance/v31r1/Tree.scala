@@ -57,7 +57,7 @@ object Tree {
         test("6.3.2", "Test Procedure", s6.s63.Procedure632)
       ),
       section("6.4", "Test Retries")(
-        notYet("6.4.2", "Test Procedure")
+        test("6.4.2", "Test Procedure", new s6.s64.TestRetries(emptyStep14 = false))
       ),
       section("6.5", "DIR and FCV Bits")(
         test("6.5.2", "Test Procedure", s6.s65.Procedure652)
@@ -83,7 +83,7 @@ object Tree {
       )
     ),
     section("7", "Transport Layer")(
-      notYet("7.2", "Test Procedure")
+      test("7.2", "Test Procedure", s7.Procedure72)
     ),
     section("8", "Application Layer")(
       section("8.1", "Binary Output Status")(
