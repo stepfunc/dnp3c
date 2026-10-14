@@ -3,7 +3,7 @@
 
 package io.stepfunc.dnp3c.conformance.api.options
 
-import io.stepfunc.dnp3c.conformance.api.{ IntegerOption, OptionGroup, OptionTypes, TestOption }
+import io.stepfunc.dnp3c.conformance.api.{ IndexListOption, IntegerOption, OptionGroup, OptionTypes, TestOption }
 
 object CounterOptions extends OptionGroup {
 
@@ -18,8 +18,16 @@ object CounterOptions extends OptionGroup {
   val counterEventsClass: IntegerOption =
     OptionTypes.integer(this, "counterEventsClass", 1, "Counter Events class assignment.", Some(1), Some(3))
 
+  val alwaysCounting: IndexListOption = OptionTypes.indexList(
+    this,
+    "alwaysCounting",
+    "Counters that can't be kept from counting, so a freeze and clear may not find them at zero: 3.1r1's 8.16.2.2.4 " +
+      "and 8.16.2.2.6 don't expect their frozen values to be zero after the second freeze. Empty for none",
+    Nil
+  )
+
   def prefix: String = "counter"
   def description: String = "Options related to counters (g20 and g22)"
-  def options: List[TestOption] = List(numCounterEventsGenerated, counterEventsClass)
+  def options: List[TestOption] = List(numCounterEventsGenerated, counterEventsClass, alwaysCounting)
 
 }

@@ -13,7 +13,8 @@ import io.stepfunc.dnp3c.protocol.parsing.Field
 object FrozenCounterSteps {
 
   // frozen counter objects from Table 8-6, and at least one of them
-  private val frozenCounters = Validations.verifyOnlyTable86Contents && Validations.isNotEmpty.acrossFragments
+  private[conformance] val frozenCounters = Validations.verifyOnlyTable86Contents &&
+    Validations.isNotEmpty.acrossFragments
 
   def binaryCounterFreezeSteps(ack: Boolean): Iterable[LabeledStep] = {
     List(
@@ -56,15 +57,16 @@ object FrozenCounterSteps {
     )
   }
 
-  private def getFreezeFunctionCode(ack: Boolean) = if (ack) AppFunction.freeze else AppFunction.freezeNoAck
+  private[conformance] def getFreezeFunctionCode(ack: Boolean) =
+    if (ack) AppFunction.freeze else AppFunction.freezeNoAck
 
-  private def getFreezeAndClearFunctionCode(ack: Boolean) =
+  private[conformance] def getFreezeAndClearFunctionCode(ack: Boolean) =
     if (ack) AppFunction.freezeClear else AppFunction.freezeClearNoAck
 
-  private def expectedFreezeResponse(ack: Boolean, seq: Sequence): TestStep =
+  private[conformance] def expectedFreezeResponse(ack: Boolean, seq: Sequence): TestStep =
     if (ack) expectNullResponse(seq) else expectNoResponse
 
-  private[helpers] def verifyAllNonZero: MessageValidation = verifyCounts(
+  private[conformance] def verifyAllNonZero: MessageValidation = verifyCounts(
     "Verify that every returned value is nonzero",
     (count: Long) => {
       if (count == 0) {
@@ -72,7 +74,7 @@ object FrozenCounterSteps {
       }
     })
 
-  private[helpers] def verifyAllZero: MessageValidation = verifyCounts(
+  private[conformance] def verifyAllZero: MessageValidation = verifyCounts(
     "Verify that the values returned are all zero",
     (count: Long) => {
       if (count != 0) {

@@ -142,4 +142,17 @@ class EventRulesTest extends AnyFunSuite with Matchers {
       an[ConfigurationException] should be thrownBy Revisions.v3_1r1.validate(withoutReads("3"))
     }
   }
+
+  test("a subset level 3 device with frozen counters must generate frozen counter events") {
+    import io.stepfunc.dnp3c.conformance.api.options.SupportOptions.Inputs
+    def withoutEvents(level: String) = Options.from(Map(
+      OutstationOptions.subsetLevel.id -> level,
+      Inputs.frozenCounter.events.id -> "false",
+      BinaryInputOptions.defaultEventVariation.id -> "1",
+      io.stepfunc.dnp3c.conformance.api.options.DoubleBitInputOptions.defaultEventVariation.id -> "1",
+      TimeSyncOptions.timeToUnsynchronizedMs.id -> "0"
+    ))
+    Revisions.v3_1r1.validate(withoutEvents("2")) should equal(2)
+    an[ConfigurationException] should be thrownBy Revisions.v3_1r1.validate(withoutEvents("3"))
+  }
 }

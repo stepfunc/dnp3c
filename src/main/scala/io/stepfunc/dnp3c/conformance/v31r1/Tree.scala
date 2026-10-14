@@ -359,10 +359,13 @@ object Tree {
             StaticInputs.frozenCounterLevelOne,
             levels = Some(Set(1))),
           test("8.16.2.2.2", "Device does not have Frozen Counters", StaticInputs.frozenCounterWithout),
-          notYet("8.16.2.2.3", "Binary Counter, Freeze"),
-          notYet("8.16.2.2.4", "Binary Counter, Freeze and Clear"),
-          notYet("8.16.2.2.5", "Binary Counter, Freeze, No Acknowledge"),
-          notYet("8.16.2.2.6", "Binary Counter, Freeze and Clear, No Acknowledge")
+          test("8.16.2.2.3", "Binary Counter, Freeze", FrozenCounters.freeze),
+          test("8.16.2.2.4", "Binary Counter, Freeze and Clear", FrozenCounters.freezeAndClear),
+          test("8.16.2.2.5", "Binary Counter, Freeze, No Acknowledge", FrozenCounters.freezeNoAck),
+          test(
+            "8.16.2.2.6",
+            "Binary Counter, Freeze and Clear, No Acknowledge",
+            FrozenCounters.freezeAndClearNoAck)
         )
       ),
       section("8.17", "Binary Counters, Event")(
