@@ -308,10 +308,12 @@ object Tree {
       ),
       section("8.14", "Binary Input Change Specific Requests")(
         section("8.14.2", "Test Procedure")(
-          notYet(
+          test(
             "8.14.2-1",
             "Subset Level 1 device that does not support a read for binary change events object group",
-            levels = Some(Set(1))),
+            InputEvents.binaryLevelOne,
+            levels = Some(Set(1))
+          ),
           test("8.14.2-2", "Device does not support Binary Input Changes", InputEvents.binaryWithoutEvents),
           test("8.14.2-3", "Binary Input Change, Qualifier 0x06", InputEvents.binaryAll),
           test("8.14.2-4", "Binary Input Change, Qualifier 0x07", InputEvents.binaryCount07),
@@ -408,30 +410,80 @@ object Tree {
         )
       ),
       section("8.21", "Double-bit Inputs")(
-        notYet("8.21.1", "Disable Double Bit Binaries"),
-        notYet("8.21-8.13.2-1", "None, with double-bit inputs", levels = Some(Set(1))),
-        notYet("8.21-8.13.2-2", "None, with double-bit inputs"),
-        test("8.21-8.13.2-3", "None, with double-bit inputs", s8.s821.Procedure82121),
-        notYet("8.21-8.13.2-4", "None, with double-bit inputs")
+        test("8.21.1", "Disable Double Bit Binaries", DisableDoubleBit.static),
+        notYet(
+          "8.21-8.13.2-1",
+          "Subset Level 1 device that does not support a read for binary input object group, with double-bit inputs",
+          levels = Some(Set(1))),
+        notYet("8.21-8.13.2-2", "Device does not have Binary Inputs, with double-bit inputs"),
+        test("8.21-8.13.2-3", "Device has Binary Inputs, with double-bit inputs", s8.s821.Procedure82121),
+        notYet("8.21-8.13.2-4", "Device supports Binary Inputs, Configurable Device, with double-bit inputs")
       ),
       section("8.22", "Double-bit Input Change")(
-        notYet("8.22.1", "Disable Double Bit Binaries"),
-        notYet("8.22-8.14.2-1", "None, with double-bit inputs", levels = Some(Set(1))),
-        test("8.22-8.14.2-2", "None, with double-bit inputs", InputEvents.doubleBitWithoutEvents),
-        test("8.22-8.14.2-3", "None, with double-bit inputs", InputEvents.doubleBitAll),
-        test("8.22-8.14.2-4", "None, with double-bit inputs", InputEvents.doubleBitCount07),
-        test("8.22-8.14.2-5", "None, with double-bit inputs", InputEvents.doubleBitCount08),
-        test("8.22-8.14.2-6", "None, with double-bit inputs", InputEvents.doubleBitNoConfirm),
-        test("8.22-8.14.2-7", "None, with double-bit inputs", InputEvents.doubleBitAllWithoutTime),
-        test("8.22-8.14.2-8", "None, with double-bit inputs", InputEvents.doubleBitCount07WithoutTime),
-        test("8.22-8.14.2-9", "None, with double-bit inputs", InputEvents.doubleBitCount08WithoutTime),
-        test("8.22-8.14.2-10", "None, with double-bit inputs", InputEvents.doubleBitAllWithTime),
-        test("8.22-8.14.2-11", "None, with double-bit inputs", InputEvents.doubleBitCount07WithTime),
-        test("8.22-8.14.2-12", "None, with double-bit inputs", InputEvents.doubleBitCount08WithTime),
-        test("8.22-8.14.2-13", "None, with double-bit inputs", InputEvents.doubleBitAllWithRelativeTime),
-        test("8.22-8.14.2-14", "None, with double-bit inputs", InputEvents.doubleBitCount07WithRelativeTime),
-        test("8.22-8.14.2-15", "None, with double-bit inputs", InputEvents.doubleBitCount08WithRelativeTime),
-        test("8.22-8.14.2-16", "None, with double-bit inputs", InputEvents.doubleBitLongInterval)
+        test("8.22.1", "Disable Double Bit Binaries", DisableDoubleBit.events),
+        test(
+          "8.22-8.14.2-1",
+          "Subset Level 1 device that does not support a read for binary change events object group, with double-bit inputs",
+          InputEvents.doubleBitLevelOne,
+          levels = Some(Set(1))
+        ),
+        test(
+          "8.22-8.14.2-2",
+          "Device does not support Binary Input Changes, with double-bit inputs",
+          InputEvents.doubleBitWithoutEvents),
+        test("8.22-8.14.2-3", "Binary Input Change, Qualifier 0x06, with double-bit inputs", InputEvents.doubleBitAll),
+        test(
+          "8.22-8.14.2-4",
+          "Binary Input Change, Qualifier 0x07, with double-bit inputs",
+          InputEvents.doubleBitCount07),
+        test(
+          "8.22-8.14.2-5",
+          "Binary Input Change, Qualifier 0x08, with double-bit inputs",
+          InputEvents.doubleBitCount08),
+        test(
+          "8.22-8.14.2-6",
+          "Binary Input Change Without Confirm, with double-bit inputs",
+          InputEvents.doubleBitNoConfirm),
+        test(
+          "8.22-8.14.2-7",
+          "Binary Input Change Without Time, Qualifier 0x06, with double-bit inputs",
+          InputEvents.doubleBitAllWithoutTime),
+        test(
+          "8.22-8.14.2-8",
+          "Binary Input Change Without Time, Qualifier 0x07, with double-bit inputs",
+          InputEvents.doubleBitCount07WithoutTime),
+        test(
+          "8.22-8.14.2-9",
+          "Binary Input Change Without Time, Qualifier 0x08, with double-bit inputs",
+          InputEvents.doubleBitCount08WithoutTime),
+        test(
+          "8.22-8.14.2-10",
+          "Binary Input Change with Time, Qualifier 0x06, with double-bit inputs",
+          InputEvents.doubleBitAllWithTime),
+        test(
+          "8.22-8.14.2-11",
+          "Binary Input Change with Time, Qualifier 0x07, with double-bit inputs",
+          InputEvents.doubleBitCount07WithTime),
+        test(
+          "8.22-8.14.2-12",
+          "Binary Input Change with Time, Qualifier 0x08, with double-bit inputs",
+          InputEvents.doubleBitCount08WithTime),
+        test(
+          "8.22-8.14.2-13",
+          "Binary Input Change with Relative Time, Qualifier 0x06, with double-bit inputs",
+          InputEvents.doubleBitAllWithRelativeTime),
+        test(
+          "8.22-8.14.2-14",
+          "Binary Input Change with Relative Time, Qualifier 0x07, with double-bit inputs",
+          InputEvents.doubleBitCount07WithRelativeTime),
+        test(
+          "8.22-8.14.2-15",
+          "Binary Input Change with Relative Time, Qualifier 0x08, with double-bit inputs",
+          InputEvents.doubleBitCount08WithRelativeTime),
+        test(
+          "8.22-8.14.2-16",
+          "Binary Input Change with Relative Time, Long Interval, with double-bit inputs",
+          InputEvents.doubleBitLongInterval)
       ),
       section("8.23", "Specific Point Ranges")(
         section("8.23.2", "Test Procedure")(

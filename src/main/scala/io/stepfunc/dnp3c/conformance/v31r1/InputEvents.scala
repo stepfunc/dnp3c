@@ -377,6 +377,39 @@ object InputEvents {
   }
 
   /**
+   * A subset level 1 device that can't read the input's events (8.14.2-1): it answers reads of variations 0 and 1 with a
+   * Null Error Response with IIN2.0, 2.1 or 2.2 (2.1 preferred), which the result notes
+   */
+  final class LevelOneWithoutEventReads(input: InputType) extends ProcedureDefinition {
+    import input._
+    override protected def requirement: Requirement = !input.support.eventReads
+
+    private val errors = IIN.FUNC_NOT_SUPPORTED | IIN.OBJECT_UNKNOWN | IIN.PARAM_ERROR
+
+    // the response must be a Null Error Response; which error bit it set goes in the result
+    private def rejected(seq: Sequence, read: Variation): TestStep = new TestStep {
+      private val check = Validations.isEmpty && Validations.containingAnyOf(errors)
+      def description: List[Comment] =
+        check.description :+ Comment("Note the error IIN bits set (IIN2.1 is preferred)")
+      def run(driver: TestDriver): List[DeferredCheck] = {
+        var set = IIN.empty
+        val noted = check && MessageValidation.check("") { m => set = m.iin.getOrElse(IIN.empty) & errors }
+        val checks = expectSingleResponse(seq, noted).run(driver)
+        driver.reporter.note(s"the DUT answers a read of $read with $set")
+        checks
+      }
+    }
+
+    override protected def steps(options: OptionSource): Iterable[LabeledStep] = List(
+      1 --> send(Requests.readAllObjects(Sequence.one, anyVariation)),
+      2 --> rejected(Sequence.one, anyVariation),
+      3 --> send(Requests.readAllObjects(Sequence.two, noTimeVariation)),
+      4 --> rejected(Sequence.two, noTimeVariation),
+      5 --> describe(s"No further ${input.name} event tests (or 8.15) apply to this DUT")
+    )
+  }
+
+  /**
    * A device without the input's events (8.14.2-2): as 2.7's, but only for a device whose events can be read, since a
    * subset level 1 device that can't read them answers with an error, which 8.14.2-1 tests
    */
@@ -387,6 +420,7 @@ object InputEvents {
 
   import InputType.{ BinaryInput, DoubleBitBinaryInput }
 
+  val binaryLevelOne = new LevelOneWithoutEventReads(BinaryInput)
   val binaryWithoutEvents = new WithoutEvents(BinaryInput)
   val binaryAll = new AllQualifier(BinaryInput)
   val binaryCount07 = new CountQualifier(BinaryInput, twoByteCount = false)
@@ -403,6 +437,7 @@ object InputEvents {
   val binaryCount07WithTime = new CountQualifierWithTime(BinaryInput, twoByteCount = false)
   val binaryCount08WithTime = new CountQualifierWithTime(BinaryInput, twoByteCount = true)
 
+  val doubleBitLevelOne = new LevelOneWithoutEventReads(DoubleBitBinaryInput)
   val doubleBitWithoutEvents = new WithoutEvents(DoubleBitBinaryInput)
   val doubleBitAll = new AllQualifier(DoubleBitBinaryInput)
   val doubleBitCount07 = new CountQualifier(DoubleBitBinaryInput, twoByteCount = false)
