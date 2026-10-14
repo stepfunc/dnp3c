@@ -185,7 +185,7 @@ object SupportOptions extends OptionGroup {
     "multipleAddresses",
     false,
     "Does the DUT answer to more than one DNP3 address over the TCP connection (link.otherDestination)? 3.1r1's " +
-      "6.6.2-4 runs over TCP only for such a DUT"
+      "6.6.2d runs over TCP only for such a DUT"
   )
 
   override def prefix: String = "supports"

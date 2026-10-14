@@ -13,7 +13,7 @@ import io.stepfunc.dnp3c.dnp3.transport.Transport
 import io.stepfunc.dnp3c.protocol.parsing.UInt16LE
 
 /**
- * 3.1r1's 6.6.2-4, No Inter-frame Gap (Section 2, Note 18): one transmission carries an application layer confirm to
+ * 3.1r1's 6.6.2d, No Inter-frame Gap (Section 2, Note 18): one transmission carries an application layer confirm to
  * another address and, with no gap, a READ to the DUT, which must answer the READ as it would on its own. dnp3c reads
  * class 0 alone first, and compares the two responses' objects: their groups, variations, qualifiers and indexes, as
  * the values may change between them.

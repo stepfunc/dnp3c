@@ -33,20 +33,20 @@ class WithTimeTest extends AnyFunSuite with Matchers {
     TimeSyncOptions.binaryInput.withTime.id -> "false",
     TimeSyncOptions.binaryInput.withTimeRejected.id -> "true"))
 
-  test("8.14.2-10 passes a device declared to reject reads with time, noting it complies with 1815-2012 only") {
+  test("8.14.2j passes a device declared to reject reads with time, noting it complies with 1815-2012 only") {
     val reporter = StubDriver.reporter(new Plugin)
     val dut = new ScriptedDut(reporter, answer)
     Console.withIn(new StringReader(""))(Run.passes(InputEvents.binaryAllWithTime, dut, rejecting)) should equal(true)
     reporter.notes.head should include("IEEE 1815-2012, but not with IEEE 1815-202x")
   }
 
-  test("8.14.2-11 and -12 are skipped for that device") {
+  test("8.14.2k and l are skipped for that device") {
     InputEvents.binaryCount07WithTime.disabledBy(rejecting) should not equal None
     InputEvents.binaryCount08WithTime.disabledBy(rejecting) should not equal None
     InputEvents.binaryCount07WithTime.disabledBy(Options.from(Map())) should equal(None)
   }
 
-  test("8.14.2-6 re-reads the unconfirmed events, and has 3.1r1's 25 steps") {
+  test("8.14.2f re-reads the unconfirmed events, and has 3.1r1's 25 steps") {
     val labels = InputEvents.binaryNoConfirm.configure(Options.from(Map())).steps.map(_.label).toList
     labels should contain("step: 15")
     labels.last should equal("step: 25")
@@ -56,7 +56,7 @@ class WithTimeTest extends AnyFunSuite with Matchers {
     TimeSyncOptions.binaryInput.withRelativeTime.id -> "false",
     TimeSyncOptions.binaryInput.withRelativeTimeRejected.id -> "true"))
 
-  test("8.14.2-13 passes a device declared to reject reads with relative time, noting it complies with 1815-2012") {
+  test("8.14.2m passes a device declared to reject reads with relative time, noting it complies with 1815-2012") {
     val reporter = StubDriver.reporter(new Plugin)
     val dut = new ScriptedDut(reporter, answer)
     Console.withIn(new StringReader(""))(
@@ -64,7 +64,7 @@ class WithTimeTest extends AnyFunSuite with Matchers {
     reporter.notes.head should include("relative time with IIN2.1")
   }
 
-  test("8.14.2-14 to -16 are skipped for that device, and -16 for any device without relative time") {
+  test("8.14.2n to p are skipped for that device, and p for any device without relative time") {
     InputEvents.binaryCount07WithRelativeTime.disabledBy(rejectingRelative) should not equal None
     InputEvents.binaryCount08WithRelativeTime.disabledBy(rejectingRelative) should not equal None
     InputEvents.binaryLongInterval.disabledBy(rejectingRelative) should not equal None
@@ -73,7 +73,7 @@ class WithTimeTest extends AnyFunSuite with Matchers {
     InputEvents.binaryCount07WithRelativeTime.disabledBy(Options.from(Map())) should equal(None)
   }
 
-  test("8.14.2-13 has 3.1r1's three phases, to step 38") {
+  test("8.14.2m has 3.1r1's three phases, to step 38") {
     val labels = InputEvents.binaryAllWithRelativeTime.configure(Options.from(Map())).steps.map(_.label).toList
     labels should contain allOf ("step: 17", "steps: 21 to 28", "step: 33")
     labels.last should equal("steps: 36 to 38")

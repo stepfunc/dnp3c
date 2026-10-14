@@ -13,10 +13,12 @@ import io.stepfunc.dnp3c.conformance.common.SupervisoryControl.Numbering
  * their titles and, where they differ from 1, 2 and 3, the subset levels they apply to.
  *
  * A test 3.1r1 numbers has its number, whether in a heading or on its "Test Procedure" line. One it doesn't has its
- * section's number and its place among that section's unnumbered tests, e.g. 8.6.5-2, except for Unsolicited and
- * Polled Responses, one test in sections, whose numbers 8.11.2.5.1 to 8.11.2.5.9 give it 8.11.2.5. Material that isn't
- * a test, such as desired behavior, terminology and setup, isn't in the tree. 3.1r1's 8.21 and 8.22 run the 8.13 and
- * 8.14 tests with double-bit inputs, so their tests are named after those, e.g. 8.22-8.14.2-3.
+ * section's number followed by a letter, a for the section's first unnumbered test, b for the next and so on, e.g.
+ * 8.6.5b; a letter can't be mistaken for one of 3.1r1's own numbers, and no section has more than 26 such tests.
+ * Unsolicited and Polled Responses, one test in sections, has 8.11.2.5, which its numbers 8.11.2.5.1 to 8.11.2.5.9
+ * give it. Material that isn't a test, such as desired behavior, terminology and setup, isn't in the tree. 3.1r1's 8.21
+ * and 8.22 run the 8.13 and 8.14 tests with double-bit inputs: theirs are lettered in the same order, so 8.22c is
+ * 8.14.2c's test, and their titles say which test each runs.
  *
  * A test whose steps are the same as a 2.7 test's, or differ only in wording, places that test's definition, which is
  * named after its 2.7 number, e.g. `v27.Procedure8_2_1_2_1`; 3.1r1's rules for every test apply to it as to any other.
@@ -84,18 +86,18 @@ object Tree {
       ),
       section("6.6", "Data Link Rejects Invalid Frames")(
         section("6.6.2", "Test Procedure – Primary Frames")(
-          test("6.6.2-1", "Invalid Start Octets", v27.Procedure6_6_2_1),
-          test("6.6.2-2", "Invalid Primary Function Code", v27.Procedure6_6_2_2),
-          test("6.6.2-3", "Invalid Destination Address", v27.Procedure6_6_2_3),
-          test("6.6.2-4", "No Inter-frame Gap", NoInterFrameGap.noInterFrameGap),
-          test("6.6.2-5", "Invalid CRC", v27.Procedure6_6_2_4),
-          test("6.6.2-6", "Invalid FCV", v27.Procedure6_6_2_5)
+          test("6.6.2a", "Invalid Start Octets", v27.Procedure6_6_2_1),
+          test("6.6.2b", "Invalid Primary Function Code", v27.Procedure6_6_2_2),
+          test("6.6.2c", "Invalid Destination Address", v27.Procedure6_6_2_3),
+          test("6.6.2d", "No Inter-frame Gap", NoInterFrameGap.noInterFrameGap),
+          test("6.6.2e", "Invalid CRC", v27.Procedure6_6_2_4),
+          test("6.6.2f", "Invalid FCV", v27.Procedure6_6_2_5)
         ),
         section("6.6.3", "Test Procedure – Secondary Frames")(
-          test("6.6.3-1", "Invalid Start Octets", v27.Procedure6_6_3_1),
-          test("6.6.3-2", "Invalid Secondary Function Code", v27.Procedure6_6_3_2),
-          test("6.6.3-3", "Invalid Destination Address", v27.Procedure6_6_3_3),
-          test("6.6.3-4", "Invalid CRC", v27.Procedure6_6_3_4)
+          test("6.6.3a", "Invalid Start Octets", v27.Procedure6_6_3_1),
+          test("6.6.3b", "Invalid Secondary Function Code", v27.Procedure6_6_3_2),
+          test("6.6.3c", "Invalid Destination Address", v27.Procedure6_6_3_3),
+          test("6.6.3d", "Invalid CRC", v27.Procedure6_6_3_4)
         )
       ),
       section("6.7", "Self-Address Support")(
@@ -159,14 +161,14 @@ object Tree {
             v27.Procedure8_2_3_2_3)
         ),
         section("8.2.4", "Multiple Object Requests")(
-          test("8.2.4-1", "Test Procedure", v27.Procedure8_2_4_2)
+          test("8.2.4a", "Test Procedure", v27.Procedure8_2_4_2)
         ),
         section("8.2.5", "Control Code Support")(
           test("8.2.5.2.1", "Binary Output, Complementary Function Support", v27.Procedure8_2_5_2_1),
           test("8.2.5.2.2", "Binary Output, Single Function Support", v27.Procedure8_2_5_2_2)
         ),
         section("8.2.6", "No Control When Status Code is Non-Zero")(
-          test("8.2.6-1", "Test Procedure", ControlStatus.nonZeroStatus)
+          test("8.2.6a", "Test Procedure", ControlStatus.nonZeroStatus)
         )
       ),
       section("8.3", "Analog Output Status")(
@@ -214,12 +216,12 @@ object Tree {
             v27.Procedure8_4_3_2_3)
         ),
         section("8.4.4", "Multiple Object Requests")(
-          test("8.4.4-1", "Test Procedure", v27.Procedure8_4_4_2)
+          test("8.4.4a", "Test Procedure", v27.Procedure8_4_4_2)
         )
       ),
       section("8.5", "Class Data")(
         section("8.5.1", "Class 0")(
-          test("8.5.1-1", "Test Procedure", v27.Procedure8_5_1_2)
+          test("8.5.1a", "Test Procedure", v27.Procedure8_5_1_2)
         ),
         section("8.5.2", "Class 1")(
           test("8.5.2.2.1", "Class 1 Data, 0x06", ClassData.class1All),
@@ -244,26 +246,26 @@ object Tree {
           test("8.5.5.2.2", "Multiple Object Request, Class 1, 2, 3, and 0", v27.Procedure8_5_5_2_2)
         ),
         section("8.5.6", "Class Assignment Verification")(
-          test("8.5.6-1", "Test Procedure", ClassData.classAssignment)
+          test("8.5.6a", "Test Procedure", ClassData.classAssignment)
         )
       ),
       section("8.6", "Indications")(
         section("8.6.1", "Restart")(
-          test("8.6.1-1", "Test Procedure", v27.Procedure8_6_1_2)
+          test("8.6.1a", "Test Procedure", v27.Procedure8_6_1_2)
         ),
         section("8.6.2", "Bad Function")(
-          test("8.6.2-1", "Test Procedure", v27.Procedure8_6_2_2)
+          test("8.6.2a", "Test Procedure", v27.Procedure8_6_2_2)
         ),
         section("8.6.3", "Object Unknown")(
-          test("8.6.3-1", "Test Procedure", v27.Procedure8_6_3_2)
+          test("8.6.3a", "Test Procedure", v27.Procedure8_6_3_2)
         ),
         section("8.6.4", "Local")(
-          test("8.6.4-1", "Test Procedure for Devices with Global Remote Supervisory Control", global8641),
-          test("8.6.4-2", "Test Procedure for Devices with Individual Remote Supervisory Control", individual8642)
+          test("8.6.4a", "Test Procedure for Devices with Global Remote Supervisory Control", global8641),
+          test("8.6.4b", "Test Procedure for Devices with Individual Remote Supervisory Control", individual8642)
         ),
         section("8.6.5", "Broadcast Address and All Stations Indication")(
-          test("8.6.5-1", "Test Procedure", Broadcast.allStationsIndication),
-          test("8.6.5-2", "Test Procedure, Confirmed Response Options", Broadcast.confirmedResponseOptions)
+          test("8.6.5a", "Test Procedure", Broadcast.allStationsIndication),
+          test("8.6.5b", "Test Procedure, Confirmed Response Options", Broadcast.confirmedResponseOptions)
         ),
         section("8.6.6", "Buffer Overflow")(
           test("8.6.6.2.1", "Buffer Overflow, Binary Input Change Event Buffers", v27.Procedure8_6_6_2_1),
@@ -278,7 +280,7 @@ object Tree {
           test("8.7.1.2.2", "Synchronization", v27.Procedure8_7_2_2)
         ),
         section("8.7.2", "LAN Time Sync Method")(
-          test("8.7.2-1", "Test Procedure", LanTimeSync.lanTimeSync)
+          test("8.7.2a", "Test Procedure", LanTimeSync.lanTimeSync)
         )
       ),
       section("8.8", "Cold Restart")(
@@ -286,10 +288,10 @@ object Tree {
       ),
       section("8.9", "Application Layer Fragmentation")(
         section("8.9.1", "Use of FIR, FIN and SEQUENCE in Fragmentation")(
-          test("8.9.1-1", "Test Procedure", v27.Procedure8_9_1_2)
+          test("8.9.1a", "Test Procedure", v27.Procedure8_9_1_2)
         ),
         section("8.9.2", "Use of Confirmation in Fragmentation")(
-          test("8.9.2-1", "Test Procedure", v27.Procedure8_9_2_2)
+          test("8.9.2a", "Test Procedure", v27.Procedure8_9_2_2)
         )
       ),
       section("8.10", "Multi-Drop Support")(
@@ -297,12 +299,12 @@ object Tree {
       ),
       section("8.11", "Unsolicited Responses")(
         section("8.11.2", "Test Procedure")(
-          test("8.11.2-1", "Unsolicited Response Configuration/Startup", v27.Procedure8_11_2_1),
-          test("8.11.2-2", "Unsolicited Response - Class 1 Data", v27.Procedure8_11_2_2),
-          test("8.11.2-3", "Unsolicited Response - Class 2 Data", v27.Procedure8_11_2_3),
-          test("8.11.2-4", "Unsolicited Response - Class 3 Data", v27.Procedure8_11_2_4),
+          test("8.11.2a", "Unsolicited Response Configuration/Startup", v27.Procedure8_11_2_1),
+          test("8.11.2b", "Unsolicited Response - Class 1 Data", v27.Procedure8_11_2_2),
+          test("8.11.2c", "Unsolicited Response - Class 2 Data", v27.Procedure8_11_2_3),
+          test("8.11.2d", "Unsolicited Response - Class 3 Data", v27.Procedure8_11_2_4),
           test("8.11.2.5", "Unsolicited and Polled Responses", Unsolicited.unsolicitedAndPolledResponses),
-          test("8.11.2-5", "Unsolicited Responses Off", v27.Procedure8_11_2_6)
+          test("8.11.2e", "Unsolicited Responses Off", v27.Procedure8_11_2_6)
         )
       ),
       section("8.12", "Collision Avoidance")(
@@ -311,47 +313,47 @@ object Tree {
       section("8.13", "Binary Inputs Specific Object Requests")(
         section("8.13.2", "Test Procedure")(
           test(
-            "8.13.2-1",
+            "8.13.2a",
             "Subset Level 1 device that does not support a read for binary input object group",
             StaticInputs.binaryLevelOne,
             levels = Some(Set(1))),
-          test("8.13.2-2", "Device does not have Binary Inputs", StaticInputs.binaryWithout),
-          test("8.13.2-3", "Device has Binary Inputs", StaticInputs.binaryHas),
-          test("8.13.2-4", "Device supports Binary Inputs, Configurable Device", StaticInputs.binaryConfigurable)
+          test("8.13.2b", "Device does not have Binary Inputs", StaticInputs.binaryWithout),
+          test("8.13.2c", "Device has Binary Inputs", StaticInputs.binaryHas),
+          test("8.13.2d", "Device supports Binary Inputs, Configurable Device", StaticInputs.binaryConfigurable)
         )
       ),
       section("8.14", "Binary Input Change Specific Requests")(
         section("8.14.2", "Test Procedure")(
           test(
-            "8.14.2-1",
+            "8.14.2a",
             "Subset Level 1 device that does not support a read for binary change events object group",
             InputEvents.binaryLevelOne,
             levels = Some(Set(1))
           ),
-          test("8.14.2-2", "Device does not support Binary Input Changes", InputEvents.binaryWithoutEvents),
-          test("8.14.2-3", "Binary Input Change, Qualifier 0x06", InputEvents.binaryAll),
-          test("8.14.2-4", "Binary Input Change, Qualifier 0x07", InputEvents.binaryCount07),
-          test("8.14.2-5", "Binary Input Change, Qualifier 0x08", InputEvents.binaryCount08),
-          test("8.14.2-6", "Binary Input Change Without Confirm", InputEvents.binaryNoConfirm),
-          test("8.14.2-7", "Binary Input Change Without Time, Qualifier 0x06", InputEvents.binaryAllWithoutTime),
-          test("8.14.2-8", "Binary Input Change Without Time, Qualifier 0x07", InputEvents.binaryCount07WithoutTime),
-          test("8.14.2-9", "Binary Input Change Without Time, Qualifier 0x08", InputEvents.binaryCount08WithoutTime),
-          test("8.14.2-10", "Binary Input Change with Time, Qualifier 0x06", InputEvents.binaryAllWithTime),
-          test("8.14.2-11", "Binary Input Change with Time, Qualifier 0x07", InputEvents.binaryCount07WithTime),
-          test("8.14.2-12", "Binary Input Change with Time, Qualifier 0x08", InputEvents.binaryCount08WithTime),
+          test("8.14.2b", "Device does not support Binary Input Changes", InputEvents.binaryWithoutEvents),
+          test("8.14.2c", "Binary Input Change, Qualifier 0x06", InputEvents.binaryAll),
+          test("8.14.2d", "Binary Input Change, Qualifier 0x07", InputEvents.binaryCount07),
+          test("8.14.2e", "Binary Input Change, Qualifier 0x08", InputEvents.binaryCount08),
+          test("8.14.2f", "Binary Input Change Without Confirm", InputEvents.binaryNoConfirm),
+          test("8.14.2g", "Binary Input Change Without Time, Qualifier 0x06", InputEvents.binaryAllWithoutTime),
+          test("8.14.2h", "Binary Input Change Without Time, Qualifier 0x07", InputEvents.binaryCount07WithoutTime),
+          test("8.14.2i", "Binary Input Change Without Time, Qualifier 0x08", InputEvents.binaryCount08WithoutTime),
+          test("8.14.2j", "Binary Input Change with Time, Qualifier 0x06", InputEvents.binaryAllWithTime),
+          test("8.14.2k", "Binary Input Change with Time, Qualifier 0x07", InputEvents.binaryCount07WithTime),
+          test("8.14.2l", "Binary Input Change with Time, Qualifier 0x08", InputEvents.binaryCount08WithTime),
           test(
-            "8.14.2-13",
+            "8.14.2m",
             "Binary Input Change with Relative Time, Qualifier 0x06",
             InputEvents.binaryAllWithRelativeTime),
           test(
-            "8.14.2-14",
+            "8.14.2n",
             "Binary Input Change with Relative Time, Qualifier 0x07",
             InputEvents.binaryCount07WithRelativeTime),
           test(
-            "8.14.2-15",
+            "8.14.2o",
             "Binary Input Change with Relative Time, Qualifier 0x08",
             InputEvents.binaryCount08WithRelativeTime),
-          test("8.14.2-16", "Binary Input Change with Relative Time, Long Interval", InputEvents.binaryLongInterval)
+          test("8.14.2p", "Binary Input Change with Relative Time, Long Interval", InputEvents.binaryLongInterval)
         )
       ),
       section("8.15", "Common Time of Occurrence")(
@@ -394,132 +396,132 @@ object Tree {
       section("8.17", "Binary Counters, Event")(
         section("8.17.2", "Test Procedure")(
           test(
-            "8.17.2-1",
+            "8.17.2a",
             "Subset Level 1 device that does not support a Read for Binary Counter Events",
             CounterAnalogEvents.counterLevelOne,
             levels = Some(Set(1))),
-          test("8.17.2-2", "Device does not support Binary Counter Events", CounterAnalogEvents.counterWithout),
-          test("8.17.2-3", "Binary Counters, Event, 0x06", CounterAnalogEvents.counterAll),
-          test("8.17.2-4", "Binary Counters, Event, 0x07", CounterAnalogEvents.counterOneByteCount),
-          test("8.17.2-5", "Binary Counters, Event, 0x08", CounterAnalogEvents.counterTwoByteCount),
-          test("8.17.2-6", "Binary Counters, Event Without Confirm", CounterAnalogEvents.counterWithoutConfirm)
+          test("8.17.2b", "Device does not support Binary Counter Events", CounterAnalogEvents.counterWithout),
+          test("8.17.2c", "Binary Counters, Event, 0x06", CounterAnalogEvents.counterAll),
+          test("8.17.2d", "Binary Counters, Event, 0x07", CounterAnalogEvents.counterOneByteCount),
+          test("8.17.2e", "Binary Counters, Event, 0x08", CounterAnalogEvents.counterTwoByteCount),
+          test("8.17.2f", "Binary Counters, Event Without Confirm", CounterAnalogEvents.counterWithoutConfirm)
         )
       ),
       section("8.18", "Analog Input")(
         section("8.18.2", "Test Procedure")(
           test(
-            "8.18.2-1",
+            "8.18.2a",
             "Subset Level 1 Device that does not support a Read for Analog Inputs",
             StaticInputs.analogLevelOne,
             levels = Some(Set(1))),
-          test("8.18.2-2", "Device does not have Analog Inputs", StaticInputs.analogWithout),
-          test("8.18.2-3", "Device has Analog Inputs", StaticInputs.analogHas)
+          test("8.18.2b", "Device does not have Analog Inputs", StaticInputs.analogWithout),
+          test("8.18.2c", "Device has Analog Inputs", StaticInputs.analogHas)
         )
       ),
       section("8.19", "Analog Change Event")(
         section("8.19.2", "Test Procedure")(
           test(
-            "8.19.2-1",
+            "8.19.2a",
             "Subset Level 1 Device that does not support a Read for Analog Input Events",
             CounterAnalogEvents.analogLevelOne,
             levels = Some(Set(1))),
-          test("8.19.2-2", "Analog Input Change", CounterAnalogEvents.analogChange),
-          test("8.19.2-3", "Analog Input Change, Without Confirm", CounterAnalogEvents.analogWithoutConfirm),
+          test("8.19.2b", "Analog Input Change", CounterAnalogEvents.analogChange),
+          test("8.19.2c", "Analog Input Change, Without Confirm", CounterAnalogEvents.analogWithoutConfirm),
           test("8.19.2.4", "Analog Input Change, Value Return", AnalogValueReturn.valueReturn)
         )
       ),
       section("8.20", "Multiple Read Requests")(
         section("8.20.2", "Test Procedure")(
           test(
-            "8.20.2-1",
+            "8.20.2a",
             "Subset Level 1 Device that does not support a Read for Individual Object Types",
             MultipleReads.levelOne,
             levels = Some(Set(1))),
-          test("8.20.2-2", "Multiple Object Types", MultipleReads.multipleObjectTypes)
+          test("8.20.2b", "Multiple Object Types", MultipleReads.multipleObjectTypes)
         )
       ),
       section("8.21", "Double-bit Inputs")(
         test("8.21.1", "Disable Double Bit Binaries", DisableDoubleBit.static),
         test(
-          "8.21-8.13.2-1",
-          "Subset Level 1 device that does not support a read for binary input object group, with double-bit inputs",
+          "8.21a",
+          "Subset Level 1 device that does not support a read for the double-bit input object group (as 8.13.2a)",
           StaticInputs.doubleBitLevelOne,
           levels = Some(Set(1))
         ),
         test(
-          "8.21-8.13.2-2",
-          "Device does not have Binary Inputs, with double-bit inputs",
+          "8.21b",
+          "Device does not have Double-bit Inputs (as 8.13.2b)",
           StaticInputs.doubleBitWithout),
-        test("8.21-8.13.2-3", "Device has Binary Inputs, with double-bit inputs", StaticInputs.doubleBitHas),
+        test("8.21c", "Device has Double-bit Inputs (as 8.13.2c)", StaticInputs.doubleBitHas),
         test(
-          "8.21-8.13.2-4",
-          "Device supports Binary Inputs, Configurable Device, with double-bit inputs",
+          "8.21d",
+          "Device supports Double-bit Inputs, Configurable Device (as 8.13.2d)",
           StaticInputs.doubleBitConfigurable)
       ),
       section("8.22", "Double-bit Input Change")(
         test("8.22.1", "Disable Double Bit Binaries", DisableDoubleBit.events),
         test(
-          "8.22-8.14.2-1",
-          "Subset Level 1 device that does not support a read for binary change events object group, with double-bit inputs",
+          "8.22a",
+          "Subset Level 1 device that does not support a read for the double-bit change events object group (as 8.14.2a)",
           InputEvents.doubleBitLevelOne,
           levels = Some(Set(1))
         ),
         test(
-          "8.22-8.14.2-2",
-          "Device does not support Binary Input Changes, with double-bit inputs",
+          "8.22b",
+          "Device does not support Double-bit Input Changes (as 8.14.2b)",
           InputEvents.doubleBitWithoutEvents),
-        test("8.22-8.14.2-3", "Binary Input Change, Qualifier 0x06, with double-bit inputs", InputEvents.doubleBitAll),
+        test("8.22c", "Double-bit Input Change, Qualifier 0x06 (as 8.14.2c)", InputEvents.doubleBitAll),
         test(
-          "8.22-8.14.2-4",
-          "Binary Input Change, Qualifier 0x07, with double-bit inputs",
+          "8.22d",
+          "Double-bit Input Change, Qualifier 0x07 (as 8.14.2d)",
           InputEvents.doubleBitCount07),
         test(
-          "8.22-8.14.2-5",
-          "Binary Input Change, Qualifier 0x08, with double-bit inputs",
+          "8.22e",
+          "Double-bit Input Change, Qualifier 0x08 (as 8.14.2e)",
           InputEvents.doubleBitCount08),
         test(
-          "8.22-8.14.2-6",
-          "Binary Input Change Without Confirm, with double-bit inputs",
+          "8.22f",
+          "Double-bit Input Change Without Confirm (as 8.14.2f)",
           InputEvents.doubleBitNoConfirm),
         test(
-          "8.22-8.14.2-7",
-          "Binary Input Change Without Time, Qualifier 0x06, with double-bit inputs",
+          "8.22g",
+          "Double-bit Input Change Without Time, Qualifier 0x06 (as 8.14.2g)",
           InputEvents.doubleBitAllWithoutTime),
         test(
-          "8.22-8.14.2-8",
-          "Binary Input Change Without Time, Qualifier 0x07, with double-bit inputs",
+          "8.22h",
+          "Double-bit Input Change Without Time, Qualifier 0x07 (as 8.14.2h)",
           InputEvents.doubleBitCount07WithoutTime),
         test(
-          "8.22-8.14.2-9",
-          "Binary Input Change Without Time, Qualifier 0x08, with double-bit inputs",
+          "8.22i",
+          "Double-bit Input Change Without Time, Qualifier 0x08 (as 8.14.2i)",
           InputEvents.doubleBitCount08WithoutTime),
         test(
-          "8.22-8.14.2-10",
-          "Binary Input Change with Time, Qualifier 0x06, with double-bit inputs",
+          "8.22j",
+          "Double-bit Input Change with Time, Qualifier 0x06 (as 8.14.2j)",
           InputEvents.doubleBitAllWithTime),
         test(
-          "8.22-8.14.2-11",
-          "Binary Input Change with Time, Qualifier 0x07, with double-bit inputs",
+          "8.22k",
+          "Double-bit Input Change with Time, Qualifier 0x07 (as 8.14.2k)",
           InputEvents.doubleBitCount07WithTime),
         test(
-          "8.22-8.14.2-12",
-          "Binary Input Change with Time, Qualifier 0x08, with double-bit inputs",
+          "8.22l",
+          "Double-bit Input Change with Time, Qualifier 0x08 (as 8.14.2l)",
           InputEvents.doubleBitCount08WithTime),
         test(
-          "8.22-8.14.2-13",
-          "Binary Input Change with Relative Time, Qualifier 0x06, with double-bit inputs",
+          "8.22m",
+          "Double-bit Input Change with Relative Time, Qualifier 0x06 (as 8.14.2m)",
           InputEvents.doubleBitAllWithRelativeTime),
         test(
-          "8.22-8.14.2-14",
-          "Binary Input Change with Relative Time, Qualifier 0x07, with double-bit inputs",
+          "8.22n",
+          "Double-bit Input Change with Relative Time, Qualifier 0x07 (as 8.14.2n)",
           InputEvents.doubleBitCount07WithRelativeTime),
         test(
-          "8.22-8.14.2-15",
-          "Binary Input Change with Relative Time, Qualifier 0x08, with double-bit inputs",
+          "8.22o",
+          "Double-bit Input Change with Relative Time, Qualifier 0x08 (as 8.14.2o)",
           InputEvents.doubleBitCount08WithRelativeTime),
         test(
-          "8.22-8.14.2-16",
-          "Binary Input Change with Relative Time, Long Interval, with double-bit inputs",
+          "8.22p",
+          "Double-bit Input Change with Relative Time, Long Interval (as 8.14.2p)",
           InputEvents.doubleBitLongInterval)
       ),
       section("8.23", "Specific Point Ranges")(
@@ -573,29 +575,29 @@ object Tree {
       ),
       section("8.24", "Specific variations for Static Inputs")(
         section("8.24.2", "Test Procedure")(
-          test("8.24.2-1", "Binary Inputs", staticVariations.binaryInputs),
-          test("8.24.2-2", "Double-Bit Binary Inputs", staticVariations.doubleBitInputs),
-          test("8.24.2-3", "Binary Output Status", staticVariations.binaryOutputStatus),
-          test("8.24.2-4", "Counters", staticVariations.counters),
-          test("8.24.2-5", "Frozen Counters", staticVariations.frozenCounters),
-          test("8.24.2-6", "Analog Inputs", staticVariations.analogInputs),
-          test("8.24.2-7", "Analog Output Status", staticVariations.analogOutputStatus)
+          test("8.24.2a", "Binary Inputs", staticVariations.binaryInputs),
+          test("8.24.2b", "Double-Bit Binary Inputs", staticVariations.doubleBitInputs),
+          test("8.24.2c", "Binary Output Status", staticVariations.binaryOutputStatus),
+          test("8.24.2d", "Counters", staticVariations.counters),
+          test("8.24.2e", "Frozen Counters", staticVariations.frozenCounters),
+          test("8.24.2f", "Analog Inputs", staticVariations.analogInputs),
+          test("8.24.2g", "Analog Output Status", staticVariations.analogOutputStatus)
         )
       ),
       section("8.25", "Specific Variations for Events")(
         section("8.25.2", "Test Procedure")(
           test(
-            "8.25.2-1",
+            "8.25.2a",
             "Binary Input Events",
             EventVariations.coveredBy("8.14, which reads binary input events in each variation"),
             levels = Some(Set(2, 3))),
           test(
-            "8.25.2-2",
+            "8.25.2b",
             "Double-Bit Binary Input Events",
             EventVariations.coveredBy("8.22, which reads double-bit input events in each variation")),
-          test("8.25.2-3", "Counter Events", eventVariations.counters),
-          test("8.25.2-4", "Frozen Counters", eventVariations.frozenCounters),
-          test("8.25.2-5", "Analog Input Events", eventVariations.analogInputs)
+          test("8.25.2c", "Counter Events", eventVariations.counters),
+          test("8.25.2d", "Frozen Counters", eventVariations.frozenCounters),
+          test("8.25.2e", "Analog Input Events", eventVariations.analogInputs)
         )
       ),
       section("8.26", "Assign Class")(
@@ -628,31 +630,31 @@ object Tree {
           test("9.5.3.5.2", "Data Filled Messages to a Fixed Port Other Than 20000", Network.unsolicitedDataFixedPort)
         ),
         section("9.5.4", "Unsolicited with Both UDP and TCP")(
-          test("9.5.4-1", "Test Procedure", Network.unsolicitedUdpAndTcp)
+          test("9.5.4a", "Test Procedure", Network.unsolicitedUdpAndTcp)
         )
       )
     ),
     section("10", "Output Control Events")(
       section("10.3", "Binary")(
         section("10.3.2", "Binary Status in Group 0")(
-          test("10.3.2-1", "Test Procedure", OutputEvents.binaryStatusInClassZero)
+          test("10.3.2a", "Test Procedure", OutputEvents.binaryStatusInClassZero)
         ),
         section("10.3.3", "Binary Output Status Events")(
-          test("10.3.3-1", "Test Procedure", OutputEvents.binaryStatusEvents)
+          test("10.3.3a", "Test Procedure", OutputEvents.binaryStatusEvents)
         ),
         section("10.3.4", "Binary Command Events")(
-          test("10.3.4-1", "Test Procedure", OutputEvents.binaryCommandEvents)
+          test("10.3.4a", "Test Procedure", OutputEvents.binaryCommandEvents)
         )
       ),
       section("10.4", "Analog")(
         section("10.4.2", "Analog Status in Group 0")(
-          test("10.4.2-1", "Test Procedure", OutputEvents.analogStatusInClassZero)
+          test("10.4.2a", "Test Procedure", OutputEvents.analogStatusInClassZero)
         ),
         section("10.4.3", "Analog Output Status Events")(
-          test("10.4.3-1", "Test Procedure", OutputEvents.analogStatusEvents)
+          test("10.4.3a", "Test Procedure", OutputEvents.analogStatusEvents)
         ),
         section("10.4.4", "Analog Command Events")(
-          test("10.4.4-1", "Test Procedure", OutputEvents.analogCommandEvents)
+          test("10.4.4a", "Test Procedure", OutputEvents.analogCommandEvents)
         )
       )
     )

@@ -67,7 +67,7 @@ object TimeSyncOptions extends OptionGroup {
     this,
     "timeToUnsynchronizedMs",
     "The manufacturer's time (in milliseconds) after the maximum time from reset to IIN1-4 assertion until the DUT's " +
-      "clock is unsynchronized, which 3.1r1's 8.14.2-13 waits for a DUT that reports events with relative time and " +
+      "clock is unsynchronized, which 3.1r1's 8.14.2m waits for a DUT that reports events with relative time and " +
       "asks for the time",
     0
   )

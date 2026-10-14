@@ -74,7 +74,7 @@ object InputEvents {
     }
   }
 
-  /** Qualifier 0x06 (8.14.2-3): every event in one response */
+  /** Qualifier 0x06 (8.14.2c): every event in one response */
   final class AllQualifier(input: InputType) extends EventTest(input) {
     import input._
     override protected def steps(options: OptionSource): Iterable[LabeledStep] = List(
@@ -91,14 +91,14 @@ object InputEvents {
     )
   }
 
-  /** Qualifier 0x07 (8.14.2-4), or 0x08 with twoByteCount (8.14.2-5): the events a few at a time */
+  /** Qualifier 0x07 (8.14.2d), or 0x08 with twoByteCount (8.14.2e): the events a few at a time */
   final class CountQualifier(input: InputType, twoByteCount: Boolean) extends EventTest(input) {
     import input._
     override protected def steps(options: OptionSource): Iterable[LabeledStep] =
       empty(Sequence.one) ++ countReads(options, anyVariation, twoByteCount, 6 to 11, 12, 13 to 15)
   }
 
-  /** Without time, qualifier 0x06 (8.14.2-7) */
+  /** Without time, qualifier 0x06 (8.14.2g) */
   final class AllQualifierWithoutTime(input: InputType) extends EventTest(input) {
     import input._
     override protected def steps(options: OptionSource): Iterable[LabeledStep] = empty(Sequence.one) ++ List(
@@ -111,7 +111,7 @@ object InputEvents {
     )
   }
 
-  /** Without time, qualifier 0x07 (8.14.2-8), or 0x08 with twoByteCount (8.14.2-9) */
+  /** Without time, qualifier 0x07 (8.14.2h), or 0x08 with twoByteCount (8.14.2i) */
   final class CountQualifierWithoutTime(input: InputType, twoByteCount: Boolean) extends EventTest(input) {
     import input._
     override protected def steps(options: OptionSource): Iterable[LabeledStep] =
@@ -123,7 +123,7 @@ object InputEvents {
     "1815-2012, but not with IEEE 1815-202x"
 
   /**
-   * With time, qualifier 0x06 (8.14.2-10). A device without events with time may answer with a Null Error Response
+   * With time, qualifier 0x06 (8.14.2j). A device without events with time may answer with a Null Error Response
    * with IIN2.1, if it's configured to: that passes, noted as compliant with 1815-2012 but not 1815-202x, and its other
    * with-time tests are skipped. Otherwise the events, with time or not, are reported as the rules require.
    */
@@ -152,8 +152,8 @@ object InputEvents {
   }
 
   /**
-   * With time, qualifier 0x07 (8.14.2-11), or 0x08 with twoByteCount (8.14.2-12): skipped for a device that answers a
-   * read of events with time with IIN2.1, which 8.14.2-10 tests
+   * With time, qualifier 0x07 (8.14.2k), or 0x08 with twoByteCount (8.14.2l): skipped for a device that answers a
+   * read of events with time with IIN2.1, which 8.14.2j tests
    */
   final class CountQualifierWithTime(input: InputType, twoByteCount: Boolean) extends EventTest(input) {
     import input._
@@ -168,7 +168,7 @@ object InputEvents {
   }
 
   /**
-   * Without confirm (8.14.2-6): the response to a read isn't confirmed, so the events stay; read again, the device
+   * Without confirm (8.14.2f): the response to a read isn't confirmed, so the events stay; read again, the device
    * answers with the same objects under the new sequence number, and doesn't retransmit either; then new events join
    * them in the next response, which is confirmed
    */
@@ -222,7 +222,7 @@ object InputEvents {
       "complies with IEEE 1815-2012, but not with IEEE 1815-202x"
 
   /**
-   * With relative time, qualifier 0x06 (8.14.2-13), in three phases: after a restart, while the clock is
+   * With relative time, qualifier 0x06 (8.14.2m), in three phases: after a restart, while the clock is
    * unsynchronized; after a time write, synchronized; and after the synchronization expires. A device without events
    * with relative time may answer with IIN2.1, if it's configured to: that passes, noted as compliant with 1815-2012
    * but not 1815-202x, and the rest of 8.14 and 8.15 are skipped.
@@ -232,7 +232,7 @@ object InputEvents {
     import io.stepfunc.dnp3c.conformance.api.options.TimeSyncOptions
     import EventRules.Clock
 
-    // 8.14.2-13 waits for the clock to go unsynchronized: how long is the manufacturer's to say
+    // 8.14.2m waits for the clock to go unsynchronized: how long is the manufacturer's to say
     override def configurationProblems(options: OptionSource): List[ConfigProblem] =
       super.configurationProblems(options) ++ Option.when(
         options.get(withRelativeTime) && options.get(TimeSyncOptions.supportSynchronizingTimeFromMaster) &&
@@ -314,7 +314,7 @@ object InputEvents {
   // the input's events with relative time can be read: not a device that answers such a read with IIN2.1
   private def relativeReadable(input: InputType): List[OptionCondition] = !input.withRelativeTimeRejected :: Nil
 
-  /** With relative time, qualifier 0x07 (8.14.2-14), or 0x08 with twoByteCount (8.14.2-15) */
+  /** With relative time, qualifier 0x07 (8.14.2n), or 0x08 with twoByteCount (8.14.2o) */
   final class CountQualifierWithRelativeTime(input: InputType, twoByteCount: Boolean) extends EventTest(input) {
     import input._
     override protected def requiredOptions: List[OptionCondition] = super.requiredOptions ++ relativeReadable(input)
@@ -323,7 +323,7 @@ object InputEvents {
   }
 
   /**
-   * With relative time, a long interval (8.14.2-16): events more than 0xFFFF ms apart need a CTO each. Only for a device
+   * With relative time, a long interval (8.14.2p): events more than 0xFFFF ms apart need a CTO each. Only for a device
    * that reports events with relative time.
    */
   final class RelativeTimeLongInterval(input: InputType) extends EventTest(input) {
@@ -361,7 +361,7 @@ object InputEvents {
   }
 
   /**
-   * A subset level 1 device that can't read the input's events (8.14.2-1): it answers reads of variations 0 and 1 with a
+   * A subset level 1 device that can't read the input's events (8.14.2a): it answers reads of variations 0 and 1 with a
    * Null Error Response with IIN2.0, 2.1 or 2.2 (2.1 preferred), which the result notes
    */
   def levelOneWithoutEventReads(input: InputType): ProcedureDefinition = new StaticInputs.LevelOneWithoutReads(
@@ -372,8 +372,8 @@ object InputEvents {
   )
 
   /**
-   * A device without the input's events (8.14.2-2): as 2.7's, but only for a device whose events can be read, since a
-   * subset level 1 device that can't read them answers with an error, which 8.14.2-1 tests
+   * A device without the input's events (8.14.2b): as 2.7's, but only for a device whose events can be read, since a
+   * subset level 1 device that can't read them answers with an error, which 8.14.2a tests
    */
   final class WithoutEvents(input: InputType) extends NoEvents(input) {
     override protected def requirement: Requirement =

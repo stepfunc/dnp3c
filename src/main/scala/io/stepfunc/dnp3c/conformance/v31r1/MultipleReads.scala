@@ -30,7 +30,7 @@ object MultipleReads {
       )) ++
       List(OptionCondition(Outputs.binary.statusPoints), OptionCondition(Outputs.analog.statusPoints)))*)
 
-  /** 8.20.2-1: a request for each type the DUT has, which it can't read, gets a Null Error Response */
+  /** 8.20.2a: a request for each type the DUT has, which it can't read, gets a Null Error Response */
   val levelOne: ProcedureDefinition = new ProcedureDefinition {
     override protected def requirement: Requirement = Requirement.not(readsSome)
 
@@ -44,7 +44,7 @@ object MultipleReads {
     }
   }
 
-  /** 8.20.2-2, of the types the DUT can read: a subset level 1 device needn't be able to read them all */
+  /** 8.20.2b, of the types the DUT can read: a subset level 1 device needn't be able to read them all */
   val multipleObjectTypes: ProcedureDefinition =
     new MultipleObjectTypes(staticInRequestOrder = false, onlyReadable = true) {
       override protected def requirement: Requirement = readsSome

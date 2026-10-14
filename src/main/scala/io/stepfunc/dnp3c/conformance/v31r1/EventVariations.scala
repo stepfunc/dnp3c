@@ -141,7 +141,7 @@ object EventVariations {
     }
   }
 
-  /** 8.25.2-1 and 8.25.2-2, which 3.1r1 gives no steps: earlier tests cover them */
+  /** 8.25.2a and 8.25.2b, which 3.1r1 gives no steps: earlier tests cover them */
   def coveredBy(what: String): ProcedureDefinition = new ProcedureDefinition {
     override protected def steps(options: OptionSource): Iterable[LabeledStep] =
       List(1 --> describe(s"3.1r1 gives this test no steps: $what covers it"))

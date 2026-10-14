@@ -27,7 +27,7 @@ Commercial DNP3 test tools save their results in proprietary formats. dnp3c writ
 
 dnp3c implements two revisions of the DNP Users Group's *DNP3 IED Certification Procedure*, chosen with `-rev` (`-revs` lists them):
 
-- **3.1 rev 1** (`3.1r1`, 13 September 2022) covers Subset Levels 1 to 3. Its tests have the numbers it gives them. One it leaves without a number is named after its section and its place among that section's unnumbered tests, e.g. 8.6.5-2.
+- **3.1 rev 1** (`3.1r1`, 13 September 2022) covers Subset Levels 1 to 3. Its tests have the numbers it gives them. One it leaves without a number has its section's number followed by a letter for its place among the section's unnumbered tests, e.g. 8.6.5b for the second.
 - **2.7** (`2.7`, 2 March 2016) covers Subset Level 2. Where a technical bulletin replaces a 2.7 test outright, dnp3c runs the replacement: TB2017-001's 8.6.4.2 and 8.6.4.3, whose steps are numbered 1.a, 1.b, and so on.
 
 The section, procedure and step numbers in the tool, its logs and the report are those of the revision being run. Each revision is run as published, so a result under 2.7 can differ from one under 3.1 rev 1, which changes what some tests send or accept, often to apply technical bulletins published after 2.7.
@@ -64,7 +64,7 @@ The library jar, `io.stepfunc:dnp3c`, is published to Maven Central. See [Automa
 - **8.11.2.1 step 24:** the procedure expects a READ to be answered while the device's startup unsolicited response is still unconfirmed, while IEEE 1815's outstation state table would let the device defer it. The tool follows the procedure.
 - **8.6.4:** 2.7's description of the desired behavior still has a binary output in local mode set LOCAL_FORCED. TB2017-001 replaced the tests, which the tool runs, but not that description: in local mode an output clears ONLINE and keeps its other flags.
 - **Counter events in 3.1r1** may be changes of a counter's flags alone (TB2017-003a). The default plugin's prompts for 8.17 ask for counts, so a device that reports only flag changes needs a plugin that generates and checks those instead.
-- **3.1r1's 6.6.2-4** (No Inter-frame Gap) is for serial and UDP, and for TCP only where the device has more than one DNP3 address. dnp3c runs it over serial (`serial.enabled`), and over TCP only for such a device (`supports.multipleAddresses`).
+- **3.1r1's 6.6.2d** (No Inter-frame Gap) is for serial and UDP, and for TCP only where the device has more than one DNP3 address. dnp3c runs it over serial (`serial.enabled`), and over TCP only for such a device (`supports.multipleAddresses`).
 - **3.1r1's network tests (section 9):** each runs only where its `network.*` options say the device and the test bench can do what it tests, and is skipped otherwise, even where 3.1r1 requires it of every device that uses TCP or UDP (e.g. 9.5.1's Port 20000). They talk to the device's port 20000 from `network.master.address`, an address of the host running dnp3c, some of them from port 20000: a device on the same host must listen on another address.
 - **Packet capture** doesn't work on macOS.
 
