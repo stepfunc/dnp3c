@@ -88,4 +88,13 @@ class Revision31r1Test extends AnyFunSuite with Matchers {
     revision.levelsOf(procedure("8.26.3")) should equal(Set(3))
     revision.levelsOf(procedure("6.1.2")) should equal(Set(1, 2, 3))
   }
+
+  test("6.4.2 drops 2.7's empty step 14, and 7.2 shares 2.7's definition") {
+    def labels(id: String, r: Revision) = r.elements(id).asInstanceOf[TestProcedure].definition
+      .configure(Options.from(Map())).steps.map(_.label.stripPrefix("step: ")).toList
+    labels("6.4.2", Revisions.v2_7).last should equal("21")
+    labels("6.4.2", revision).last should equal("20")
+    labels("6.4.2", revision) should contain("14")
+    procedure("7.2").definition should be theSameInstanceAs s7.Procedure72
+  }
 }

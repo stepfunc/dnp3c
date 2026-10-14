@@ -10,7 +10,12 @@ import io.stepfunc.dnp3c.conformance.s8.helpers.GenericSteps._
 import io.stepfunc.dnp3c.dnp3.LinkOverride
 import io.stepfunc.dnp3c.dnp3.app.Sequence
 
-object Procedure642 extends ProcedureDefinition {
+/**
+ * 6.4.2
+ *
+ * @param emptyStep14 whether the numbering has 2.7's empty step 14, which 3.1r1 drops, moving the later steps back one
+ */
+class TestRetries(emptyStep14: Boolean) extends ProcedureDefinition {
 
   override def requiredOptions = List(SupportOptions.dataLinkConfirmRequests, SupportOptions.dataLinkRetries)
 
@@ -24,6 +29,7 @@ object Procedure642 extends ProcedureDefinition {
     val numRetry = options.get(LinkOptions.numRetry)
     val timeout = options.get(LinkOptions.timeout)
     val responseTimeout = responseTimeoutMs(options)
+    val s = if (emptyStep14) 0 else -1
 
     List(
       1 --> step1,
@@ -37,15 +43,17 @@ object Procedure642 extends ProcedureDefinition {
       (10 to 12) --> expectFrameAndRetries(isConfirmedUserData, numRetry, timeout, responseTimeout) +
         expectNoMoreRetries(timeout),
       13 --> describe(notExercised),
-      15 --> readClass0(Sequence.two, LinkOverride.control(0xC4.toByte)),
-      16 --> (expectLinkReset(responseTimeout) + sendLinkConfirm),
-      (17 to 18) --> expectFrameAndRetries(withControl(0x73), 1, timeout, responseTimeout),
-      19 --> sendLinkConfirm,
+      15 + s --> readClass0(Sequence.two, LinkOverride.control(0xC4.toByte)),
+      16 + s --> (expectLinkReset(responseTimeout) + sendLinkConfirm),
+      (17 + s to 18 + s) --> expectFrameAndRetries(withControl(0x73), 1, timeout, responseTimeout),
+      19 + s --> sendLinkConfirm,
       // no retry (0x73) in the window expectNoMoreRetries watches, but a class 0 response longer than one frame goes on
       // with its next frame, the FCB toggled (0x53)
-      20 --> expectLinkTimeoutOr(withControl(0x53), timeout * 3 / 2),
-      21 --> describe(notExercised)
+      20 + s --> expectLinkTimeoutOr(withControl(0x53), timeout * 3 / 2),
+      21 + s --> describe(notExercised)
     )
 
   }
 }
+
+object Procedure642 extends TestRetries(emptyStep14 = true)
