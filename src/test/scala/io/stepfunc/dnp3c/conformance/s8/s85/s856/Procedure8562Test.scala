@@ -4,7 +4,7 @@
 package io.stepfunc.dnp3c.conformance.s8.s85.s856
 
 import io.stepfunc.dnp3c.conformance.api.Options
-import io.stepfunc.dnp3c.conformance.api.options.ClassOptions
+import io.stepfunc.dnp3c.conformance.api.options.{ OutstationOptions, ClassOptions }
 import io.stepfunc.dnp3c.dnp3.link.FrameValidator
 import io.stepfunc.dnp3c.dnp3._
 import io.stepfunc.dnp3c.dnp3.app._
@@ -65,7 +65,8 @@ class Procedure8562Test extends AnyFunSuite with Matchers {
   }
 
   private val noClasses = Options.from(
-    List(ClassOptions.supportClass1, ClassOptions.supportClass2, ClassOptions.supportClass3).map(_.id -> "false").toMap)
+    List(ClassOptions.supportClass1, ClassOptions.supportClass2, ClassOptions.supportClass3).map(_.id ->
+      "false").toMap + (OutstationOptions.subsetLevel.id -> "2"))
 
   private def run(dut: Dut): Unit = Procedure8562.configure(noClasses).steps.foreach(_.step.run(dut))
 
@@ -85,7 +86,8 @@ class Procedure8562Test extends AnyFunSuite with Matchers {
   }
 
   private val onlyClass2 = Options.from(
-    List(ClassOptions.supportClass1, ClassOptions.supportClass3).map(_.id -> "false").toMap)
+    List(ClassOptions.supportClass1, ClassOptions.supportClass3).map(_.id -> "false").toMap +
+      (OutstationOptions.subsetLevel.id -> "2"))
 
   // class 2's first read gets its event, the second a Null Response
   private def class2Events(seq: Int, variations: List[Variation]): Boolean = variations == List(Group60Var3) && seq == 2

@@ -4,7 +4,7 @@
 package io.stepfunc.dnp3c.conformance
 
 import io.stepfunc.dnp3c.conformance.api.{ BooleanOption, OptionGroups, Options, TestElement, ProcedureDefinition }
-import io.stepfunc.dnp3c.conformance.api.options.{ AttributeOptions, SupportOptions }
+import io.stepfunc.dnp3c.conformance.api.options.{ AttributeOptions, OutstationOptions, SupportOptions }
 import org.junit.runner.RunWith
 import org.scalatestplus.junit.JUnitRunner
 import org.scalatest.matchers.should.Matchers
@@ -16,7 +16,7 @@ class ProcedureConfigurationTest extends AnyFunSuite with Matchers {
 
   // every revision's procedures; a definition that two revisions share is configured once for each
   private val procedures = Revisions.list.flatMap(_.flatMapProcedures(p => Some(p)))
-  private val (incomplete, implemented) = procedures.partition(_.incomplete)
+  private val incomplete = procedures.filter(_.incomplete)
 
   // the Device Profile values that have no default
   private val profile = Map(AttributeOptions.supportedVariations.id -> "1")
@@ -25,18 +25,23 @@ class ProcedureConfigurationTest extends AnyFunSuite with Matchers {
 
   private def build(procedure: ProcedureDefinition, options: Options): Unit = procedure.configure(options).steps.toList
 
-  private def configuresEveryProcedure(options: Options): Unit = implemented.foreach { p =>
-    withClue(s"${p.id}: ")(noException should be thrownBy build(p.definition, options))
-  }
+  // at each subset level a revision tests, its implemented procedures that apply at that level
+  private def configuresEveryProcedure(options: Map[String, String]): Unit =
+    for {
+      revision <- Revisions.list
+      level <- revision.subsetLevels
+      p <- revision.flatMapProcedures(p => Some(p)) if !p.incomplete && revision.levelsOf(p).contains(level)
+    } withClue(s"${revision.id} L$level ${p.id}: ")(noException should be thrownBy
+      build(p.definition, Options.from(options + (OutstationOptions.subsetLevel.id -> level.toString))))
 
   test("every implemented procedure configures with the defaults") {
-    configuresEveryProcedure(Options.from(profile))
+    configuresEveryProcedure(profile)
   }
 
   // each setting enables the procedures that require it, so their steps are built too
   test("every implemented procedure configures with every boolean option on, and with every one off") {
-    configuresEveryProcedure(Options.from(profile ++ booleans.map(_ -> "true")))
-    configuresEveryProcedure(Options.from(profile ++ booleans.map(_ -> "false")))
+    configuresEveryProcedure(profile ++ booleans.map(_ -> "true"))
+    configuresEveryProcedure(profile ++ booleans.map(_ -> "false"))
   }
 
   test("a procedure that needs Device Profile values fails to configure without them") {

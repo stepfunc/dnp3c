@@ -4,7 +4,6 @@
 package io.stepfunc.dnp3c.conformance.s8.s85.s855
 
 import io.stepfunc.dnp3c.conformance.api._
-import io.stepfunc.dnp3c.conformance.api.options.SupportOptions
 import io.stepfunc.dnp3c.conformance.s8.helpers.GenericSteps._
 import io.stepfunc.dnp3c.conformance.s8.helpers.Validations._
 import io.stepfunc.dnp3c.dnp3.{ AutoConfirm, Requests }
@@ -24,7 +23,7 @@ object Procedure85521 extends ProcedureDefinition {
           AutoConfirm.Yes,
           eventResponse(
             PluginValidations.verifyLatestClassEvents(EventClass.All),
-            verifyOnlyTable84Contents(options.get(SupportOptions.Inputs.doubleBit.points)))
+            verifyOnlyTable84Contents(Tables(options)))
         )
     )
   }

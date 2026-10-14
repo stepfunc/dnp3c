@@ -199,32 +199,32 @@ object Tree {
       ),
       section("8.5", "Class Data")(
         section("8.5.1", "Class 0")(
-          notYet("8.5.1-1", "Test Procedure")
+          test("8.5.1-1", "Test Procedure", s8.s85.s851.Procedure8512)
         ),
         section("8.5.2", "Class 1")(
-          notYet("8.5.2.2.1", "Class 1 Data, 0x06"),
-          notYet("8.5.2.2.2", "Class 1 Data, 0x07"),
-          notYet("8.5.2.2.3", "Class 1 Data, 0x08"),
-          notYet("8.5.2.2.4", "Class 1 Data Without Confirm")
+          test("8.5.2.2.1", "Class 1 Data, 0x06", ClassData.class1All),
+          test("8.5.2.2.2", "Class 1 Data, 0x07", ClassData.class1OneByteCount),
+          test("8.5.2.2.3", "Class 1 Data, 0x08", ClassData.class1TwoByteCount),
+          test("8.5.2.2.4", "Class 1 Data Without Confirm", s8.s85.s852.Procedure85224)
         ),
         section("8.5.3", "Class 2")(
-          notYet("8.5.3.2.1", "Class 2 Data, 0x06"),
-          notYet("8.5.3.2.2", "Class 2 Data, 0x07"),
-          notYet("8.5.3.2.3", "Class 2 Data, 0x08"),
-          notYet("8.5.3.2.4", "Class 2 Data Without Confirm")
+          test("8.5.3.2.1", "Class 2 Data, 0x06", ClassData.class2All),
+          test("8.5.3.2.2", "Class 2 Data, 0x07", ClassData.class2OneByteCount),
+          test("8.5.3.2.3", "Class 2 Data, 0x08", ClassData.class2TwoByteCount),
+          test("8.5.3.2.4", "Class 2 Data Without Confirm", s8.s85.s853.Procedure85324)
         ),
         section("8.5.4", "Class 3")(
-          notYet("8.5.4.2.1", "Class 3 Data, 0x06"),
-          notYet("8.5.4.2.2", "Class 3 Data, 0x07"),
-          notYet("8.5.4.2.3", "Class 3 Data, 0x08"),
-          notYet("8.5.4.2.4", "Class 3 Data Without Confirm")
+          test("8.5.4.2.1", "Class 3 Data, 0x06", ClassData.class3All),
+          test("8.5.4.2.2", "Class 3 Data, 0x07", ClassData.class3OneByteCount),
+          test("8.5.4.2.3", "Class 3 Data, 0x08", ClassData.class3TwoByteCount),
+          test("8.5.4.2.4", "Class 3 Data Without Confirm", s8.s85.s854.Procedure85424)
         ),
         section("8.5.5", "Multiple Object Request")(
-          notYet("8.5.5.2.1", "Multiple Object Request, Class 1, 2, and 3"),
-          notYet("8.5.5.2.2", "Multiple Object Request, Class 1, 2, 3, and 0")
+          test("8.5.5.2.1", "Multiple Object Request, Class 1, 2, and 3", s8.s85.s855.Procedure85521),
+          test("8.5.5.2.2", "Multiple Object Request, Class 1, 2, 3, and 0", s8.s85.s855.Procedure85522)
         ),
         section("8.5.6", "Class Assignment Verification")(
-          notYet("8.5.6-1", "Test Procedure")
+          test("8.5.6-1", "Test Procedure", ClassData.classAssignment)
         )
       ),
       section("8.6", "Indications")(

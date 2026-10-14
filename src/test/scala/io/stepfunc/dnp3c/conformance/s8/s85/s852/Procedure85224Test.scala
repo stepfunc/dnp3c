@@ -3,6 +3,7 @@
 
 package io.stepfunc.dnp3c.conformance.s8.s85.s852
 
+import io.stepfunc.dnp3c.conformance.api.options.OutstationOptions
 import io.stepfunc.dnp3c.conformance.api.Options
 import io.stepfunc.dnp3c.dnp3._
 import io.stepfunc.dnp3c.dnp3.app._
@@ -66,6 +67,8 @@ class Procedure85224Test extends AnyFunSuite with Matchers {
 
   test("a manual tester's answer doesn't delay step 18's confirmation past the DUT's confirm timeout") {
     val dut = new Dut(new Tester)
-    Try(Procedure85224.configure(Options.from(Map())).steps.foreach(_.step.run(dut))).isSuccess should equal(true)
+    Try(Procedure85224.configure(
+      Options.from(Map(OutstationOptions.subsetLevel.id -> "2"))).steps.foreach(_.step.run(dut))).isSuccess should
+      equal(true)
   }
 }

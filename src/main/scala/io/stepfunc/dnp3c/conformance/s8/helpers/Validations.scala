@@ -3,6 +3,8 @@
 
 package io.stepfunc.dnp3c.conformance.s8.helpers
 
+import io.stepfunc.dnp3c.conformance.api.OptionSource
+import io.stepfunc.dnp3c.conformance.api.options.{ OutstationOptions, SupportOptions }
 import io.stepfunc.dnp3c.dnp3.app._
 import io.stepfunc.dnp3c.dnp3.app.objects._
 import io.stepfunc.dnp3c.dnp3._
@@ -307,12 +309,6 @@ object Validations {
   private val eventQualifiers = Set(Qualifier.ONE_BYTE_COUNT_AND_INDEX, Qualifier.TWO_BYTE_COUNT_AND_INDEX)
   private val ctoQualifier = Qualifier.ONE_BYTE_COUNT
 
-  // Tables 8-3 and 8-4 also list the double-bit objects (g3, g4). These are a Subset Level 4 feature that a
-  // Level 2 device may optionally support (8.21, 8.22), so only accept them if the DUT is configured as having them.
-  private def isTable83Or84Variation(variation: Variation, allowDoubleBit: Boolean): Boolean =
-    SubsetLevel.isLevelOneOrTwo(variation.minSubsetLevel) ||
-      (allowDoubleBit && (variation.group == Group3 || variation.group == Group4))
-
   // a response of events of the variations, with 1- or 2-octet indexes (qualifier 0x17 or 0x28), and CTOs of the ctos
   // variations (qualifier 0x07), a relative-time event preceded by a CTO
   def eventsWithCtos(
@@ -346,30 +342,60 @@ object Validations {
     }
   }
 
-  def verifyOnlyTable84Contents(allowDoubleBit: Boolean): MessageValidation = MessageValidation.check(
-    "Verify that the response only contains objects, variations, and qualifiers specified in table 8-4") { message =>
-    checkTableObjects(message, Set(Event, CommonTimeOfOccurrence), allowDoubleBit)
+  /**
+   * What tables 8-3 and 8-4 allow a DUT to report: the objects of its subset level and the levels below, and the
+   * double-bit inputs (g3, g4), which a device may support at any level (8.21, 8.22), if it has them. 3.1r1's tables
+   * give each object the lowest level IEEE 1815 does, which its variation's minSubsetLevel holds, except for g1v2;
+   * 2.7's are 3.1r1's at level 2, the only level 2.7 tests.
+   */
+  final case class Tables(level: Int, doubleBit: Boolean) {
+    private[helpers] def allows(variation: Variation): Boolean =
+      Tables.lowerLevels.get(variation).fold(SubsetLevel.within(variation.minSubsetLevel, level))(_ <= level) ||
+        (doubleBit && (variation.group == Group3 || variation.group == Group4))
   }
 
-  def verifyOnlyTable83Contents(allowDoubleBit: Boolean): MessageValidation = MessageValidation.check(
-    "Verify the response only contains objects, variations and qualifiers specified in table 8-3") { message =>
-    checkTableObjects(message, Set(Static), allowDoubleBit)
+  object Tables {
+
+    // the tables' entries whose lowest level is below IEEE 1815's: 3.1r1's Table 8-3 allows binary inputs with flags
+    // at level 1
+    private val lowerLevels: Map[Variation, Int] = Map(Group1Var2 -> 1)
+    def apply(options: OptionSource): Tables = Tables(
+      options.get(OutstationOptions.subsetLevel).getOrElse(
+        throw new Exception(s"${OutstationOptions.subsetLevel.id} isn't set: tables 8-3 and 8-4 depend on it")),
+      options.get(SupportOptions.Inputs.doubleBit.points)
+    )
   }
 
-  def verifyOnlyTable83OrTable84Contents(allowDoubleBit: Boolean): MessageValidation = MessageValidation.check(
-    "Verify that the response holds only objects listed in tables 8-3 and 8-4",
+  def verifyOnlyTable84Contents(tables: Tables): MessageValidation = MessageValidation.check(
+    "Verify that the response only contains objects, variations, and qualifiers specified in table 8-4" +
+      atLevel(tables)) { message =>
+    checkTableObjects(message, Set(Event, CommonTimeOfOccurrence), tables)
+  }
+
+  def verifyOnlyTable83Contents(tables: Tables): MessageValidation = MessageValidation.check(
+    "Verify the response only contains objects, variations and qualifiers specified in table 8-3" + atLevel(tables)) {
+    message =>
+      checkTableObjects(message, Set(Static), tables)
+  }
+
+  // at level 2, the tables are 2.7's, which have no levels
+  private def atLevel(tables: Tables): String =
+    if (tables.level == 2) "" else s", for subset level ${tables.level}"
+
+  def verifyOnlyTable83OrTable84Contents(tables: Tables): MessageValidation = MessageValidation.check(
+    "Verify that the response holds only objects listed in tables 8-3 and 8-4" + atLevel(tables),
     "Verify that event objects are prefixed with 1-octet (qualifier 0x17) or 2-octet (qualifier 0x28) indexes",
     "Verify that static objects are in start/stop ranges with 1-octet (qualifier 0x00) or 2-octet (qualifier 0x01) indexes"
   ) { message =>
-    checkTableObjects(message, Set(Static, Event, CommonTimeOfOccurrence), allowDoubleBit)
+    checkTableObjects(message, Set(Static, Event, CommonTimeOfOccurrence), tables)
   }
 
   // the objects tables 8-3 (static) and 8-4 (events, and the CTOs relative-time events follow) list: of the allowed
   // types, each with the qualifiers the tables give it
-  private def checkTableObjects(message: Message, types: Set[ObjectType], allowDoubleBit: Boolean): Unit = {
+  private def checkTableObjects(message: Message, types: Set[ObjectType], tables: Tables): Unit = {
     message.headers.foreach { header =>
       val variation = header.variation
-      if (!isTable83Or84Variation(variation, allowDoubleBit)) {
+      if (!tables.allows(variation)) {
         throw new Exception(
           s"Unexpected group/variation ${variation.key} with minimum subset level: ${variation.minSubsetLevel}")
       }

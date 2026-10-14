@@ -167,7 +167,7 @@ object UnsolicitedResponseSteps {
       hasMinNumEventsBeforeUnsolicited: Boolean,
       appConfirmTimeoutMs: Int,
       holdOffMs: Int,
-      allowDoubleBit: Boolean,
+      tables: Validations.Tables,
       actionWindowMs: Int): Iterable[LabeledStep] = {
     val messageRecorder = new MessageRecorder
 
@@ -309,7 +309,7 @@ object UnsolicitedResponseSteps {
       (3 to 8) --> unconfirmedUnsolicited.expectNoResponseBeforeTimeout +
         expectAtLeastOneResponse(
           seq,
-          Validations.verifyOnlyTable84Contents(allowDoubleBit) &&
+          Validations.verifyOnlyTable84Contents(tables) &&
             verifyConfirmRequested &&
             PluginValidations.verifyResponseRetainsEvents(messageRecorder).acrossFragments
         ),

@@ -5,7 +5,7 @@ package io.stepfunc.dnp3c.conformance.s8.helpers
 
 import io.stepfunc.dnp3c.conformance.Placements.id
 import io.stepfunc.dnp3c.conformance.api.{ Options, ProcedureDefinition }
-import io.stepfunc.dnp3c.conformance.api.options.ClassOptions
+import io.stepfunc.dnp3c.conformance.api.options.{ OutstationOptions, ClassOptions }
 import io.stepfunc.dnp3c.conformance.s8.s85.{ s852, s853, s854 }
 import io.stepfunc.dnp3c.dnp3._
 import io.stepfunc.dnp3c.dnp3.app._
@@ -49,7 +49,8 @@ class ClassEventProceduresTest extends AnyFunSuite with Matchers {
       val driver = new StubDriver(StubDriver.reporter()) {
         override def writeMessage(message: Message, options: LinkOverride): Unit = requests += message
       }
-      family.allQualifier.configure(Options.from(Map())).steps.head.step.run(driver)
+      family.allQualifier.configure(
+        Options.from(Map(OutstationOptions.subsetLevel.id -> "2"))).steps.head.step.run(driver)
       requests.flatMap(_.headers.map(_.variation)) should equal(List(family.variation))
     }
   }

@@ -16,4 +16,13 @@ object SubsetLevel {
   private val oneAndTwo = Set(One, Two)
 
   def isLevelOneOrTwo(level: SubsetLevel): Boolean = oneAndTwo.contains(level)
+
+  /** whether a device of the subset level numbered `level` may use what's in `lowest` and above */
+  def within(lowest: SubsetLevel, level: Int): Boolean = lowest match {
+    case One => level >= 1
+    case Two => level >= 2
+    case Three => level >= 3
+    case Four => level >= 4
+    case SubsetLevel.None => false
+  }
 }

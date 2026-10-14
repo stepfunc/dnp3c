@@ -5,7 +5,7 @@ package io.stepfunc.dnp3c.conformance.s8.s811
 
 import io.stepfunc.dnp3c.conformance.api._
 import io.stepfunc.dnp3c.conformance.api.options.{ OutstationOptions, SupportOptions, TestOptions, UnsolicitedOptions }
-import io.stepfunc.dnp3c.conformance.s8.helpers.UnsolicitedResponseSteps
+import io.stepfunc.dnp3c.conformance.s8.helpers.{ UnsolicitedResponseSteps, Validations }
 import io.stepfunc.dnp3c.conformance.s8.helpers.UnsolicitedResponseSteps.RetryLimit
 
 /**
@@ -25,7 +25,7 @@ class UnsolicitedAndPolledResponses(retryLimit: OptionSource => RetryLimit) exte
       options.get(UnsolicitedOptions.hasMinNumEventsBeforeUnsolicited),
       options.get(OutstationOptions.appConfirmTimeout),
       options.get(UnsolicitedOptions.holdOffMs),
-      options.get(SupportOptions.Inputs.doubleBit.points),
+      Validations.Tables(options),
       options.get(TestOptions.manualActionWindowMs)
     )
   }

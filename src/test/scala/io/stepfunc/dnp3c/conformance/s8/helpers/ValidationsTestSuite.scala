@@ -74,12 +74,39 @@ class ValidationsTestSuite extends AnyFunSuite with Matchers {
     val static = Message.parseObjectHeaders(Hex.from("03 02 00 00 00 01"))
     val event = Message.parseObjectHeaders(Hex.from("04 01 17 01 00 01"))
 
-    passes(Validations.verifyOnlyTable83Contents(false), response(IIN.empty, static)) should be(false)
-    passes(Validations.verifyOnlyTable83Contents(true), response(IIN.empty, static)) should be(true)
-    passes(Validations.verifyOnlyTable84Contents(false), response(IIN.empty, event)) should be(false)
-    passes(Validations.verifyOnlyTable84Contents(true), response(IIN.empty, event)) should be(true)
-    passes(Validations.verifyOnlyTable83OrTable84Contents(false), response(IIN.empty, static ++ event)) should be(false)
-    passes(Validations.verifyOnlyTable83OrTable84Contents(true), response(IIN.empty, static ++ event)) should be(true)
+    passes(Validations.verifyOnlyTable83Contents(Validations.Tables(2, false)), response(IIN.empty, static)) should
+      be(false)
+    passes(Validations.verifyOnlyTable83Contents(Validations.Tables(2, true)), response(IIN.empty, static)) should
+      be(true)
+    passes(Validations.verifyOnlyTable84Contents(Validations.Tables(2, false)), response(IIN.empty, event)) should
+      be(false)
+    passes(Validations.verifyOnlyTable84Contents(Validations.Tables(2, true)), response(IIN.empty, event)) should
+      be(true)
+    passes(
+      Validations.verifyOnlyTable83OrTable84Contents(Validations.Tables(2, false)),
+      response(IIN.empty, static ++ event)) should be(false)
+    passes(
+      Validations.verifyOnlyTable83OrTable84Contents(Validations.Tables(2, true)),
+      response(IIN.empty, static ++ event)) should be(true)
+  }
+
+  test("Tables 8-3 and 8-4 allow the objects of the DUT's subset level and the levels below") {
+    // g21v1 (level 2) and g40v1 (level 3) at index 0, start/stop 0x00, and g23v1 (level 3) at index 0, 0x17
+    val frozenCounter = Message.parseObjectHeaders(Hex.from("15 01 00 00 00 01 00 00 00 00"))
+    val outputStatus = Message.parseObjectHeaders(Hex.from("28 01 00 00 00 01 00 00 00 00"))
+    val frozenCounterEvent = Message.parseObjectHeaders(Hex.from("17 01 17 01 00 01 00 00 00 00"))
+    def table83(level: Int) = Validations.verifyOnlyTable83Contents(Validations.Tables(level, doubleBit = false))
+    def table84(level: Int) = Validations.verifyOnlyTable84Contents(Validations.Tables(level, doubleBit = false))
+
+    // g1v2, index 0, start/stop 0x00: IEEE 1815 puts it at level 2, but table 8-3 allows it at level 1
+    val binaryWithFlags = Message.parseObjectHeaders(Hex.from("01 02 00 00 00 01"))
+    passes(table83(1), response(IIN.empty, binaryWithFlags)) should be(true)
+    passes(table83(1), response(IIN.empty, frozenCounter)) should be(false)
+    passes(table83(2), response(IIN.empty, frozenCounter)) should be(true)
+    passes(table83(2), response(IIN.empty, outputStatus)) should be(false)
+    passes(table83(3), response(IIN.empty, outputStatus)) should be(true)
+    passes(table84(2), response(IIN.empty, frozenCounterEvent)) should be(false)
+    passes(table84(3), response(IIN.empty, frozenCounterEvent)) should be(true)
   }
 
   test("Binary input event responses accept a CTO and require it before relative time events") {
@@ -97,7 +124,7 @@ class ValidationsTestSuite extends AnyFunSuite with Matchers {
   }
 
   test("Table 8-4 check requires a CTO before relative time events") {
-    val v = Validations.verifyOnlyTable84Contents(false)
+    val v = Validations.verifyOnlyTable84Contents(Validations.Tables(2, false))
     val cto = "33 01 07 01 00 00 00 00 00 00 " // g51v1, count 1
     val relative = "02 03 17 01 00 01 00 00 " // g2v3, index 0, flags 0x01, relative time 0
 
