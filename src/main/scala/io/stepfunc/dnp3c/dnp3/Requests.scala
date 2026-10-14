@@ -63,13 +63,14 @@ object Requests {
       FieldHeaderPayload(FieldHeaderPayloadObject(value))))
   )
 
-  def writeTime(seq: Sequence, time: UInt48LE): Message = {
+  // a write of the time, absolute (g50v1), or the time of the last Record Current Time request (g50v3)
+  def writeTime(seq: Sequence, time: UInt48LE, variation: Variation = Group50Var1): Message = {
     Message.request(
       seq,
       AppFunction.write,
       List(
         OneByteCountHeader(
-          Group50Var1,
+          variation,
           UInt8(1),
           FieldHeaderPayload(
             FieldHeaderPayloadObject(
