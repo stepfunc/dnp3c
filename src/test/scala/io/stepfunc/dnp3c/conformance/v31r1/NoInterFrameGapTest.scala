@@ -4,14 +4,13 @@
 package io.stepfunc.dnp3c.conformance.v31r1
 
 import scala.collection.mutable
-import scala.util.Try
 
+import io.stepfunc.dnp3c.conformance.Run
 import io.stepfunc.dnp3c.conformance.api.Options
 import io.stepfunc.dnp3c.conformance.api.options.{ LinkOptions, SupportOptions }
 import io.stepfunc.dnp3c.dnp3._
-import io.stepfunc.dnp3c.dnp3.app.{ AppFunction, Message, Unsolicited }
-import io.stepfunc.dnp3c.dnp3.link.{ FrameValidator, LinkFrame, LinkFrameParser }
-import io.stepfunc.dnp3c.protocol.Hex
+import io.stepfunc.dnp3c.dnp3.app.{ AppFunction, Message }
+import io.stepfunc.dnp3c.dnp3.link.{ LinkFrame, LinkFrameParser }
 import org.junit.runner.RunWith
 import org.scalatestplus.junit.JUnitRunner
 import org.scalatest.matchers.should.Matchers
@@ -25,14 +24,13 @@ class NoInterFrameGapTest extends AnyFunSuite with Matchers {
    * Answers a READ of class 0 with binary inputs 0 and 1, or, if it was preceded in the same write by a frame to
    * another address and the DUT is confused by that, with only binary input 0
    */
-  private class Dut(confused: Boolean) extends StubDriver(StubDriver.reporter()) {
-    private val responses = mutable.Queue.empty[Message]
+  private class Dut(confused: Boolean) extends RespondingDriver {
     val frames = mutable.ListBuffer.empty[LinkFrame]
 
     private def answer(read: Message, both: Boolean): Unit = {
       val seq = read.ctrl.seq.value.toInt
       val objects = if (both) "01 02 00 00 01 01 01" else "01 02 00 00 00 01"
-      responses.enqueue(Message.parse(Hex.from("%02X 81 00 00 %s".format(0xC0 | seq, objects))))
+      enqueue("%02X 81 00 00 %s".format(0xC0 | seq, objects))
     }
 
     override def writeMessage(message: Message, options: LinkOverride): Unit = answer(message, both = true)
@@ -51,24 +49,15 @@ class NoInterFrameGapTest extends AnyFunSuite with Matchers {
       reads.foreach(answer(_, both = !(confused && toOther)))
     }
 
-    override def readMessage(
-        unsolicited: Unsolicited,
-        validator: FrameValidator,
-        linkOverride: LinkOverride,
-        timeoutMs: Option[Int]): Option[Message] =
-      if (responses.isEmpty) timedOut(timeoutMs) else Some(responses.dequeue())
-
     override def readFrame(timeout: Option[Int]): Option[io.stepfunc.dnp3c.dnp3.link.LinkFrame] =
-      if (responses.isEmpty) timedOut(timeout) else throw new Exception("an extra response")
-    override def close(): Unit = {}
+      if (!responseWaiting) timedOut(timeout) else throw new Exception("an extra response")
   }
 
   private val options =
     Options.from(Map(SupportOptions.multipleAddresses.id -> "true", LinkOptions.otherDestination.id -> "1025"))
 
   private def run(dut: Dut): Boolean =
-    Try(NoInterFrameGap.noInterFrameGap.configure(options).steps.foreach(s => s.step.run(dut).foreach(_.check())))
-      .isSuccess
+    Run.passes(NoInterFrameGap.noInterFrameGap, dut, options)
 
   test("one write carries the confirm to the other address, then the READ to the DUT") {
     val dut = new Dut(confused = false)

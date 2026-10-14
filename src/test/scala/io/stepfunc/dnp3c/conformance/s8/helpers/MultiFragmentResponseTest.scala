@@ -3,16 +3,16 @@
 
 package io.stepfunc.dnp3c.conformance.s8.helpers
 
+import io.stepfunc.dnp3c.conformance.Run
 import io.stepfunc.dnp3c.conformance.api.options.OutstationOptions
 import io.stepfunc.dnp3c.conformance.Placements.id
-import io.stepfunc.dnp3c.conformance.api.{ Options, ProcedureDefinition }
+import io.stepfunc.dnp3c.conformance.api.ProcedureDefinition
 import io.stepfunc.dnp3c.conformance.s8.{ s814, s817, s819, s822, s83, s86, s87 }
 import io.stepfunc.dnp3c.conformance.s8.s85.s855.Procedure85522
 import io.stepfunc.dnp3c.conformance.s8.s85.s856.Procedure8562
 import io.stepfunc.dnp3c.conformance.s8.s86.s866.Procedure86621
 import io.stepfunc.dnp3c.dnp3._
 import io.stepfunc.dnp3c.dnp3.app._
-import io.stepfunc.dnp3c.dnp3.link.FrameValidator
 import io.stepfunc.dnp3c.protocol.Hex
 import org.junit.runner.RunWith
 import org.scalatestplus.junit.JUnitRunner
@@ -20,8 +20,6 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.funsuite.AnyFunSuite
 
 import java.io.StringReader
-import scala.collection.mutable
-import scala.util.Try
 
 // responses that take more than one fragment
 @RunWith(classOf[JUnitRunner])
@@ -51,14 +49,13 @@ class MultiFragmentResponseTest extends AnyFunSuite with Matchers {
   // answers the request with this sequence number with the fragments, numbering them on from it, and any other request
   // with a null response
   private class Dut(seq: Int, fragments: List[Fragment], val plugin: Plugin = new Plugin)
-      extends StubDriver(StubDriver.reporter(plugin)) {
-    private val pending = mutable.Queue.empty[Message]
+      extends RespondingDriver(StubDriver.reporter(plugin)) {
 
     override def writeMessage(message: Message, options: LinkOverride): Unit = {
       val requestSeq = message.ctrl.seq.value.toInt
       if (message.function == AppFunction.confirm) ()
       else if (requestSeq != seq)
-        pending.enqueue(Message(Control.request(message.ctrl.seq), AppFunction.response, Some(IIN.empty), Nil))
+        enqueue(Message(Control.request(message.ctrl.seq), AppFunction.response, Some(IIN.empty), Nil))
       else fragments.zipWithIndex.foreach { case (fragment, i) =>
         val control = Control(
           First(i == 0),
@@ -67,16 +64,10 @@ class MultiFragmentResponseTest extends AnyFunSuite with Matchers {
           Unsolicited.No,
           Sequence(((seq + i) % 16).toByte))
         val headers = Message.parse(Hex.from("C0 81 00 00 " + fragment.objects)).headers
-        pending.enqueue(Message(control, AppFunction.response, Some(fragment.iin), headers))
+        enqueue(Message(control, AppFunction.response, Some(fragment.iin), headers))
       }
     }
 
-    override def readMessage(
-        unsolicited: Unsolicited,
-        validator: FrameValidator,
-        linkOverride: LinkOverride,
-        timeoutMs: Option[Int]): Option[Message] =
-      if (pending.isEmpty) timedOut(timeoutMs) else Some(pending.dequeue())
   }
 
   private val event = "02 01 17 01 05 81" // g2v1, index 5
@@ -84,9 +75,8 @@ class MultiFragmentResponseTest extends AnyFunSuite with Matchers {
 
   // runs every step, carrying on past failures; a manual question gets no answer (end of input), so it fails rather
   // than waits. Returns how many steps failed.
-  private def failedSteps(procedure: ProcedureDefinition, dut: Dut): Int = Console.withIn(new StringReader(""))(
-    procedure.configure(Options.from(Map(OutstationOptions.subsetLevel.id -> "2"))).steps.count(s =>
-      Try(s.step.run(dut)).isFailure))
+  private def failedSteps(procedure: ProcedureDefinition, dut: Dut): Int =
+    Console.withIn(new StringReader(""))(Run.everyStep(procedure, dut, Map(OutstationOptions.subsetLevel.id -> "2")))
 
   test("8.5.5.2.2: the last fragment needn't ask for confirmation when it carries only static data") {
     def classes1230(fragments: Fragment*) = failedSteps(Procedure85522, new Dut(1, fragments.toList)) == 0

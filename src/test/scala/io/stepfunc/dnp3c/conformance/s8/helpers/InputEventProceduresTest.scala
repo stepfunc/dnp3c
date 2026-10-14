@@ -3,6 +3,7 @@
 
 package io.stepfunc.dnp3c.conformance.s8.helpers
 
+import io.stepfunc.dnp3c.conformance.Run
 import io.stepfunc.dnp3c.conformance.Placements.id
 import io.stepfunc.dnp3c.conformance.api.{ BooleanOption, Options, ProcedureDefinition }
 import io.stepfunc.dnp3c.conformance.s8.{ s814, s822 }
@@ -74,17 +75,12 @@ class InputEventProceduresTest extends AnyFunSuite with Matchers {
   test("a DUT without the input's events is asked for that input's events, and must answer with a Null Response") {
     for ((family, variation) <- List(binary -> Group2Var0, doubleBit -> Group4Var0)) {
       val dut = new Dut(_ => (IIN.empty, Nil))
-      family.procedures(1).configure(Options.from(Map(family.input.support.events.id -> "false"))).steps.foreach(
-        _.step.run(dut))
+      Run.passing(family.procedures(1), dut, Map(family.input.support.events.id -> "false"))
       dut.requests.flatMap(_.headers.map(_.variation)) should equal(List(variation))
 
       val withEvents = new Dut(r => (IIN.empty, r.headers))
       an[Exception] should be thrownBy
-        family
-          .procedures(1)
-          .configure(Options.from(Map(family.input.support.events.id -> "false")))
-          .steps
-          .foreach(_.step.run(withEvents))
+        Run.passing(family.procedures(1), withEvents, Map(family.input.support.events.id -> "false"))
     }
   }
 

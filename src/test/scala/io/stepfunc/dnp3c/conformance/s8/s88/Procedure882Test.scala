@@ -3,7 +3,7 @@
 
 package io.stepfunc.dnp3c.conformance.s8.s88
 
-import io.stepfunc.dnp3c.conformance.api.Options
+import io.stepfunc.dnp3c.conformance.Run
 import io.stepfunc.dnp3c.dnp3.{ DefaultIntegrationPlugin, PluginReporter, ScriptedDut, StubDriver }
 import io.stepfunc.dnp3c.dnp3.app.{ AppFunction, IIN, Message }
 import io.stepfunc.dnp3c.protocol.Hex
@@ -48,8 +48,7 @@ class Procedure882Test extends AnyFunSuite with Matchers {
       override def close(): Unit = closedAfter += requests.count(_.function != AppFunction.confirm)
     }
     val dut = new Dut
-    Console.withIn(new java.io.StringReader(""))(
-      Procedure882.configure(Options.from(Map())).steps.foreach(s => scala.util.Try(s.step.run(dut))))
+    Console.withIn(new java.io.StringReader(""))(Run.everyStep(Procedure882, dut))
     // the restart is the first request, then the READ
     dut.closedAfter.toList should equal(List(1))
     dut.requests.map(_.function).filter(_ != AppFunction.confirm).take(2).toList should equal(
@@ -89,8 +88,7 @@ class Procedure882Test extends AnyFunSuite with Matchers {
             (if (restarted) IIN.DEVICE_RESTART else IIN.empty, Nil)
           }
       ) { override def close(): Unit = () }
-      val steps = new ColdRestart(configures = true).configure(Options.from(Map())).steps
-      val passed = scala.util.Try(steps.foreach(s => s.step.run(dut).foreach(_.check()))).isSuccess
+      val passed = Run.passes(new ColdRestart(configures = true), dut)
       (passed, plugin.settings)
     }
     run(ignoresSetting = false) should equal((true, List(true, false, true)))

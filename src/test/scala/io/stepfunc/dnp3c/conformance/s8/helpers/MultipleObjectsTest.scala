@@ -3,6 +3,7 @@
 
 package io.stepfunc.dnp3c.conformance.s8.helpers
 
+import io.stepfunc.dnp3c.conformance.Run
 import io.stepfunc.dnp3c.conformance.Placements.id
 import io.stepfunc.dnp3c.conformance.api.{ Options, ProcedureDefinition }
 import io.stepfunc.dnp3c.conformance.api.options.{ AnalogOutputOptions, ControlOptions }
@@ -112,7 +113,7 @@ class MultipleObjectsTest extends AnyFunSuite with Matchers {
     val options = Options.from(
       family.command ++ Map(family.installedKey -> installed.mkString(","), family.maxKey -> max.toString))
     val outstation = new Outstation(family.output, options, installed.toSet, max, tooMany)
-    family.procedure.configure(options).steps.foreach(_.step.run(outstation))
+    Run.passing(family.procedure, outstation, options)
     outstation.requests.toList
   }
 

@@ -3,19 +3,16 @@
 
 package io.stepfunc.dnp3c.conformance.s8.s89
 
-import io.stepfunc.dnp3c.conformance.api.Options
+import io.stepfunc.dnp3c.conformance.Run
 import io.stepfunc.dnp3c.conformance.api.options.SupportOptions
 import io.stepfunc.dnp3c.conformance.s8.helpers.Validations
 import io.stepfunc.dnp3c.dnp3._
 import io.stepfunc.dnp3c.dnp3.app._
-import io.stepfunc.dnp3c.dnp3.link.FrameValidator
 import io.stepfunc.dnp3c.protocol.Hex
 import org.junit.runner.RunWith
 import org.scalatestplus.junit.JUnitRunner
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.funsuite.AnyFunSuite
-
-import scala.collection.mutable
 
 @RunWith(classOf[JUnitRunner])
 class FragmentChecksTest extends AnyFunSuite with Matchers {
@@ -46,24 +43,14 @@ class FragmentChecksTest extends AnyFunSuite with Matchers {
   }
 
   // answers every READ with a response in one fragment
-  private class Dut extends StubDriver(StubDriver.reporter(new Plugin)) {
-    private val pending = mutable.Queue.empty[Message]
+  private class Dut extends RespondingDriver(StubDriver.reporter(new Plugin)) {
     override def writeMessage(message: Message, options: LinkOverride): Unit =
-      pending.enqueue(Message.parse(Hex.from("%02X 81 00 00".format(0xC0 | message.ctrl.seq.value))))
-    override def readMessage(
-        unsolicited: Unsolicited,
-        validator: FrameValidator,
-        linkOverride: LinkOverride,
-        timeoutMs: Option[Int]): Option[Message] = if (pending.isEmpty) None else Some(pending.dequeue())
-    override def close(): Unit = ()
+      enqueue("%02X 81 00 00".format(0xC0 | message.ctrl.seq.value))
   }
 
   private def run(multiFragment: Boolean): Unit = {
     val dut = new Dut
-    Procedure8912
-      .configure(Options.from(Map(SupportOptions.multiFragmentResponses.id -> multiFragment.toString)))
-      .steps
-      .foreach(_.step.run(dut))
+    Run.passing(Procedure8912, dut, Map(SupportOptions.multiFragmentResponses.id -> multiFragment.toString))
   }
 
   test("8.9.1.2 needs several fragments only when the data for them was set up") {

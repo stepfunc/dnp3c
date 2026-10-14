@@ -3,7 +3,7 @@
 
 package io.stepfunc.dnp3c.conformance.s8.s817
 
-import io.stepfunc.dnp3c.conformance.api.Options
+import io.stepfunc.dnp3c.conformance.Run
 import io.stepfunc.dnp3c.dnp3._
 import io.stepfunc.dnp3c.dnp3.app._
 import org.junit.runner.RunWith
@@ -12,7 +12,6 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.funsuite.AnyFunSuite
 
 import java.io.StringReader
-import scala.util.Try
 
 @RunWith(classOf[JUnitRunner])
 class Procedure81722Test extends AnyFunSuite with Matchers {
@@ -27,8 +26,7 @@ class Procedure81722Test extends AnyFunSuite with Matchers {
   test("the counter values are recorded before more counts are generated") {
     val plugin = new Plugin
     val dut = new ScriptedDut(StubDriver.reporter(plugin), _ => (IIN.empty, Nil))
-    Console.withIn(new StringReader(""))(
-      Procedure81722.configure(Options.from(Map())).steps.foreach(s => Try(s.step.run(dut))))
+    Console.withIn(new StringReader(""))(Run.everyStep(Procedure81722, dut))
     plugin.actions.toList should equal(List("generate", "record", "generate"))
   }
 }

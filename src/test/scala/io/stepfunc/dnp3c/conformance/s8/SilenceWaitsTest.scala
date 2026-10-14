@@ -3,8 +3,9 @@
 
 package io.stepfunc.dnp3c.conformance.s8
 
+import io.stepfunc.dnp3c.conformance.Run
 import io.stepfunc.dnp3c.conformance.Placements.id
-import io.stepfunc.dnp3c.conformance.api.{ Options, ProcedureDefinition }
+import io.stepfunc.dnp3c.conformance.api.ProcedureDefinition
 import io.stepfunc.dnp3c.conformance.s6
 import io.stepfunc.dnp3c.conformance.api.options.{
   BehaviorOptions,
@@ -25,7 +26,6 @@ import org.scalatest.funsuite.AnyFunSuite
 import java.io.StringReader
 
 import scala.collection.mutable
-import scala.util.Try
 
 // how long the steps that expect silence wait for it
 @RunWith(classOf[JUnitRunner])
@@ -59,8 +59,7 @@ class SilenceWaitsTest extends AnyFunSuite with Matchers {
       procedure: ProcedureDefinition,
       settings: Map[String, String],
       driver: Silent = new Silent): Silent = {
-    Console.withIn(new StringReader(""))(
-      procedure.configure(Options.from(settings)).steps.foreach(s => Try(s.step.run(driver))))
+    Console.withIn(new StringReader(""))(Run.everyStep(procedure, driver, settings))
     driver
   }
 

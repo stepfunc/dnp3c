@@ -4,9 +4,9 @@
 package io.stepfunc.dnp3c.conformance.v31r1
 
 import scala.collection.mutable
-import scala.util.Try
 
-import io.stepfunc.dnp3c.conformance.api.{ Options, TestProcedure }
+import io.stepfunc.dnp3c.conformance.Run
+import io.stepfunc.dnp3c.conformance.api.{ Options, ProcedureOutcome, TestProcedure }
 import io.stepfunc.dnp3c.conformance.api.options.SerialOptions
 import io.stepfunc.dnp3c.dnp3._
 import io.stepfunc.dnp3c.dnp3.app.EventClass
@@ -38,7 +38,7 @@ class CollisionAvoidanceTest extends AnyFunSuite with Matchers {
       fixedRandom: Boolean = false,
       watchesCarrier: Boolean = false,
       outlier: Boolean = false)
-      extends StubDriver(StubDriver.reporter()) {
+      extends StubDriver {
     private var delays = CollisionDelays(100, 50)
     val set: mutable.ListBuffer[Option[CollisionDelays]] = mutable.ListBuffer.empty
     var rts: List[Boolean] = Nil
@@ -52,14 +52,13 @@ class CollisionAvoidanceTest extends AnyFunSuite with Matchers {
     private val carrier = mutable.ListBuffer.empty[(Long, Long)]
     private var draws = 0
 
-    val plugin: DefaultIntegrationPlugin = new DefaultIntegrationPlugin {
+    override protected val testPlugin: DefaultIntegrationPlugin = new DefaultIntegrationPlugin {
       override def generateClassEvents(reporter: PluginReporter, eventClass: EventClass): Unit = {}
       override def setCollisionDelays(reporter: PluginReporter, d: Option[CollisionDelays]): Unit = {
         set += d
         d.foreach(delays = _)
       }
     }
-    override val reporter: ProcedureReporter = StubDriver.reporter(plugin)
 
     override def write(bytes: List[Byte]): Unit = {
       val start = math.max(clock.nanoTime(), lineFree)
@@ -130,12 +129,13 @@ class CollisionAvoidanceTest extends AnyFunSuite with Matchers {
     SerialOptions.otherMaxRandomDelayMs.id -> "100"
   )
 
-  private def run(line: Line, settings: Map[String, String] = Map()): (Boolean, String) = {
-    val config = CollisionAvoidance.collisionAvoidance.configure(Options.from(bench ++ settings))
-    val result = Try(config.steps.foreach(s => s.step.run(line).foreach(_.check())))
-    config.cleanup.foreach(s => s.step.run(line).foreach(_.check()))
-    (result.isSuccess, result.failed.toOption.map(_.getMessage).getOrElse(""))
-  }
+  // whether it passed, and why not
+  private def run(line: Line, settings: Map[String, String] = Map()): (Boolean, String) =
+    Run.outcome(CollisionAvoidance.collisionAvoidance, line, bench ++ settings) match {
+      case ProcedureOutcome.Passed => (true, "")
+      case ProcedureOutcome.Failed(why) => (false, why)
+      case ProcedureOutcome.Skipped(why) => (false, why)
+    }
 
   test("a DUT that backs off as it should passes, at both settings, which are restored") {
     val line = new Line

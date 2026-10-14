@@ -3,8 +3,7 @@
 
 package io.stepfunc.dnp3c.conformance.v31r1
 
-import scala.util.Try
-
+import io.stepfunc.dnp3c.conformance.Run
 import io.stepfunc.dnp3c.conformance.api.{ Options, ProcedureDefinition }
 import io.stepfunc.dnp3c.conformance.api.options.SupportOptions
 import io.stepfunc.dnp3c.conformance.api.options.SupportOptions.Inputs
@@ -57,7 +56,7 @@ class PointRangesTest extends AnyFunSuite with Matchers {
   private def passes(procedure: ProcedureDefinition, indices: List[Int], extra: Boolean = false): Boolean = {
     val plugin = new Plugin
     val d = dut(indices, plugin, extra)
-    Try(procedure.configure(Options.from(Map())).steps.foreach(s => s.step.run(d).foreach(_.check()))).isSuccess &&
+    Run.passes(procedure, d) &&
     !plugin.uninstalled
   }
 
@@ -89,8 +88,7 @@ class PointRangesTest extends AnyFunSuite with Matchers {
           (IIN.empty, Message.parseObjectHeaders(Hex.from("01 02 00 00 00 01")))
         else (IIN.FUNC_NOT_SUPPORTED, Nil)
     )
-    Try(PointRanges.validRequest(binary).configure(noRanges).steps.foreach(s => s.step.run(d).foreach(_.check())))
-      .isSuccess should equal(true)
+    Run.passes(PointRanges.validRequest(binary), d, noRanges) should equal(true)
   }
 
   test("the test without the points runs where the DUT has none, or can disable them") {
@@ -104,10 +102,7 @@ class PointRangesTest extends AnyFunSuite with Matchers {
     val plugin = new Plugin
     // answers the range reads without an error
     val d = new ScriptedDut(StubDriver.reporter(plugin), _ => (IIN.empty, Nil))
-    val passed = Try(
-      PointRanges.withoutPoints(binary).configure(Options.from(Map())).steps.foreach(s =>
-        s.step.run(d).foreach(_.check()))).isSuccess
-    passed should equal(false)
+    Run.passes(PointRanges.withoutPoints(binary), d) should equal(false)
     plugin.uninstalled should equal(false)
   }
 }

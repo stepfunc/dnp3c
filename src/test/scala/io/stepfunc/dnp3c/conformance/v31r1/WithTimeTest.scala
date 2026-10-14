@@ -5,8 +5,7 @@ package io.stepfunc.dnp3c.conformance.v31r1
 
 import java.io.StringReader
 
-import scala.util.Try
-
+import io.stepfunc.dnp3c.conformance.Run
 import io.stepfunc.dnp3c.conformance.api.Options
 import io.stepfunc.dnp3c.conformance.api.options.TimeSyncOptions
 import io.stepfunc.dnp3c.dnp3._
@@ -37,9 +36,7 @@ class WithTimeTest extends AnyFunSuite with Matchers {
   test("8.14.2-10 passes a device declared to reject reads with time, noting it complies with 1815-2012 only") {
     val reporter = StubDriver.reporter(new Plugin)
     val dut = new ScriptedDut(reporter, answer)
-    val ran = Console.withIn(new StringReader(""))(Try(
-      InputEvents.binaryAllWithTime.configure(rejecting).steps.foreach(s => s.step.run(dut).foreach(_.check()))))
-    ran.isSuccess should equal(true)
+    Console.withIn(new StringReader(""))(Run.passes(InputEvents.binaryAllWithTime, dut, rejecting)) should equal(true)
     reporter.notes.head should include("IEEE 1815-2012, but not with IEEE 1815-202x")
   }
 
@@ -62,11 +59,8 @@ class WithTimeTest extends AnyFunSuite with Matchers {
   test("8.14.2-13 passes a device declared to reject reads with relative time, noting it complies with 1815-2012") {
     val reporter = StubDriver.reporter(new Plugin)
     val dut = new ScriptedDut(reporter, answer)
-    val ran = Console.withIn(new StringReader(""))(Try(InputEvents.binaryAllWithRelativeTime
-      .configure(rejectingRelative)
-      .steps
-      .foreach(s => s.step.run(dut).foreach(_.check()))))
-    ran.isSuccess should equal(true)
+    Console.withIn(new StringReader(""))(
+      Run.passes(InputEvents.binaryAllWithRelativeTime, dut, rejectingRelative)) should equal(true)
     reporter.notes.head should include("relative time with IIN2.1")
   }
 

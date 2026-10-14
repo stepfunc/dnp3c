@@ -263,7 +263,11 @@ object TestRunner {
   // e.g. "8.11.2.5.3": a label that names a subsection, rather than a step
   private val subsection = """\d+(\.\d+)+""".r
 
-  private def runSteps(procedure: TestProcedure, options: OptionSource, driver: TestDriver): ProcedureOutcome = {
+  // the procedure's steps, then their deferred checks, then its cleanup; tests run procedures through it too
+  private[conformance] def runSteps(
+      procedure: TestProcedure,
+      options: OptionSource,
+      driver: TestDriver): ProcedureOutcome = {
 
     // checks returned by completed steps, to run once every step has
     val pending = mutable.ListBuffer[Pending]()

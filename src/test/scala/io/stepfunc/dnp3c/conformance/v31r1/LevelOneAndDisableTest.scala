@@ -6,8 +6,8 @@ package io.stepfunc.dnp3c.conformance.v31r1
 import java.io.StringReader
 
 import scala.collection.mutable
-import scala.util.Try
 
+import io.stepfunc.dnp3c.conformance.Run
 import io.stepfunc.dnp3c.conformance.api.{ Options, ProcedureDefinition }
 import io.stepfunc.dnp3c.conformance.api.options.SupportOptions.Inputs
 import io.stepfunc.dnp3c.dnp3._
@@ -30,9 +30,8 @@ class LevelOneAndDisableTest extends AnyFunSuite with Matchers {
   private def run(procedure: ProcedureDefinition, options: Options, iin: IIN, plugin: Plugin = new Plugin) = {
     val reporter = StubDriver.reporter(plugin)
     val dut = new ScriptedDut(reporter, (_: Message) => (iin, List.empty[ObjectHeader]))
-    val ran = Console.withIn(new StringReader(""))(
-      Try(procedure.configure(options).steps.foreach(s => s.step.run(dut).foreach(_.check()))))
-    (ran.isSuccess, reporter.notes, plugin.calls.toList)
+    val passed = Console.withIn(new StringReader(""))(Run.passes(procedure, dut, options))
+    (passed, reporter.notes, plugin.calls.toList)
   }
 
   private val levelOne = Options.from(Map(Inputs.binary.eventReads.id -> "false"))

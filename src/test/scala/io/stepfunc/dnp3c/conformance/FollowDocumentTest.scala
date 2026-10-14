@@ -4,12 +4,12 @@
 package io.stepfunc.dnp3c.conformance
 
 import io.stepfunc.dnp3c.conformance.Placements.id
-import io.stepfunc.dnp3c.conformance.api.{ Options, ProcedureDefinition }
+import io.stepfunc.dnp3c.conformance.api.ProcedureDefinition
 import io.stepfunc.dnp3c.conformance.api.options.ControlOptions
 import io.stepfunc.dnp3c.dnp3._
 import io.stepfunc.dnp3c.dnp3.app._
 import io.stepfunc.dnp3c.dnp3.app.objects._
-import io.stepfunc.dnp3c.dnp3.link.{ FrameValidator, LinkFrame }
+import io.stepfunc.dnp3c.dnp3.link.LinkFrame
 import io.stepfunc.dnp3c.protocol.Hex
 import org.junit.runner.RunWith
 import org.scalatestplus.junit.JUnitRunner
@@ -19,7 +19,6 @@ import org.scalatest.funsuite.AnyFunSuite
 import java.io.StringReader
 
 import scala.collection.mutable
-import scala.util.Try
 
 // requests and actions that follow the procedure document
 @RunWith(classOf[JUnitRunner])
@@ -37,29 +36,21 @@ class FollowDocumentTest extends AnyFunSuite with Matchers {
   }
 
   // answers every request with a Null Response with IIN2.1 (object unknown); records the requests
-  private class Dut(val plugin: Plugin = new Plugin) extends StubDriver(StubDriver.reporter(plugin)) {
+  private class Dut(val plugin: Plugin = new Plugin) extends RespondingDriver(StubDriver.reporter(plugin)) {
     val requests = mutable.ListBuffer.empty[Message]
-    private val pending = mutable.Queue.empty[Message]
     override def writeMessage(message: Message, options: LinkOverride): Unit = {
       requests += message
-      pending.enqueue(Message.parse(Hex.from("%02X 81 00 02".format(0xC0 | message.ctrl.seq.value))))
+      enqueue("%02X 81 00 02".format(0xC0 | message.ctrl.seq.value))
     }
     override def writeFrame(frame: LinkFrame): Unit = ()
-    override def readMessage(
-        unsolicited: Unsolicited,
-        validator: FrameValidator,
-        linkOverride: LinkOverride,
-        timeoutMs: Option[Int]): Option[Message] = if (pending.isEmpty) timedOut(timeoutMs) else Some(pending.dequeue())
     override def readFrame(timeout: Option[Int]): Option[LinkFrame] = timedOut(timeout)
-    override def close(): Unit = ()
   }
 
   // runs every step, carrying on past failures, to see everything the procedure sends; a manual question gets no
   // answer (end of input), so it fails rather than waits
   private def runEachStep(procedure: ProcedureDefinition, settings: Map[String, String] = Map()): Dut = {
     val dut = new Dut
-    Console.withIn(new StringReader(""))(
-      procedure.configure(Options.from(settings)).steps.foreach(s => Try(s.step.run(dut))))
+    Console.withIn(new StringReader(""))(Run.everyStep(procedure, dut, settings))
     dut
   }
 

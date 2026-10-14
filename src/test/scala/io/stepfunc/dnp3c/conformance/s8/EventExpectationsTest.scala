@@ -3,12 +3,12 @@
 
 package io.stepfunc.dnp3c.conformance.s8
 
+import io.stepfunc.dnp3c.conformance.Run
 import io.stepfunc.dnp3c.conformance.api.options.OutstationOptions
 import io.stepfunc.dnp3c.conformance.Placements.id
-import io.stepfunc.dnp3c.conformance.api.{ Options, ProcedureDefinition }
+import io.stepfunc.dnp3c.conformance.api.ProcedureDefinition
 import io.stepfunc.dnp3c.dnp3._
 import io.stepfunc.dnp3c.dnp3.app._
-import io.stepfunc.dnp3c.dnp3.link.FrameValidator
 import io.stepfunc.dnp3c.protocol.Hex
 import org.junit.runner.RunWith
 import org.scalatestplus.junit.JUnitRunner
@@ -17,7 +17,6 @@ import org.scalatest.funsuite.AnyFunSuite
 
 import java.io.StringReader
 import scala.collection.mutable
-import scala.util.Try
 
 // what each procedure expects of the events it asks the plugin to check
 @RunWith(classOf[JUnitRunner])
@@ -52,8 +51,7 @@ class EventExpectationsTest extends AnyFunSuite with Matchers {
 
   // answers a read of counters (g22) or analogs (g32) with one such event, any other request with one binary event and
   // a static value, each asking for confirmation
-  private class Dut(val plugin: Plugin = new Plugin) extends StubDriver(StubDriver.reporter(plugin)) {
-    private val responses = mutable.Queue.empty[Message]
+  private class Dut(val plugin: Plugin = new Plugin) extends RespondingDriver(StubDriver.reporter(plugin)) {
     override def writeMessage(message: Message, options: LinkOverride): Unit =
       if (message.function != AppFunction.confirm) {
         val objects = message.headers.headOption.map(_.variation.group.id.toInt) match {
@@ -63,22 +61,13 @@ class EventExpectationsTest extends AnyFunSuite with Matchers {
         }
         val control = Control(First.Yes, Final.Yes, Confirm.Yes, Unsolicited.No, message.ctrl.seq)
         val headers = Message.parse(Hex.from("C0 81 00 00 " + objects)).headers
-        responses.enqueue(Message(control, AppFunction.response, Some(IIN.empty), headers))
+        enqueue(Message(control, AppFunction.response, Some(IIN.empty), headers))
       }
-    override def readMessage(
-        unsolicited: Unsolicited,
-        validator: FrameValidator,
-        linkOverride: LinkOverride,
-        timeoutMs: Option[Int]): Option[Message] =
-      if (responses.isEmpty) timedOut(timeoutMs) else Some(responses.dequeue())
-    override def close(): Unit = ()
   }
 
   private def expectations(procedure: ProcedureDefinition): List[(String, EventExpectation)] = {
     val dut = new Dut
-    Console.withIn(new StringReader(""))(
-      procedure.configure(Options.from(Map(OutstationOptions.subsetLevel.id -> "2"))).steps.foreach(s =>
-        Try(s.step.run(dut))))
+    Console.withIn(new StringReader(""))(Run.everyStep(procedure, dut, Map(OutstationOptions.subsetLevel.id -> "2")))
     dut.plugin.expected.toList
   }
 

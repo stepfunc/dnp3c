@@ -5,12 +5,11 @@ package io.stepfunc.dnp3c.conformance.v31r1
 
 import java.io.StringReader
 
-import scala.util.Try
-
-import io.stepfunc.dnp3c.conformance.api.{ Options, ProcedureDefinition }
+import io.stepfunc.dnp3c.conformance.Run
+import io.stepfunc.dnp3c.conformance.api.ProcedureDefinition
 import io.stepfunc.dnp3c.dnp3._
-import io.stepfunc.dnp3c.dnp3.app.{ AppFunction, IIN, Message, Sequence, Unsolicited }
-import io.stepfunc.dnp3c.dnp3.link.{ FrameValidator, LinkFrame }
+import io.stepfunc.dnp3c.dnp3.app.{ AppFunction, IIN, Message, Sequence }
+import io.stepfunc.dnp3c.dnp3.link.LinkFrame
 import org.junit.runner.RunWith
 import org.scalatestplus.junit.JUnitRunner
 import org.scalatest.matchers.should.Matchers
@@ -30,7 +29,6 @@ class BroadcastTest extends AnyFunSuite with Matchers {
     // the address of the broadcast to report, until it's reported (0xFFFF, 0xFFFD) or confirmed (0xFFFE)
     private var broadcast: Option[Int] = None
     private var awaitingConfirm: Option[Sequence] = None
-    private val responses = scala.collection.mutable.Queue.empty[Message]
 
     override def writeMessage(message: Message, link: LinkOverride): Unit = {
       val destination = link.destination.map(_.value)
@@ -47,25 +45,17 @@ class BroadcastTest extends AnyFunSuite with Matchers {
         else if (broadcast.isDefined) broadcast = None
         // FIR and FIN set, CON as above, and the request's sequence number
         val ctrl = (0xC0 | (if (con) 0x20 else 0) | message.ctrl.seq.value).toByte
-        responses.enqueue(Message.parse(List(ctrl, 0x81.toByte, iin.lsb, iin.msb)))
+        enqueue(Message.parse(List(ctrl, 0x81.toByte, iin.lsb, iin.msb)))
       }
     }
 
-    override def readMessage(
-        unsolicited: Unsolicited,
-        validator: FrameValidator,
-        linkOverride: LinkOverride,
-        timeoutMs: Option[Int]): Option[Message] =
-      if (responses.isEmpty) timedOut(timeoutMs) else Some(responses.dequeue())
-
     override def readFrame(timeout: Option[Int]): Option[LinkFrame] = timedOut(timeout)
-    override def close(): Unit = {}
   }
 
   // runs the steps in order, stopping at the first that fails
   private def passes(procedure: ProcedureDefinition, dut: Outstation): Boolean =
     Console.withIn(new StringReader(""))(
-      Try(procedure.configure(Options.from(Map())).steps.foreach(s => s.step.run(dut).foreach(_.check()))).isSuccess)
+      Run.passes(procedure, dut))
 
   test("8.6.5-1 passes an outstation that acts on a broadcast sent as confirmed user data") {
     passes(Broadcast.allStationsIndication, new Outstation(actsOnConfirmed = true)) should equal(true)

@@ -3,7 +3,6 @@
 
 package io.stepfunc.dnp3c.conformance.s8.s89
 
-import io.stepfunc.dnp3c.dnp3.link.FrameValidator
 import io.stepfunc.dnp3c.conformance.s8.helpers.UnconfirmedResponse
 import io.stepfunc.dnp3c.dnp3._
 import io.stepfunc.dnp3c.dnp3.app._
@@ -30,14 +29,9 @@ class SecondFragmentTest extends AnyFunSuite with Matchers {
     override def generateMultiFragmentResponse(reporter: PluginReporter): Unit = generated += 1
   }
 
-  private class Dut(plugin: Plugin, fragments: Message*) extends StubDriver(StubDriver.reporter(plugin)) {
-    private val pending = mutable.Queue(fragments*)
+  private class Dut(plugin: Plugin, fragments: Message*) extends RespondingDriver(StubDriver.reporter(plugin)) {
+    fragments.foreach(f => enqueue(f))
     val written = mutable.ListBuffer.empty[(AppFunction, Int)]
-    override def readMessage(
-        unsolicited: Unsolicited,
-        validator: FrameValidator,
-        linkOverride: LinkOverride,
-        timeoutMs: Option[Int]): Option[Message] = if (pending.isEmpty) None else Some(pending.dequeue())
     override def writeMessage(message: Message, options: LinkOverride): Unit =
       written += ((message.function, message.ctrl.seq.value.toInt))
   }

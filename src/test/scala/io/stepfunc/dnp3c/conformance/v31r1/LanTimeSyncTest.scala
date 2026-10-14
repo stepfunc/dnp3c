@@ -4,15 +4,14 @@
 package io.stepfunc.dnp3c.conformance.v31r1
 
 import scala.collection.mutable
-import scala.util.Try
 
+import io.stepfunc.dnp3c.conformance.Run
 import io.stepfunc.dnp3c.conformance.api.Options
 import io.stepfunc.dnp3c.conformance.api.options.TimeSyncOptions
 import io.stepfunc.dnp3c.dnp3._
-import io.stepfunc.dnp3c.dnp3.app.{ AppFunction, GenIndexedPoint, IIN, MeasurementPoint, Message, Unsolicited }
+import io.stepfunc.dnp3c.dnp3.app.{ AppFunction, GenIndexedPoint, IIN, MeasurementPoint, Message }
 import io.stepfunc.dnp3c.dnp3.app.objects.Group50Var3
-import io.stepfunc.dnp3c.dnp3.link.{ FrameValidator, LinkFrame }
-import io.stepfunc.dnp3c.protocol.Hex
+import io.stepfunc.dnp3c.dnp3.link.LinkFrame
 import org.junit.runner.RunWith
 import org.scalatestplus.junit.JUnitRunner
 import org.scalatest.matchers.should.Matchers
@@ -34,16 +33,18 @@ class LanTimeSyncTest extends AnyFunSuite with Matchers {
    * Needs the time until a g50v3 write, which it answers with IIN1.0, if it saw a broadcast Record Current Time; reports
    * a time-tagged binary input event when read
    */
-  private class Dut(answersBroadcast: Boolean) extends StubDriver(StubDriver.reporter(plugin)) {
+  private class Dut(answersBroadcast: Boolean) extends RespondingDriver(StubDriver.reporter(plugin)) {
     private var needTime = true
     private var recorded = false
-    private val responses = mutable.Queue.empty[Message]
     val written = mutable.ListBuffer.empty[Message]
     var broadcastAt: Option[Long] = None
 
     private def respond(seq: Int, iin: IIN, objects: String = "", con: Boolean = false): Unit =
-      responses.enqueue(Message.parse(Hex.from(
-        "%02X 81 %02X %02X %s".format(0xC0 | (if (con) 0x20 else 0) | seq, iin.lsb & 0xFF, iin.msb & 0xFF, objects))))
+      enqueue("%02X 81 %02X %02X %s".format(
+        0xC0 | (if (con) 0x20 else 0) | seq,
+        iin.lsb & 0xFF,
+        iin.msb & 0xFF,
+        objects))
 
     override def writeMessage(message: Message, options: LinkOverride): Unit = {
       val seq = message.ctrl.seq.value.toInt
@@ -65,22 +66,14 @@ class LanTimeSyncTest extends AnyFunSuite with Matchers {
       }
     }
 
-    override def readMessage(
-        unsolicited: Unsolicited,
-        validator: FrameValidator,
-        linkOverride: LinkOverride,
-        timeoutMs: Option[Int]): Option[Message] =
-      if (responses.isEmpty) timedOut(timeoutMs) else Some(responses.dequeue())
-
     override def readFrame(timeout: Option[Int]): Option[LinkFrame] =
-      if (responses.isEmpty) timedOut(timeout) else throw new Exception("a response to the broadcast")
-    override def close(): Unit = {}
+      if (!responseWaiting) timedOut(timeout) else throw new Exception("a response to the broadcast")
   }
 
   private val options = Options.from(Map(TimeSyncOptions.supportLanTimeSync.id -> "true"))
 
   private def run(dut: Dut): Boolean =
-    Try(LanTimeSync.lanTimeSync.configure(options).steps.foreach(s => s.step.run(dut).foreach(_.check()))).isSuccess
+    Run.passes(LanTimeSync.lanTimeSync, dut, options)
 
   test("the DUT takes the time it recorded at the broadcast, and reports IIN1.0") {
     val dut = new Dut(answersBroadcast = false)

@@ -6,8 +6,8 @@ package io.stepfunc.dnp3c.conformance.s8.s86.s864
 import java.io.StringReader
 
 import scala.collection.mutable
-import scala.util.Try
 
+import io.stepfunc.dnp3c.conformance.Run
 import io.stepfunc.dnp3c.conformance.api.{ Index, Options, ProcedureDefinition }
 import io.stepfunc.dnp3c.dnp3._
 import io.stepfunc.dnp3c.dnp3.app.{ AppFunction, IIN, Message, ObjectHeader }
@@ -87,7 +87,7 @@ class SupervisoryControlProceduresTest extends AnyFunSuite with Matchers {
     val outstation = new Outstation(localForced)
     val dut = new ScriptedDut(StubDriver.reporter(new Plugin(outstation)), outstation.answer)
     Console.withIn(new StringReader(""))(
-      Try(procedure.configure(options).steps.foreach(s => s.step.run(dut).foreach(_.check()))).isSuccess)
+      Run.passes(procedure, dut, options))
   }
 
   test("8.6.4.2 passes an outstation whose outputs in local mode clear ONLINE and refuse controls") {
