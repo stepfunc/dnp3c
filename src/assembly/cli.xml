@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- the CLI download: dnp3c-<version>/bin launchers, lib/dnp3c.jar (runnable) and the license -->
+<!-- the CLI download: dnp3c-<version>/bin launchers, lib/dnp3c.jar (runnable), the license, and those of the
+     dependencies it bundles, in third-party -->
 <assembly xmlns="http://maven.apache.org/ASSEMBLY/2.2.0"
           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
           xsi:schemaLocation="http://maven.apache.org/ASSEMBLY/2.2.0 https://maven.apache.org/xsd/assembly-2.2.0.xsd">
@@ -30,5 +31,20 @@
         <file>
             <source>LICENSE</source>
         </file>
+        <file>
+            <source>${project.build.directory}/generated-sources/license/THIRD-PARTY.txt</source>
+            <outputDirectory>third-party</outputDirectory>
+        </file>
+        <file>
+            <source>src/license/licenses-resolved.xml</source>
+            <outputDirectory>third-party</outputDirectory>
+        </file>
     </files>
+    <fileSets>
+        <!-- the licenses of the dependencies bundled in lib/dnp3c.jar -->
+        <fileSet>
+            <directory>src/license/texts</directory>
+            <outputDirectory>third-party/licenses</outputDirectory>
+        </fileSet>
+    </fileSets>
 </assembly>

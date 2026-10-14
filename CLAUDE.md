@@ -34,6 +34,8 @@ mvn package    # library jar, runnable "-cli" jar, and the CLI zip (dnp3c-<versi
 
 Spotless rewrites source files during the build: it formats them with scalafmt (`.scalafmt.conf`) and writes the SPDX license header from `LICENSE_HEADER`. Check `git status` after building.
 
+The license-maven-plugin lists the licenses of the dependencies the CLI jar bundles, and keeps each license's text, and the upstream NOTICE files missing from their jars, in `src/license/texts`, with which dependency each is for in `src/license/licenses-resolved.xml`. The build fails on a license that isn't allowed (`includedLicenses` in `pom.xml`). It downloads only what it hasn't seen, which changes `src/license`, and CI fails until that's reviewed and committed. `src/license/licenses.xml` corrects what the dependencies' POMs say, e.g. the license dnp3c takes a dual-licensed one under, for the versions reviewed: a dependency upgrade changes `src/license` until its entry there is updated.
+
 dnp3c is licensed GPL-3.0-only, copyright Step Function I/O LLC.
 
 ## Workflow

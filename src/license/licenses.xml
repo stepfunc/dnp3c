@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Corrections to the license data in the POMs of the dependencies the CLI jar bundles, for the license-maven-plugin's
+  download-licenses goal: dnp3c takes the dual-licensed ones under Apache-2.0, and the MIT ones' license texts come from
+  their projects, with their copyright lines, rather than from a generic page, and the NOTICE files of the Apache-2.0
+  ones that have one upstream but not in their jars come too. Each entry matches the version reviewed: a new version
+  gets the license its POM gives, a new file in src/license/texts, until its entry is reviewed and updated. A matched
+  license's distribution and comments need patterns too, as an empty one matches only an empty value. Names are matched
+  as add-third-party's licenseMerges have them too, as it runs first and renames them.
+-->
+<licenseSummary>
+  <dependencies>
+    <dependency>
+      <groupId>\Qcom.fazecast\E</groupId>
+      <artifactId>\QjSerialComm\E</artifactId>
+      <version>\Q2.11.4\E</version>
+      <matchLicenses>
+        <license>
+          <name>LGPL-3\.0|GNU Lesser GPL.+Version 3</name>
+          <url>.*</url>
+          <distribution>.*</distribution>
+          <comments>.*</comments>
+        </license>
+        <license>
+          <name>Apache-2\.0|Apache Software License.+Version 2\.0</name>
+          <url>.*</url>
+          <distribution>.*</distribution>
+          <comments>.*</comments>
+        </license>
+      </matchLicenses>
+      <licenses>
+        <license>
+          <name>Apache-2.0</name>
+          <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+          <comments>Dual licensed under Apache-2.0 or LGPL-3.0; dnp3c uses it under Apache-2.0</comments>
+        </license>
+        <license>
+          <name>NOTICE</name>
+          <url>https://raw.githubusercontent.com/Fazecast/jSerialComm/v2.11.4/NOTICE</url>
+        </license>
+      </licenses>
+    </dependency>
+    <dependency>
+      <groupId>\Qnet.java.dev.jna\E</groupId>
+      <artifactId>\Qjna\E</artifactId>
+      <version>\Q5.3.1\E</version>
+      <matchLicenses>
+        <license>
+          <name>LGPL-2\.1|LGPL.+version 2\.1</name>
+          <url>.*</url>
+          <distribution>.*</distribution>
+          <comments>.*</comments>
+        </license>
+        <license>
+          <name>Apache-2\.0|Apache License v2\.0</name>
+          <url>.*</url>
+          <distribution>.*</distribution>
+          <comments>.*</comments>
+        </license>
+      </matchLicenses>
+      <licenses>
+        <license>
+          <name>Apache-2.0</name>
+          <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+          <comments>Dual licensed under Apache-2.0 or LGPL-2.1; dnp3c uses it under Apache-2.0</comments>
+        </license>
+      </licenses>
+    </dependency>
+    <dependency>
+      <groupId>\Qorg.pcap4j\E</groupId>
+      <artifactId>.*</artifactId>
+      <version>\Q1.8.2\E</version>
+      <matchLicenses>
+        <license>
+          <name>MIT|MIT License</name>
+          <url>.*</url>
+          <distribution>.*</distribution>
+          <comments>.*</comments>
+        </license>
+      </matchLicenses>
+      <licenses>
+        <license>
+          <name>MIT</name>
+          <url>https://raw.githubusercontent.com/kaitoy/pcap4j/pcap4j-1.8.2/LICENSE</url>
+        </license>
+      </licenses>
+    </dependency>
+    <dependency>
+      <groupId>\Qorg.slf4j\E</groupId>
+      <artifactId>.*</artifactId>
+      <version>\Q2.0.20\E</version>
+      <matchLicenses>
+        <license>
+          <name>\QMIT\E</name>
+          <url>.*</url>
+          <distribution>.*</distribution>
+          <comments>.*</comments>
+        </license>
+      </matchLicenses>
+      <licenses>
+        <license>
+          <name>MIT</name>
+          <url>https://raw.githubusercontent.com/qos-ch/slf4j/v_2.0.20/LICENSE.txt</url>
+        </license>
+      </licenses>
+    </dependency>
+    <dependency>
+      <groupId>\Qorg.scala-lang\E</groupId>
+      <artifactId>\Qscala-library\E|\Qscala3-library_3\E</artifactId>
+      <version>\Q3.9.0\E</version>
+      <matchLicenses>
+        <license>
+          <name>Apache-2\.0</name>
+          <url>.*</url>
+          <distribution>.*</distribution>
+          <comments>.*</comments>
+        </license>
+      </matchLicenses>
+      <licenses>
+        <license>
+          <name>Apache-2.0</name>
+          <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+        </license>
+        <license>
+          <name>NOTICE</name>
+          <url>https://raw.githubusercontent.com/scala/scala3/3.9.0/NOTICE.md</url>
+        </license>
+      </licenses>
+    </dependency>
+  </dependencies>
+</licenseSummary>
