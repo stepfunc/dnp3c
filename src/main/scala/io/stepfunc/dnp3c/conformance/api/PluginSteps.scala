@@ -180,12 +180,12 @@ object PluginSteps {
       plugin.generateExactInputEvents(reporter, InputKind.AnalogInput, numEvents)
     }
 
-  // Unsolicited responses
   def setColdRestartSupport(enabled: Boolean): TestStep =
     action(s"${enable(enabled)} the DUT's support for cold restart") { (plugin, reporter) =>
       plugin.setColdRestartSupport(reporter, enabled)
     }
 
+  // Unsolicited responses
   def enableUnsolicitedResponse(enabled: Boolean): TestStep =
     action(s"Configure the unsolicited response mode to '$enabled'") { (plugin, reporter) =>
       plugin.enableUnsolicitedResponse(reporter, enabled)

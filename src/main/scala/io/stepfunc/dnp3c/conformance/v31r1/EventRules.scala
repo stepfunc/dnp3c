@@ -7,7 +7,7 @@ import scala.util.Try
 
 import io.stepfunc.dnp3c.conformance.api.{ ConfigProblem, OptionSource, TestProcedure }
 import io.stepfunc.dnp3c.conformance.api.options.{ OutstationOptions, TimeSyncOptions }
-import io.stepfunc.dnp3c.conformance.api.options.AnalogOutputOptions
+import io.stepfunc.dnp3c.conformance.api.options.{ AnalogInputOptions, AnalogOutputOptions }
 import io.stepfunc.dnp3c.conformance.api.options.SupportOptions.{ Inputs, Outputs }
 import io.stepfunc.dnp3c.conformance.s8.helpers.{ InputType, Validations }
 import io.stepfunc.dnp3c.dnp3.{ Comment, DeferredCheck, MessageValidation, ProcedureReporter }
@@ -125,8 +125,25 @@ object EventRules {
         AnalogOutputOptions.commands32Bit.id,
         "false",
         "a subset level 3 device with analog output commands must accept 32-bit ones (g41v1)"))
+    // 8.19.2.4 changes an analog input by its deadband, which only the device's configuration says, and must tell the
+    // changed value from the first within the tolerance
+    val valueReturn = selected.exists(p =>
+      p.definition == AnalogValueReturn.valueReturn && p.definition.disabledBy(options).isEmpty)
+    val deadband = Option.when(valueReturn && options.get(AnalogInputOptions.valueReturnDeadband).isEmpty)(
+      ConfigProblem(
+        AnalogInputOptions.valueReturnDeadband.id,
+        "",
+        "required by 3.1r1's 8.19.2.4, which changes the analog input by 150% of its deadband")) ++
+      options.get(AnalogInputOptions.valueReturnDeadband).filter(d =>
+        valueReturn && 2 * options.get(AnalogInputOptions.valueTolerance) >= AnalogValueReturn.change(d)).map(d =>
+        ConfigProblem(
+          AnalogInputOptions.valueTolerance.id,
+          options.get(AnalogInputOptions.valueTolerance).toString,
+          s"too wide for 3.1r1's 8.19.2.4 to tell the value it applies, ${AnalogValueReturn.change(d)} (150% of the " +
+            "deadband) above the first, from the first"
+        ))
     unreadable ++ unreadableStatic ++ defaults ++ rejected ++ relativeRejected ++ expiry ++ frozenCounterEvents ++
-      analogOutputs32Bit
+      analogOutputs32Bit ++ deadband
   }
 
   /** the preferred variation for a read of `requested`: itself, or for variation 0 the Device Profile's default */

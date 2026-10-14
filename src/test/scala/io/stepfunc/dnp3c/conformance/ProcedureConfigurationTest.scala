@@ -4,7 +4,9 @@
 package io.stepfunc.dnp3c.conformance
 
 import io.stepfunc.dnp3c.conformance.api.{ BooleanOption, OptionGroups, Options, TestElement, ProcedureDefinition }
-import io.stepfunc.dnp3c.conformance.api.options.{ AttributeOptions, OutstationOptions, SupportOptions }
+import io.stepfunc.dnp3c.conformance.api.options.{
+  AnalogInputOptions, AttributeOptions, OutstationOptions, SupportOptions
+}
 import org.junit.runner.RunWith
 import org.scalatestplus.junit.JUnitRunner
 import org.scalatest.matchers.should.Matchers
@@ -19,7 +21,8 @@ class ProcedureConfigurationTest extends AnyFunSuite with Matchers {
   private val incomplete = procedures.filter(_.incomplete)
 
   // the Device Profile values that have no default
-  private val profile = Map(AttributeOptions.supportedVariations.id -> "1")
+  private val profile =
+    Map(AttributeOptions.supportedVariations.id -> "1", AnalogInputOptions.valueReturnDeadband.id -> "10")
 
   private val booleans = OptionGroups.list.flatMap(_.options).collect { case o: BooleanOption => o.id }
 
