@@ -4,7 +4,8 @@
 package io.stepfunc.dnp3c.conformance.api.options
 
 import io.stepfunc.dnp3c.conformance.api.{
-  Index, IndexListOption, IndexOption, IntegerOption, OptionGroup, OptionSource, OptionTypes, TestOption
+  BooleanOption, Index, IndexListOption, IndexOption, IntegerOption, OptionalIndexOption, OptionGroup, OptionSource,
+  OptionTypes, TestOption
 }
 import io.stepfunc.dnp3c.dnp3.app.objects.{ CommandStatus, Group41Var2 }
 
@@ -24,9 +25,23 @@ object AnalogOutputOptions extends OptionGroup {
     Some(1),
     None)
 
+  val commands32Bit: BooleanOption = OptionTypes.boolean(
+    this,
+    "commands32Bit",
+    false,
+    "Does the DUT accept 32-bit analog output commands (g41v1)? Subset level 3 requires it"
+  )
+  val index32Bit: OptionalIndexOption = OptionTypes.optionalIndex(
+    this,
+    "index32Bit",
+    None,
+    "Index of an installed 32-bit analog output, which 3.1r1's 8.4.1.2.13 commands; empty if none is installed"
+  )
+
   def prefix: String = "analogOutput"
   def description: String = "Options related to analog outputs (g41)"
   def options: List[TestOption] = uninstalledIndex :: installedPoints :: maxAnalogOutputsInSingleRequest ::
+    commands32Bit :: index32Bit ::
     primary.options ::: alternate.options
 
   case class Options(group: OptionGroup, id: String, defaultIndex: Index, defaultValue: Int) {

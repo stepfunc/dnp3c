@@ -7,7 +7,8 @@ import scala.util.Try
 
 import io.stepfunc.dnp3c.conformance.api.{ ConfigProblem, OptionSource, TestProcedure }
 import io.stepfunc.dnp3c.conformance.api.options.{ OutstationOptions, TimeSyncOptions }
-import io.stepfunc.dnp3c.conformance.api.options.SupportOptions.Inputs
+import io.stepfunc.dnp3c.conformance.api.options.AnalogOutputOptions
+import io.stepfunc.dnp3c.conformance.api.options.SupportOptions.{ Inputs, Outputs }
 import io.stepfunc.dnp3c.conformance.s8.helpers.{ InputType, Validations }
 import io.stepfunc.dnp3c.dnp3.{ Comment, DeferredCheck, MessageValidation, ProcedureReporter }
 import io.stepfunc.dnp3c.dnp3.app.{ Message, Variation }
@@ -117,7 +118,15 @@ object EventRules {
         Inputs.frozenCounter.events.id,
         "false",
         "a subset level 3 device with frozen counters must generate frozen counter events (8.16.2)"))
-    unreadable ++ unreadableStatic ++ defaults ++ rejected ++ relativeRejected ++ expiry ++ frozenCounterEvents
+    // 8.4.1.2.13: a subset level 3 device with analog output commands accepts them with 32-bit values
+    val analogOutputs32Bit = Option.when(
+      level.contains(3) && options.get(Outputs.analog.commands) && !options.get(AnalogOutputOptions.commands32Bit))(
+      ConfigProblem(
+        AnalogOutputOptions.commands32Bit.id,
+        "false",
+        "a subset level 3 device with analog output commands must accept 32-bit ones (g41v1)"))
+    unreadable ++ unreadableStatic ++ defaults ++ rejected ++ relativeRejected ++ expiry ++ frozenCounterEvents ++
+      analogOutputs32Bit
   }
 
   /** the preferred variation for a read of `requested`: itself, or for variation 0 the Device Profile's default */
