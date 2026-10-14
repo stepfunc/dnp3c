@@ -13,6 +13,7 @@ object OptionGroups {
   val list: List[OptionGroup] = List(
     TestOptions,
     ChannelOptions,
+    SerialOptions,
     LinkOptions,
     OutstationOptions,
     ControlOptions,

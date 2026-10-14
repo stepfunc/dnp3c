@@ -4,7 +4,7 @@
 package io.stepfunc.dnp3c.conformance.v31r1
 
 import io.stepfunc.dnp3c.conformance.api._
-import io.stepfunc.dnp3c.conformance.api.options.{ LinkOptions, SupportOptions }
+import io.stepfunc.dnp3c.conformance.api.options.{ LinkOptions, SerialOptions, SupportOptions }
 import io.stepfunc.dnp3c.conformance.s8.helpers.GenericSteps._
 import io.stepfunc.dnp3c.dnp3._
 import io.stepfunc.dnp3c.dnp3.app.{ IIN, Message, Sequence, Unsolicited }
@@ -18,8 +18,9 @@ import io.stepfunc.dnp3c.protocol.parsing.UInt16LE
  * class 0 alone first, and compares the two responses' objects: their groups, variations, qualifiers and indexes, as
  * the values may change between them.
  *
- * The test is for serial and UDP, and for TCP only where the DUT has more than one DNP3 address. dnp3c connects over
- * TCP only, so it runs the test for such a DUT, sending the confirm to its other address.
+ * The test is for serial and UDP, and for TCP only where the DUT has more than one DNP3 address. dnp3c runs it over a
+ * serial line, sending the confirm to another device's address, and over TCP for such a DUT, sending the confirm to its
+ * other address (LinkOptions.otherDestination either way).
  */
 object NoInterFrameGap {
 
@@ -46,10 +47,13 @@ object NoInterFrameGap {
     responses.foldLeft(IIN.empty)((all, m) => all | (m.iin.getOrElse(IIN.empty) & ~changing)))
 
   val noInterFrameGap: ProcedureDefinition = new ProcedureDefinition {
-    override protected def requiredOptions: List[OptionCondition] = List(SupportOptions.multipleAddresses)
+    // on a serial line, the other address is any other device's
+    override protected def requirement: Requirement =
+      Requirement.anyOf(OptionCondition(SerialOptions.enabled), OptionCondition(SupportOptions.multipleAddresses))
 
     override protected def steps(options: OptionSource): Iterable[LabeledStep] = {
       val other = options.get(LinkOptions.otherDestination)
+      val serial = options.get(SerialOptions.enabled)
       if (other == options.get(LinkOptions.destination))
         throw new Exception(
           s"${LinkOptions.otherDestination.id} is the DUT's own address, ${LinkOptions.destination.id}")
@@ -94,8 +98,16 @@ object NoInterFrameGap {
             expectAtLeastOneResponse(Sequence.zero, record) + transmit),
         // and nothing more, e.g. from the other address
         2 --> (expectAtLeastOneResponse(Sequence.one, sameAsAlone) + expectNoAnswer(options)),
-        3 --> describe("dnp3c connects over TCP only: it can't repeat the test over serial or UDP"),
-        4 --> describe(s"Over TCP, for a DUT with more than one DNP3 address: the confirm goes to its other, $other")
+        3 -->
+          (if (serial)
+             describe(s"Over serial: the confirm goes to another device's address, $other. dnp3c can't repeat the " +
+               "test over UDP, and a run over TCP repeats it there")
+           else
+             describe("dnp3c can't repeat the test over UDP, and a run over serial (serial.enabled) repeats it there")),
+        4 -->
+          (if (serial) describe("A run over TCP repeats the test for a DUT with more than one DNP3 address")
+           else
+             describe(s"Over TCP, for a DUT with more than one DNP3 address: the confirm goes to its other, $other"))
       )
     }
   }

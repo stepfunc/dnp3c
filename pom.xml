@@ -54,6 +54,7 @@
         <commons-cli.version>1.11.0</commons-cli.version>
         <slf4j.version>2.0.20</slf4j.version>
         <pcap4j.version>1.8.2</pcap4j.version>
+        <jserialcomm.version>2.11.4</jserialcomm.version>
         <!-- plugin versions -->
         <scala-maven-plugin.version>4.10.0</scala-maven-plugin.version>
         <maven-jar-plugin.version>3.5.1</maven-jar-plugin.version>
@@ -292,6 +293,11 @@
             <artifactId>slf4j-nop</artifactId>
             <version>${slf4j.version}</version>
             <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.fazecast</groupId>
+            <artifactId>jSerialComm</artifactId>
+            <version>${jserialcomm.version}</version>
         </dependency>
         <dependency>
             <groupId>commons-cli</groupId>
