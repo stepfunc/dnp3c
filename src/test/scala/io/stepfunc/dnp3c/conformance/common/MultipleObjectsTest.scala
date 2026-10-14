@@ -6,7 +6,7 @@ package io.stepfunc.dnp3c.conformance.common
 import io.stepfunc.dnp3c.conformance.Run
 import io.stepfunc.dnp3c.conformance.Placements.id
 import io.stepfunc.dnp3c.conformance.api.{ Options, ProcedureDefinition }
-import io.stepfunc.dnp3c.conformance.api.options.{ AnalogOutputOptions, ControlOptions }
+import io.stepfunc.dnp3c.conformance.api.options.{ AnalogOutputOptions, BinaryOutputOptions }
 import io.stepfunc.dnp3c.conformance.v27.Procedure8_2_4_2
 import io.stepfunc.dnp3c.conformance.v27.Procedure8_4_4_2
 import io.stepfunc.dnp3c.dnp3._
@@ -84,21 +84,21 @@ class MultipleObjectsTest extends AnyFunSuite with Matchers {
     Family(
       Procedure8_2_4_2,
       OperationType.BinaryOutput,
-      ControlOptions.installedPoints.id,
-      ControlOptions.maxControlPointsInSingleRequest.id,
-      ControlOptions.uninstalledIndex.id,
+      BinaryOutputOptions.installedPoints.id,
+      BinaryOutputOptions.maxPointsInSingleRequest.id,
+      BinaryOutputOptions.uninstalledIndex.id,
       // a command other than the default
       Map(
-        s"${ControlOptions.prefix}.primary.valid.count" -> "3",
-        s"${ControlOptions.prefix}.primary.valid.onTime.ms" -> "250",
-        s"${ControlOptions.prefix}.primary.valid.offTime.ms" -> "300"
+        s"${BinaryOutputOptions.prefix}.primary.valid.count" -> "3",
+        s"${BinaryOutputOptions.prefix}.primary.valid.onTime.ms" -> "250",
+        s"${BinaryOutputOptions.prefix}.primary.valid.offTime.ms" -> "300"
       )
     ),
     Family(
       Procedure8_4_4_2,
       OperationType.AnalogOutput,
       AnalogOutputOptions.installedPoints.id,
-      AnalogOutputOptions.maxAnalogOutputsInSingleRequest.id,
+      AnalogOutputOptions.maxPointsInSingleRequest.id,
       AnalogOutputOptions.uninstalledIndex.id,
       Map(s"${AnalogOutputOptions.prefix}.primary.valid.value" -> "1234")
     )

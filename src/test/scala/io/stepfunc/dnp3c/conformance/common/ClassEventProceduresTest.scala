@@ -28,9 +28,9 @@ class ClassEventProceduresTest extends AnyFunSuite with Matchers {
       count: ProcedureDefinition)
 
   private val families = List(
-    Family(ClassOptions.supportClass1.id, Group60Var2, v27.Procedure8_5_2_2_1, v27.Procedure8_5_2_2_2),
-    Family(ClassOptions.supportClass2.id, Group60Var3, v27.Procedure8_5_3_2_1, v27.Procedure8_5_3_2_2),
-    Family(ClassOptions.supportClass3.id, Group60Var4, v27.Procedure8_5_4_2_1, v27.Procedure8_5_4_2_2)
+    Family(ClassOptions.class1.supported.id, Group60Var2, v27.Procedure8_5_2_2_1, v27.Procedure8_5_2_2_2),
+    Family(ClassOptions.class2.supported.id, Group60Var3, v27.Procedure8_5_3_2_1, v27.Procedure8_5_3_2_2),
+    Family(ClassOptions.class3.supported.id, Group60Var4, v27.Procedure8_5_4_2_1, v27.Procedure8_5_4_2_2)
   )
 
   private def runs(procedure: ProcedureDefinition, settings: (String, String)*): Boolean =

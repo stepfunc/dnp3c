@@ -13,17 +13,9 @@ object AnalogOutputOptions extends OptionGroup {
 
   val primary = Options(this, "primary", Index.zero, 10)
   val alternate = Options(this, "alternate", Index.one, 11)
-  val uninstalledIndex: IndexOption =
-    OptionTypes.index(this, "uninstalled.index", Index.max, "Index not assigned to any analog output point")
-  val installedPoints: IndexListOption =
-    OptionTypes.indexList(this, "installedPoints", "List of all installed AO indices")
-  val maxAnalogOutputsInSingleRequest: IntegerOption = OptionTypes.integer(
-    this,
-    "maxAnalogOutputsInSingleRequest",
-    1,
-    "Maximum number of analog outputs that are supported in a single request",
-    Some(1),
-    None)
+  val uninstalledIndex: IndexOption = PointOptions.uninstalledIndex(this, "analog output")
+  val installedPoints: IndexListOption = PointOptions.installedPoints(this, "AO")
+  val maxPointsInSingleRequest: IntegerOption = PointOptions.maxPointsInSingleRequest(this, "analog output")
 
   val commands32Bit: BooleanOption = OptionTypes.boolean(
     this,
@@ -31,20 +23,10 @@ object AnalogOutputOptions extends OptionGroup {
     false,
     "Does the DUT accept 32-bit analog output commands (g41v1)? Subset level 3 requires it"
   )
-  val statusOnly32Bit: IndexListOption = OptionTypes.indexList(
-    this,
-    "status.only32Bit",
-    "Analog output status points the DUT keeps and reports only as 32-bit values, which 3.1r1's 8.24 accepts in a " +
-      "32-bit variation where a 16-bit one is requested. Empty for none",
-    Nil
-  )
-  val statusFlags: IndexListOption = OptionTypes.indexList(
-    this,
-    "status.changeableFlags",
-    "The analog output status flags, by bit number (0 ONLINE to 6 REFERENCE_ERR), that the plugin can change, which " +
-      "3.1r1's 10.4.3 changes one at a time. Empty for none",
-    Nil
-  )
+  val statusOnly32Bit: IndexListOption =
+    PointOptions.onlyWidth(this, "status.", "Analog output status points", 32)
+  val statusFlags: IndexListOption =
+    PointOptions.changeableFlags(this, "analog output", "6 REFERENCE_ERR", "10.4.3")
   val statusValueEvents: BooleanOption = OptionTypes.boolean(
     this,
     "status.valueChangeEvents",
@@ -70,8 +52,8 @@ object AnalogOutputOptions extends OptionGroup {
   )
 
   def prefix: String = "analogOutput"
-  def description: String = "Options related to analog outputs (g41)"
-  def options: List[TestOption] = uninstalledIndex :: installedPoints :: maxAnalogOutputsInSingleRequest ::
+  def description: String = "Options related to analog outputs (g40 and g41)"
+  def options: List[TestOption] = uninstalledIndex :: installedPoints :: maxPointsInSingleRequest ::
     commands32Bit :: index32Bit :: statusOnly32Bit :: statusFlags :: statusValueEvents :: statusDeadband ::
     commandResetsBase ::
     primary.options ::: alternate.options

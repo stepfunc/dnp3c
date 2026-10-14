@@ -21,60 +21,48 @@ object TimeSyncOptions extends OptionGroup {
     "Does the DUT support the LAN time sync method (Record Current Time, function code 24), as its Device Profile " +
       "claims? 3.1r1's 8.7.2 tests it"
   )
-  val binaryInputChangeWithTime: BooleanOption = OptionTypes.boolean(
-    this,
-    "binaryInputChangeWithTime",
-    true,
-    "Does the DUT support Binary Input Change with Time events (g2v2) ?")
-  val binaryInputChangeWithRelativeTime: BooleanOption = OptionTypes.boolean(
-    this,
-    "binaryInputChangeWithRelativeTime",
-    true,
-    "Does the DUT support Binary Input Change with Relative Time events (g2v3) ?")
-  val doubleBitInputChangeWithTime: BooleanOption = OptionTypes.boolean(
-    this,
-    "doubleBitInputChangeWithTime",
-    true,
-    "Does the DUT support Double-bit Input Change with Time events (g4v2) ?")
-  val doubleBitInputChangeWithRelativeTime: BooleanOption = OptionTypes.boolean(
-    this,
-    "doubleBitInputChangeWithRelativeTime",
-    true,
-    "Does the DUT support Double-bit Input Change with Relative Time events (g4v3) ?")
-  // 3.1r1: a device without events with time may answer a read for them with IIN2.1, which 1815-2012 allows
-  val binaryInputChangeWithTimeRejected: BooleanOption = OptionTypes.boolean(
-    this,
-    "binaryInputChangeWithTimeRejected",
-    false,
-    "For a DUT without Binary Input Change with Time events: does it answer a read of g2v2 with IIN2.1, as IEEE " +
-      "1815-2012 allows? 3.1r1 then notes it as compliant with 1815-2012 but not 1815-202x, and skips its other " +
-      "with-time tests"
-  )
-  val doubleBitInputChangeWithTimeRejected: BooleanOption = OptionTypes.boolean(
-    this,
-    "doubleBitInputChangeWithTimeRejected",
-    false,
-    "For a DUT without Double-bit Input Change with Time events: does it answer a read of g4v2 with IIN2.1, as IEEE " +
-      "1815-2012 allows? 3.1r1 then notes it as compliant with 1815-2012 but not 1815-202x, and skips its other " +
-      "with-time tests"
-  )
-  // 3.1r1: a device without events with relative time may answer a read for them with IIN2.1
-  val binaryInputChangeWithRelativeTimeRejected: BooleanOption = OptionTypes.boolean(
-    this,
-    "binaryInputChangeWithRelativeTimeRejected",
-    false,
-    "For a DUT without Binary Input Change with Relative Time events: does it answer a read of g2v3 with IIN2.1, as " +
-      "IEEE 1815-2012 allows? 3.1r1 then notes it as compliant with 1815-2012 but not 1815-202x, and skips the rest " +
-      "of 8.14 and 8.15"
-  )
-  val doubleBitInputChangeWithRelativeTimeRejected: BooleanOption = OptionTypes.boolean(
-    this,
-    "doubleBitInputChangeWithRelativeTimeRejected",
-    false,
-    "For a DUT without Double-bit Input Change with Relative Time events: does it answer a read of g4v3 with IIN2.1, " +
-      "as IEEE 1815-2012 allows? 3.1r1 then notes it as compliant with 1815-2012 but not 1815-202x, and skips its " +
-      "other relative-time tests"
-  )
+  // the with-time and relative-time events of binary or double-bit inputs, e.g. "binaryInput" and "Binary Input", of
+  // event group 2, and what a DUT that rejects relative time has 3.1r1 skip
+  final class TimedEvents private[TimeSyncOptions] (
+      input: String,
+      name: String,
+      eventGroup: Int,
+      relativeTimeSkipped: String) {
+
+    val withTime: BooleanOption = OptionTypes.boolean(
+      TimeSyncOptions,
+      s"${input}ChangeWithTime",
+      true,
+      s"Does the DUT support $name Change with Time events (g${eventGroup}v2) ?")
+    val withRelativeTime: BooleanOption = OptionTypes.boolean(
+      TimeSyncOptions,
+      s"${input}ChangeWithRelativeTime",
+      true,
+      s"Does the DUT support $name Change with Relative Time events (g${eventGroup}v3) ?")
+    // 3.1r1: a device without events with time may answer a read for them with IIN2.1, which 1815-2012 allows
+    val withTimeRejected: BooleanOption = OptionTypes.boolean(
+      TimeSyncOptions,
+      s"${input}ChangeWithTimeRejected",
+      false,
+      s"For a DUT without $name Change with Time events: does it answer a read of g${eventGroup}v2 with IIN2.1, as " +
+        "IEEE 1815-2012 allows? 3.1r1 then notes it as compliant with 1815-2012 but not 1815-202x, and skips its " +
+        "other with-time tests"
+    )
+    // 3.1r1: likewise for events with relative time
+    val withRelativeTimeRejected: BooleanOption = OptionTypes.boolean(
+      TimeSyncOptions,
+      s"${input}ChangeWithRelativeTimeRejected",
+      false,
+      s"For a DUT without $name Change with Relative Time events: does it answer a read of g${eventGroup}v3 with " +
+        "IIN2.1, as IEEE 1815-2012 allows? 3.1r1 then notes it as compliant with 1815-2012 but not 1815-202x, and " +
+        s"skips $relativeTimeSkipped"
+    )
+  }
+
+  val binaryInput: TimedEvents = new TimedEvents("binaryInput", "Binary Input", 2, "the rest of 8.14 and 8.15")
+  val doubleBitInput: TimedEvents =
+    new TimedEvents("doubleBitInput", "Double-bit Input", 4, "its other relative-time tests")
+
   val timeToUnsynchronizedMs: RequiredIntegerOption = OptionTypes.requiredIntegerAtLeast(
     this,
     "timeToUnsynchronizedMs",
@@ -106,14 +94,14 @@ object TimeSyncOptions extends OptionGroup {
   override def options: List[TestOption] = List(
     supportSynchronizingTimeFromMaster,
     supportLanTimeSync,
-    binaryInputChangeWithTime,
-    binaryInputChangeWithRelativeTime,
-    doubleBitInputChangeWithTime,
-    doubleBitInputChangeWithRelativeTime,
-    binaryInputChangeWithTimeRejected,
-    doubleBitInputChangeWithTimeRejected,
-    binaryInputChangeWithRelativeTimeRejected,
-    doubleBitInputChangeWithRelativeTimeRejected,
+    binaryInput.withTime,
+    binaryInput.withRelativeTime,
+    doubleBitInput.withTime,
+    doubleBitInput.withRelativeTime,
+    binaryInput.withTimeRejected,
+    doubleBitInput.withTimeRejected,
+    binaryInput.withRelativeTimeRejected,
+    doubleBitInput.withRelativeTimeRejected,
     timeToUnsynchronizedMs,
     maxTimeFromResetToIIN14Ms,
     maxTimeBetweenSyncRequestsMs,

@@ -4,7 +4,9 @@
 package io.stepfunc.dnp3c.conformance.common
 
 import io.stepfunc.dnp3c.conformance.api._
-import io.stepfunc.dnp3c.conformance.api.options.{ AnalogOutputOptions, CommandConfig, ControlOptions, SupportOptions }
+import io.stepfunc.dnp3c.conformance.api.options.{
+  AnalogOutputOptions, CommandConfig, BinaryOutputOptions, SupportOptions
+}
 import io.stepfunc.dnp3c.dnp3.app.FixedSizeSerializable
 import io.stepfunc.dnp3c.dnp3.app.objects.{ CommandStatus, Group12Var1, Group41Var2 }
 
@@ -32,11 +34,11 @@ object OperationType {
   object BinaryOutput extends OperationType("binary output", SupportOptions.Outputs.binary) {
     type Command = Group12Var1
 
-    def primary(options: OptionSource): CommandConfig[Group12Var1] = ControlOptions.primary.getConfig(options)
-    def alternate(options: OptionSource): CommandConfig[Group12Var1] = ControlOptions.alternate.getConfig(options)
-    def uninstalledIndex(options: OptionSource): Index = options.get(ControlOptions.uninstalledIndex)
-    def installedPoints(options: OptionSource): List[Index] = options.get(ControlOptions.installedPoints)
-    def maxPerRequest(options: OptionSource): Int = options.get(ControlOptions.maxControlPointsInSingleRequest)
+    def primary(options: OptionSource): CommandConfig[Group12Var1] = BinaryOutputOptions.primary.getConfig(options)
+    def alternate(options: OptionSource): CommandConfig[Group12Var1] = BinaryOutputOptions.alternate.getConfig(options)
+    def uninstalledIndex(options: OptionSource): Index = options.get(BinaryOutputOptions.uninstalledIndex)
+    def installedPoints(options: OptionSource): List[Index] = options.get(BinaryOutputOptions.installedPoints)
+    def maxPerRequest(options: OptionSource): Int = options.get(BinaryOutputOptions.maxPointsInSingleRequest)
     def withStatus(command: Group12Var1, status: CommandStatus): Group12Var1 = command.copy(status = status)
 
     def uninstall: TestStep = PluginSteps.uninstallBinaryOutputs
@@ -52,7 +54,7 @@ object OperationType {
     def alternate(options: OptionSource): CommandConfig[Group41Var2] = AnalogOutputOptions.alternate.getConfig(options)
     def uninstalledIndex(options: OptionSource): Index = options.get(AnalogOutputOptions.uninstalledIndex)
     def installedPoints(options: OptionSource): List[Index] = options.get(AnalogOutputOptions.installedPoints)
-    def maxPerRequest(options: OptionSource): Int = options.get(AnalogOutputOptions.maxAnalogOutputsInSingleRequest)
+    def maxPerRequest(options: OptionSource): Int = options.get(AnalogOutputOptions.maxPointsInSingleRequest)
     def withStatus(command: Group41Var2, status: CommandStatus): Group41Var2 = command.copy(status = status)
 
     def uninstall: TestStep = PluginSteps.uninstallAnalogOutputs

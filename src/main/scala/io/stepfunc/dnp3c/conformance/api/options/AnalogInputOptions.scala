@@ -9,8 +9,7 @@ import io.stepfunc.dnp3c.conformance.api.{
 
 object AnalogInputOptions extends OptionGroup {
 
-  val analogInputEventsClass: IntegerOption =
-    OptionTypes.integer(this, "analogInputEventsClass", 1, "Analog Input Events class assignment.", Some(1), Some(3))
+  val eventsClass: IntegerOption = PointOptions.eventsClass(this, "Analog Input")
 
   val valueReturnIndex: IndexOption = OptionTypes.index(
     this,
@@ -33,24 +32,12 @@ object AnalogInputOptions extends OptionGroup {
     None
   )
 
-  val only16Bit: IndexListOption = OptionTypes.indexList(
-    this,
-    "only16Bit",
-    "Analog inputs the DUT keeps and reports only as 16-bit values, which 3.1r1's 8.24 accepts in a 16-bit variation " +
-      "where a 32-bit one is requested. Empty for none",
-    Nil
-  )
-  val only32Bit: IndexListOption = OptionTypes.indexList(
-    this,
-    "only32Bit",
-    "Analog inputs the DUT keeps and reports only as 32-bit values, which 3.1r1's 8.24 accepts in a 32-bit variation " +
-      "where a 16-bit one is requested. Empty for none",
-    Nil
-  )
+  val only16Bit: IndexListOption = PointOptions.onlyWidth(this, "", "Analog inputs", 16)
+  val only32Bit: IndexListOption = PointOptions.onlyWidth(this, "", "Analog inputs", 32)
 
   def prefix: String = "analogInput"
   def description: String = "Options related to analog inputs (g30 and g32)"
   def options: List[TestOption] =
-    List(analogInputEventsClass, valueReturnIndex, valueReturnDeadband, valueTolerance, only16Bit, only32Bit)
+    List(eventsClass, valueReturnIndex, valueReturnDeadband, valueTolerance, only16Bit, only32Bit)
 
 }

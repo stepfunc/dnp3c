@@ -15,7 +15,7 @@ import org.scalatest.funsuite.AnyFunSuite
 @RunWith(classOf[JUnitRunner])
 class CommonTimeTest extends AnyFunSuite with Matchers {
 
-  private val relative = Map(TimeSyncOptions.binaryInputChangeWithRelativeTime.id -> "true")
+  private val relative = Map(TimeSyncOptions.binaryInput.withRelativeTime.id -> "true")
 
   private def labels(procedure: ProcedureDefinition, options: Map[String, String] = relative): List[String] =
     procedure.configure(Options.from(options)).steps.map(_.label.stripPrefix("step: ")).toList.filter(_.head.isDigit)
@@ -33,8 +33,8 @@ class CommonTimeTest extends AnyFunSuite with Matchers {
 
   test("8.15.2 accepts IIN2.1 from a device configured to reject reads of relative time events, and notes it") {
     val rejecting = Map(
-      TimeSyncOptions.binaryInputChangeWithRelativeTime.id -> "false",
-      TimeSyncOptions.binaryInputChangeWithRelativeTimeRejected.id -> "true")
+      TimeSyncOptions.binaryInput.withRelativeTime.id -> "false",
+      TimeSyncOptions.binaryInput.withRelativeTimeRejected.id -> "true")
     describes(CommonTime.readWithRelativeTime, rejecting) should include("Note the result")
     describes(CommonTime.readWithRelativeTime, relative) should not include "Note the result"
   }
@@ -43,9 +43,9 @@ class CommonTimeTest extends AnyFunSuite with Matchers {
     def runs(settings: (String, String)*) =
       CommonTime.relativeTimeSupported.disabledBy(Options.from(settings.toMap)).isEmpty
     val (relative, absolute, rejected) = (
-      TimeSyncOptions.binaryInputChangeWithRelativeTime.id,
-      TimeSyncOptions.binaryInputChangeWithTime.id,
-      TimeSyncOptions.binaryInputChangeWithRelativeTimeRejected.id)
+      TimeSyncOptions.binaryInput.withRelativeTime.id,
+      TimeSyncOptions.binaryInput.withTime.id,
+      TimeSyncOptions.binaryInput.withRelativeTimeRejected.id)
     runs(relative -> "true", absolute -> "false") should equal(true)
     runs(relative -> "false", absolute -> "true") should equal(true)
     runs(relative -> "false", absolute -> "false") should equal(false)

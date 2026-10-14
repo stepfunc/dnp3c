@@ -16,7 +16,7 @@ object OptionGroups {
     SerialOptions,
     LinkOptions,
     OutstationOptions,
-    ControlOptions,
+    BinaryOutputOptions,
     AnalogOutputOptions,
     ClassOptions,
     EventBufferOptions,

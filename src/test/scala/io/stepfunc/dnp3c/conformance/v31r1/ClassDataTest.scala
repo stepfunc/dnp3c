@@ -74,7 +74,8 @@ class ClassDataTest extends AnyFunSuite with Matchers {
         Some(response)
       }
     }
-    val options = Options.from(Map(OutstationOptions.subsetLevel.id -> "2", ClassOptions.supportClass1.id -> "false"))
+    val options =
+      Options.from(Map(OutstationOptions.subsetLevel.id -> "2", ClassOptions.class1.supported.id -> "false"))
     Run.passing(ClassData.class1All, dut, options)
     a[Exception] should be thrownBy dut.readMessage(Unsolicited.No, FrameValidator.none, LinkOverride.default, None)
   }

@@ -35,12 +35,12 @@ object CounterAnalogEvents {
   val counterAll: ProcedureDefinition = counterTest(_ => CounterEventSteps.AllQualifierSteps(unconfirmed = true))
   val counterOneByteCount: ProcedureDefinition = counterTest(options =>
     CounterEventSteps.CountQualifierSteps(
-      options.get(CounterOptions.numCounterEventsGenerated),
+      options.get(CounterOptions.numEventsGenerated),
       twoBytesQualifier = false,
       confirmSteps = true))
   val counterTwoByteCount: ProcedureDefinition = counterTest(options =>
     CounterEventSteps.CountQualifierSteps(
-      options.get(CounterOptions.numCounterEventsGenerated),
+      options.get(CounterOptions.numEventsGenerated),
       twoBytesQualifier = true,
       confirmSteps = true))
   val counterWithoutConfirm = v27.Procedure8_17_2_5.requiring(counterEventReads)

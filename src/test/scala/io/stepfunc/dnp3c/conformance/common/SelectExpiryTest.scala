@@ -6,7 +6,7 @@ package io.stepfunc.dnp3c.conformance.common
 import java.io.StringReader
 
 import io.stepfunc.dnp3c.conformance.api.{ LabeledStep, Options }
-import io.stepfunc.dnp3c.conformance.api.options.ControlOptions
+import io.stepfunc.dnp3c.conformance.api.options.BinaryOutputOptions
 import io.stepfunc.dnp3c.dnp3._
 import io.stepfunc.dnp3c.dnp3.app._
 import io.stepfunc.dnp3c.dnp3.app.objects.CommandStatus
@@ -21,7 +21,7 @@ import scala.collection.mutable
 @RunWith(classOf[JUnitRunner])
 class SelectExpiryTest extends AnyFunSuite with Matchers {
 
-  private val config = ControlOptions.primary.getConfig(Options.from(Map()))
+  private val config = BinaryOutputOptions.primary.getConfig(Options.from(Map()))
   private val request = config.oneByteHeader
   private val noSelect = config.oneByteHeader(c => c.copy(status = CommandStatus.NO_SELECT))
   private val selectTimeoutMs = 2000

@@ -4,8 +4,8 @@
 package io.stepfunc.dnp3c.conformance.v27
 
 import io.stepfunc.dnp3c.conformance.api._
-import io.stepfunc.dnp3c.conformance.api.options.ControlOptions.ControlCodePointOptions
-import io.stepfunc.dnp3c.conformance.api.options.{ ControlOptions, SupportOptions }
+import io.stepfunc.dnp3c.conformance.api.options.BinaryOutputOptions.ControlCodePointOptions
+import io.stepfunc.dnp3c.conformance.api.options.{ BinaryOutputOptions, SupportOptions }
 import io.stepfunc.dnp3c.conformance.common.{ OperationSteps, OperationType }
 import io.stepfunc.dnp3c.dnp3.app.objects.ControlCode
 import io.stepfunc.dnp3c.dnp3.app.MutableSequence
@@ -43,21 +43,21 @@ object Procedure8_2_5_2_2 extends ProcedureDefinition {
     }
 
     List(3 --> describe("The plugin knows what each control below should do, and checks that it happened")) ++
-      singleFunctionSteps(4, ControlOptions.singleFunctionPulseOnPoint, ControlCode.pulse, "Pulse On/NUL") ++
-      singleFunctionSteps(7, ControlOptions.singleFunctionLatchOnPoint, ControlCode.latchOn, "Latch On/NUL") ++
+      singleFunctionSteps(4, BinaryOutputOptions.singleFunctionPulseOnPoint, ControlCode.pulse, "Pulse On/NUL") ++
+      singleFunctionSteps(7, BinaryOutputOptions.singleFunctionLatchOnPoint, ControlCode.latchOn, "Latch On/NUL") ++
       singleFunctionSteps(
         10,
-        ControlOptions.singleFunctionLatchOffPoint,
+        BinaryOutputOptions.singleFunctionLatchOffPoint,
         ControlCode.latchOff,
         "Latch Off/NUL") ++
       singleFunctionSteps(
         13,
-        ControlOptions.singleFunctionPulseOnClosePoint,
+        BinaryOutputOptions.singleFunctionPulseOnClosePoint,
         ControlCode.pulseClose,
         "Pulse On/Close") ++
       singleFunctionSteps(
         16,
-        ControlOptions.singleFunctionPulseOnTripPoint,
+        BinaryOutputOptions.singleFunctionPulseOnTripPoint,
         ControlCode.pulseTrip,
         "Pulse On/Trip")
   }

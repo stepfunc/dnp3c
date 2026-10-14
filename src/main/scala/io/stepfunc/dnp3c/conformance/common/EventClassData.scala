@@ -22,11 +22,23 @@ final case class EventClassData(
 
 object EventClassData {
   val class1: EventClassData =
-    EventClassData(EventClass.Class1, Group60Var2, ClassOptions.supportClass1, ClassOptions.numClass1EventsGenerated)
+    EventClassData(
+      EventClass.Class1,
+      Group60Var2,
+      ClassOptions.class1.supported,
+      ClassOptions.class1.numEventsGenerated)
   val class2: EventClassData =
-    EventClassData(EventClass.Class2, Group60Var3, ClassOptions.supportClass2, ClassOptions.numClass2EventsGenerated)
+    EventClassData(
+      EventClass.Class2,
+      Group60Var3,
+      ClassOptions.class2.supported,
+      ClassOptions.class2.numEventsGenerated)
   val class3: EventClassData =
-    EventClassData(EventClass.Class3, Group60Var4, ClassOptions.supportClass3, ClassOptions.numClass3EventsGenerated)
+    EventClassData(
+      EventClass.Class3,
+      Group60Var4,
+      ClassOptions.class3.supported,
+      ClassOptions.class3.numEventsGenerated)
 
   // the class numbered 1 to 3, as the options that assign points to a class give it
   def numbered(number: Int): EventClassData = number match {

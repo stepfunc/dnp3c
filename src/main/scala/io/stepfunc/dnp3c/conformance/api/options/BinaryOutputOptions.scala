@@ -7,35 +7,22 @@ import io.stepfunc.dnp3c.conformance.api.{ Index, _ }
 import io.stepfunc.dnp3c.dnp3.app.objects.{ CommandStatus, ControlCode, Group12Var1 }
 import io.stepfunc.dnp3c.protocol.parsing.UInt32LE
 
-object ControlOptions extends OptionGroup {
+object BinaryOutputOptions extends OptionGroup {
 
   private def validCROBCodes = ControlCode.list.map(_.value).toSet
 
   val primary = Options(this, "primary", Index.zero)
   val alternate = Options(this, "alternate", Index.one)
-  val installedPoints: IndexListOption =
-    OptionTypes.indexList(this, "installedPoints", "List of all installed BO indices")
-  val statusFlags: IndexListOption = OptionTypes.indexList(
-    this,
-    "status.changeableFlags",
-    "The binary output status flags, by bit number (0 ONLINE to 4 LOCAL_FORCED), that the plugin can change, which " +
-      "3.1r1's 10.3.3 changes one at a time. Empty for none",
-    Nil
-  )
+  val installedPoints: IndexListOption = PointOptions.installedPoints(this, "BO")
+  val statusFlags: IndexListOption =
+    PointOptions.changeableFlags(this, "binary output", "4 LOCAL_FORCED", "10.3.3")
   val statusStateEvents: BooleanOption = OptionTypes.boolean(
     this,
     "status.stateChangeEvents",
     false,
     "Does the DUT generate binary output status events on a change of state (3.1r1's 10.3.3)?")
-  val uninstalledIndex: IndexOption =
-    OptionTypes.index(this, "uninstalled.index", Index.max, "Index not assigned to any control point")
-  val maxControlPointsInSingleRequest: IntegerOption = OptionTypes.integer(
-    this,
-    "maxControlPointsInSingleRequest",
-    1,
-    "Maximum number of control points that are supported in a single request",
-    Some(1),
-    None)
+  val uninstalledIndex: IndexOption = PointOptions.uninstalledIndex(this, "binary output")
+  val maxPointsInSingleRequest: IntegerOption = PointOptions.maxPointsInSingleRequest(this, "binary output")
   val latchOnOffPoint = ControlCodePointOptions(
     this,
     "latchOnOffPoint",
@@ -77,9 +64,9 @@ object ControlOptions extends OptionGroup {
     Index.one,
     "Optional single function point supported function code Pulse On/Trip (0x81).")
 
-  def prefix: String = "control"
-  def description: String = "Options related to controls (g12v1)"
-  def options: List[TestOption] = uninstalledIndex :: maxControlPointsInSingleRequest :: installedPoints ::
+  def prefix: String = "binaryOutput"
+  def description: String = "Options related to binary outputs (g10 and g12)"
+  def options: List[TestOption] = uninstalledIndex :: maxPointsInSingleRequest :: installedPoints ::
     statusFlags :: statusStateEvents ::
     primary.options ::: alternate.options :::
     latchOnOffPoint.options ::: pulseOnOffPoint.options ::: latchAndPulsePoint.options :::
@@ -97,22 +84,18 @@ object ControlOptions extends OptionGroup {
       ControlCode.latchOn.value,
       "Valid control function in hexadecimal",
       validCROBCodes)
-    private val count =
-      OptionTypes.integer(group, s"$id.valid.count", 1, "Valid count for Group12Var1", Some(1), Some(255))
-    private val onTime = OptionTypes.integer(group, s"$id.valid.onTime.ms", 100, "On time in ms", Some(0), Some(65535))
-    private val offTime =
-      OptionTypes.integer(group, s"$id.valid.offTime.ms", 100, "Off time in ms", Some(0), Some(65535))
+    private val crob = CrobFields(group, s"$id.valid")
 
-    val options: List[TestOption] = List(index, function, count, onTime, offTime)
+    val options: List[TestOption] = List(index, function) ::: crob.options
 
     def getConfig(src: OptionSource): CommandConfig[Group12Var1] = {
       CommandConfig(
         src.get(index),
         Group12Var1(
           ControlCode(src.get(function)),
-          src.get(count).toByte,
-          UInt32LE(src.get(onTime)),
-          UInt32LE(src.get(offTime)),
+          src.get(crob.count).toByte,
+          UInt32LE(src.get(crob.onTime)),
+          UInt32LE(src.get(crob.offTime)),
           CommandStatus.SUCCESS)
       )
     }
@@ -120,11 +103,9 @@ object ControlOptions extends OptionGroup {
 
   case class ControlCodePointOptions(group: OptionGroup, id: String, defaultIndex: Index, description: String) {
     val index = OptionTypes.optionalIndex(group, s"$id.index", Some(defaultIndex), description, Index.maxOneOctet)
-    private val count = OptionTypes.integer(group, s"$id.count", 1, "Valid count for Group12Var1", Some(1), Some(255))
-    private val onTime = OptionTypes.integer(group, s"$id.onTime.ms", 100, "On time in ms", Some(0), Some(65535))
-    private val offTime = OptionTypes.integer(group, s"$id.offTime.ms", 100, "Off time in ms", Some(0), Some(65535))
+    private val crob = CrobFields(group, id)
 
-    val options: List[TestOption] = List(index, count, onTime, offTime)
+    val options: List[TestOption] = index :: crob.options
 
     def isPresent(src: OptionSource): Boolean = {
       src.get(index) match {
@@ -139,14 +120,26 @@ object ControlOptions extends OptionGroup {
             idx,
             Group12Var1(
               function,
-              src.get(count).toByte,
-              UInt32LE(src.get(onTime)),
-              UInt32LE(src.get(offTime)),
+              src.get(crob.count).toByte,
+              UInt32LE(src.get(crob.onTime)),
+              UInt32LE(src.get(crob.offTime)),
               CommandStatus.SUCCESS)
           ))
         case None => None
       }
     }
+  }
+
+  // a CROB's count and on and off times, under the key prefix
+  private case class CrobFields(group: OptionGroup, prefix: String) {
+    val count: IntegerOption =
+      OptionTypes.integer(group, s"$prefix.count", 1, "Valid count for Group12Var1", Some(1), Some(255))
+    val onTime: IntegerOption =
+      OptionTypes.integer(group, s"$prefix.onTime.ms", 100, "On time in ms", Some(0), Some(65535))
+    val offTime: IntegerOption =
+      OptionTypes.integer(group, s"$prefix.offTime.ms", 100, "Off time in ms", Some(0), Some(65535))
+
+    val options: List[TestOption] = List(count, onTime, offTime)
   }
 
 }

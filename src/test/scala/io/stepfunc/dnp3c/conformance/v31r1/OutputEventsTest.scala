@@ -7,7 +7,7 @@ import scala.collection.mutable
 
 import io.stepfunc.dnp3c.conformance.Run
 import io.stepfunc.dnp3c.conformance.api.ProcedureDefinition
-import io.stepfunc.dnp3c.conformance.api.options.ControlOptions
+import io.stepfunc.dnp3c.conformance.api.options.BinaryOutputOptions
 import io.stepfunc.dnp3c.conformance.api.options.SupportOptions.Outputs
 import io.stepfunc.dnp3c.dnp3._
 import io.stepfunc.dnp3c.dnp3.app._
@@ -94,7 +94,7 @@ class OutputEventsTest extends AnyFunSuite with Matchers {
   }
 
   test("10.3.3: an event for each flag changed, with the flag changed and nothing else") {
-    val settings = Map(Outputs.binary.events.id -> "true", ControlOptions.statusFlags.id -> "1, 2")
+    val settings = Map(Outputs.binary.events.id -> "true", BinaryOutputOptions.statusFlags.id -> "1, 2")
     run(OutputEvents.binaryStatusEvents, new Dut, settings) should equal(true)
     run(OutputEvents.binaryStatusEvents, new Dut(hidesFlag = true), settings) should equal(false)
   }

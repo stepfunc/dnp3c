@@ -66,8 +66,9 @@ class ConfirmAndCapabilityTest extends AnyFunSuite with Matchers {
     def others(supported: Map[String, String]) =
       UnsolicitedResponseSteps.otherSupportedClasses(EventClassData.class1, Options.from(supported))
     others(Map()) should equal(List(EventClass.Class2, EventClass.Class3))
-    others(Map(ClassOptions.supportClass2.id -> "false")) should equal(List(EventClass.Class3))
-    others(Map(ClassOptions.supportClass2.id -> "false", ClassOptions.supportClass3.id -> "false")) should equal(Nil)
+    others(Map(ClassOptions.class2.supported.id -> "false")) should equal(List(EventClass.Class3))
+    others(Map(ClassOptions.class2.supported.id -> "false", ClassOptions.class3.supported.id -> "false")) should
+      equal(Nil)
   }
 
   // g40v2 at index 0 holding 10, the default primary analog output's value

@@ -21,7 +21,7 @@ import io.stepfunc.dnp3c.dnp3.app.objects._
  */
 class RelativeTimeSupported(
     conditionStep: Boolean,
-    reportsRelativeTime: Requirement = OptionCondition(TimeSyncOptions.binaryInputChangeWithRelativeTime))
+    reportsRelativeTime: Requirement = OptionCondition(TimeSyncOptions.binaryInput.withRelativeTime))
     extends ProcedureDefinition {
 
   override protected def requirement: Requirement =

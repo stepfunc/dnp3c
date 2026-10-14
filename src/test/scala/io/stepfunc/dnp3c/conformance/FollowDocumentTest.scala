@@ -5,7 +5,7 @@ package io.stepfunc.dnp3c.conformance
 
 import io.stepfunc.dnp3c.conformance.Placements.id
 import io.stepfunc.dnp3c.conformance.api.ProcedureDefinition
-import io.stepfunc.dnp3c.conformance.api.options.ControlOptions
+import io.stepfunc.dnp3c.conformance.api.options.BinaryOutputOptions
 import io.stepfunc.dnp3c.dnp3._
 import io.stepfunc.dnp3c.dnp3.app._
 import io.stepfunc.dnp3c.dnp3.app.objects._
@@ -63,7 +63,7 @@ class FollowDocumentTest extends AnyFunSuite with Matchers {
   }
 
   test("the configurable-device SBO selects point 0, whatever the primary point") {
-    val dut = runEachStep(v27.Procedure8_2_1_2_10, Map(ControlOptions.primary.index.id -> "3"))
+    val dut = runEachStep(v27.Procedure8_2_1_2_10, Map(BinaryOutputOptions.primary.index.id -> "3"))
     val selects = dut.requests.filter(_.function == AppFunction.select)
     // group, variation, qualifier 0x28 and a 2-byte count come before the 2-byte index
     selects.flatMap(_.headers).map(_.toBytes.slice(5, 7)) should equal(List(Hex.from("00 00")))

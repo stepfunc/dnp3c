@@ -6,7 +6,7 @@ package io.stepfunc.dnp3c.conformance.v31r1
 import scala.util.Try
 
 import io.stepfunc.dnp3c.conformance.api.{ Index, Options }
-import io.stepfunc.dnp3c.conformance.api.options.ControlOptions
+import io.stepfunc.dnp3c.conformance.api.options.BinaryOutputOptions
 import io.stepfunc.dnp3c.dnp3.StubDriver
 import io.stepfunc.dnp3c.dnp3.app.Message
 import io.stepfunc.dnp3c.dnp3.app.objects.CommandStatus
@@ -19,7 +19,7 @@ import org.scalatest.funsuite.AnyFunSuite
 @RunWith(classOf[JUnitRunner])
 class ControlStatusTest extends AnyFunSuite with Matchers {
 
-  private val select = ControlOptions.primary
+  private val select = BinaryOutputOptions.primary
     .getConfig(Options.from(Map()))
     .twoByteHeader(Index(0), _.copy(status = CommandStatus(126.toByte, "126")))
 

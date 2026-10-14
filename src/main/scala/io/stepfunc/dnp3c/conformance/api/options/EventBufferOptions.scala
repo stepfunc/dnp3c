@@ -7,24 +7,18 @@ import io.stepfunc.dnp3c.conformance.api.{ IntegerOption, OptionGroup, OptionTyp
 
 object EventBufferOptions extends OptionGroup {
 
-  val maxBinaryInputEvents: IntegerOption =
-    OptionTypes.integer(this, "maxBinaryInputEvents", 10, "Maximum number of binary input events", Some(1), None)
-  val maxAnalogInputEvents: IntegerOption =
-    OptionTypes.integer(this, "maxAnalogInputEvents", 10, "Maximum number of analog input events", Some(1), None)
-  val maxCounterEvents: IntegerOption =
-    OptionTypes.integer(this, "maxCounterEvents", 10, "Maximum number of binary counter events", Some(1), None)
-  val maxDoubleBitBinaryInputEvents: IntegerOption = OptionTypes.integer(
-    this,
-    "maxDoubleBitBinaryInputEvents",
-    10,
-    "Maximum number of double-bit binary input events",
-    Some(1),
-    None)
+  private def maxEvents(points: String, events: String): IntegerOption =
+    OptionTypes.integer(this, s"max${points}Events", 10, s"Maximum number of $events events", Some(1), None)
+
+  val maxBinaryInputEvents: IntegerOption = maxEvents("BinaryInput", "binary input")
+  val maxAnalogInputEvents: IntegerOption = maxEvents("AnalogInput", "analog input")
+  val maxCounterEvents: IntegerOption = maxEvents("Counter", "counter")
+  val maxDoubleBitInputEvents: IntegerOption = maxEvents("DoubleBitInput", "double-bit input")
 
   override def prefix: String = "event.buffer"
 
   override def description: String = "Event buffer sizes"
 
   override def options: List[TestOption] =
-    List(maxBinaryInputEvents, maxAnalogInputEvents, maxCounterEvents, maxDoubleBitBinaryInputEvents)
+    List(maxBinaryInputEvents, maxAnalogInputEvents, maxCounterEvents, maxDoubleBitInputEvents)
 }

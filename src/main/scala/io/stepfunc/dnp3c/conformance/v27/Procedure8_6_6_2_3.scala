@@ -17,7 +17,7 @@ object Procedure8_6_6_2_3 extends ProcedureDefinition {
   override protected def steps(options: OptionSource): Iterable[LabeledStep] = {
 
     val maxEvents = options.get(EventBufferOptions.maxCounterEvents)
-    val eventClass = EventClassData.numbered(options.get(CounterOptions.counterEventsClass))
+    val eventClass = EventClassData.numbered(options.get(CounterOptions.eventsClass))
 
     EventBufferSteps.get(
       "Binary Counter Change Events",

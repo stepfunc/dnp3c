@@ -4,7 +4,7 @@
 package io.stepfunc.dnp3c.conformance.v27
 
 import io.stepfunc.dnp3c.conformance.api._
-import io.stepfunc.dnp3c.conformance.api.options.{ ControlOptions, SupportOptions }
+import io.stepfunc.dnp3c.conformance.api.options.{ BinaryOutputOptions, SupportOptions }
 import io.stepfunc.dnp3c.conformance.common.SupervisoryControl._
 import io.stepfunc.dnp3c.dnp3.app.Sequence
 import io.stepfunc.dnp3c.dnp3.app.objects.CommandStatus
@@ -19,7 +19,7 @@ class GlobalRemoteSupervisoryControl(n: Numbering) extends ProcedureDefinition {
     SupportOptions.Outputs.binary.commands)
 
   override protected def steps(options: OptionSource): Iterable[LabeledStep] = {
-    val index = options.get(ControlOptions.primary.index)
+    val index = options.get(BinaryOutputOptions.primary.index)
     val first = new Snapshot
     List(
       n.step(1) --> PluginSteps.enableRemoteSupervisoryControl(),

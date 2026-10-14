@@ -62,7 +62,7 @@ class AnalogValueReturnTest extends AnyFunSuite with Matchers {
     val options = Options.from(Map(
       OutstationOptions.subsetLevel.id -> "2",
       AnalogInputOptions.valueReturnDeadband.id -> "10",
-      SupportOptions.analogEventsQueuedPerPoint.id -> profileQueues.toString
+      SupportOptions.analogInputEventsQueuedPerPoint.id -> profileQueues.toString
     ))
     Run.passes(AnalogValueReturn.valueReturn, dut, options)
   }

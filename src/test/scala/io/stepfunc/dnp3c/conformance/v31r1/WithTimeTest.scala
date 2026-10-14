@@ -30,8 +30,8 @@ class WithTimeTest extends AnyFunSuite with Matchers {
     else (IIN.empty, Nil)
 
   private val rejecting = Options.from(Map(
-    TimeSyncOptions.binaryInputChangeWithTime.id -> "false",
-    TimeSyncOptions.binaryInputChangeWithTimeRejected.id -> "true"))
+    TimeSyncOptions.binaryInput.withTime.id -> "false",
+    TimeSyncOptions.binaryInput.withTimeRejected.id -> "true"))
 
   test("8.14.2-10 passes a device declared to reject reads with time, noting it complies with 1815-2012 only") {
     val reporter = StubDriver.reporter(new Plugin)
@@ -53,8 +53,8 @@ class WithTimeTest extends AnyFunSuite with Matchers {
   }
 
   private val rejectingRelative = Options.from(Map(
-    TimeSyncOptions.binaryInputChangeWithRelativeTime.id -> "false",
-    TimeSyncOptions.binaryInputChangeWithRelativeTimeRejected.id -> "true"))
+    TimeSyncOptions.binaryInput.withRelativeTime.id -> "false",
+    TimeSyncOptions.binaryInput.withRelativeTimeRejected.id -> "true"))
 
   test("8.14.2-13 passes a device declared to reject reads with relative time, noting it complies with 1815-2012") {
     val reporter = StubDriver.reporter(new Plugin)
@@ -69,7 +69,7 @@ class WithTimeTest extends AnyFunSuite with Matchers {
     InputEvents.binaryCount08WithRelativeTime.disabledBy(rejectingRelative) should not equal None
     InputEvents.binaryLongInterval.disabledBy(rejectingRelative) should not equal None
     InputEvents.binaryLongInterval.disabledBy(
-      Options.from(Map(TimeSyncOptions.binaryInputChangeWithRelativeTime.id -> "false"))) should not equal None
+      Options.from(Map(TimeSyncOptions.binaryInput.withRelativeTime.id -> "false"))) should not equal None
     InputEvents.binaryCount07WithRelativeTime.disabledBy(Options.from(Map())) should equal(None)
   }
 

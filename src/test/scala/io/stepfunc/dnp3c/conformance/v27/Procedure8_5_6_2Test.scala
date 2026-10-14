@@ -58,7 +58,7 @@ class Procedure8_5_6_2Test extends AnyFunSuite with Matchers {
   }
 
   private val noClasses = Options.from(
-    List(ClassOptions.supportClass1, ClassOptions.supportClass2, ClassOptions.supportClass3).map(_.id ->
+    List(ClassOptions.class1.supported, ClassOptions.class2.supported, ClassOptions.class3.supported).map(_.id ->
       "false").toMap + (OutstationOptions.subsetLevel.id -> "2"))
 
   private def run(dut: Dut): Unit = Run.passing(Procedure8_5_6_2, dut, noClasses)
@@ -79,7 +79,7 @@ class Procedure8_5_6_2Test extends AnyFunSuite with Matchers {
   }
 
   private val onlyClass2 = Options.from(
-    List(ClassOptions.supportClass1, ClassOptions.supportClass3).map(_.id -> "false").toMap +
+    List(ClassOptions.class1.supported, ClassOptions.class3.supported).map(_.id -> "false").toMap +
       (OutstationOptions.subsetLevel.id -> "2"))
 
   // class 2's first read gets its event, the second a Null Response
