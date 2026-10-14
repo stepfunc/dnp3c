@@ -35,6 +35,15 @@ package object api {
 
   def describe(desc: String*): TestStep = describe(desc.map(Comment.apply).toList)
 
+  /** a step that notes `text` on the procedure's result, which the report shows even when it passes */
+  def noting(text: String): TestStep = new TestStep {
+    def description: List[Comment] = List(Comment(s"Note the result: $text"))
+    def run(driver: TestDriver): List[DeferredCheck] = {
+      driver.reporter.note(text)
+      Nil
+    }
+  }
+
   def repeat(count: Int)(step: => TestStep): TestStep = new TestStep {
 
     assert(count >= 0)

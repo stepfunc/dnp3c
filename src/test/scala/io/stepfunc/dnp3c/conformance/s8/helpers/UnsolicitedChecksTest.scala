@@ -3,9 +3,10 @@
 
 package io.stepfunc.dnp3c.conformance.s8.helpers
 
-import io.stepfunc.dnp3c.conformance.api.Options
+import io.stepfunc.dnp3c.conformance.api.{ Options, ProcedureDefinition }
 import io.stepfunc.dnp3c.conformance.api.options.UnsolicitedOptions
 import io.stepfunc.dnp3c.conformance.s8.s811.Procedure81125
+import io.stepfunc.dnp3c.conformance.v31r1
 import io.stepfunc.dnp3c.dnp3.link.FrameValidator
 import io.stepfunc.dnp3c.conformance.s8.helpers.UnconfirmedResponse
 import io.stepfunc.dnp3c.dnp3._
@@ -116,9 +117,10 @@ class UnsolicitedChecksTest extends AnyFunSuite with Matchers {
     failedSteps(0) should equal(failedSteps(5000) + 2)
   }
 
-  test("8.11.2.5 reads each retry, and expects none after the last, within the confirm timeout and the tolerance") {
-    // answers every read at once, an unsolicited one with an event, and records the unsolicited reads' timeouts, and
-    // whether 8.11.2.5.9 step 1 has set the retry limit
+  // runs 8.11.2.5 against a DUT that answers every read at once, an unsolicited one with an event, and counts the
+  // unsolicited reads that wait for a retry within the confirm timeout and the tolerance, before and after a step sets
+  // the retry limit (8.11.2.5.9 step 1, or step 19 where it skips to it)
+  private def retryWindows(procedure: ProcedureDefinition, options: (String, String)*): (Int, Int) = {
     class Plugin extends DefaultIntegrationPlugin {
       var retryLimitSet = false
       override def cyclePower(reporter: PluginReporter): Unit = ()
@@ -146,14 +148,29 @@ class UnsolicitedChecksTest extends AnyFunSuite with Matchers {
         } else if (solicited.isEmpty) timedOut(timeoutMs)
         else Some(solicited.dequeue())
     }
-    val options = Options.from(
-      Map(UnsolicitedOptions.unsolicitedConfirmTimeoutMs.id -> "2000", UnsolicitedOptions.holdOffMs.id -> "1000"))
-    Console.withIn(new StringReader(""))(Procedure81125.configure(options).steps.foreach(s => Try(s.step.run(dut))))
+    val all = Options.from(
+      Map(UnsolicitedOptions.unsolicitedConfirmTimeoutMs.id -> "2000", UnsolicitedOptions.holdOffMs.id -> "1000") ++
+        options)
+    Console.withIn(new StringReader(""))(procedure.configure(all).steps.foreach(s => Try(s.step.run(dut))))
     def inRetryWindow(retryLimitSet: Boolean) = waits.count(_ == (retryLimitSet, Some(2500)))
-    // 8.11.2.5.3 and 8.11.2.5.6: a retry each; 8.11.2.5.5 step 8 and 8.11.2.5.7 step 9: no more
-    inRetryWindow(false) should equal(4)
-    // 8.11.2.5.9 step 10: five retries and no sixth; step 18: a retry and no more; step 28: seven retries
-    inRetryWindow(true) should equal(15)
+    (inRetryWindow(false), inRetryWindow(true))
+  }
+
+  test("8.11.2.5 reads each retry, and expects none after the last, within the confirm timeout and the tolerance") {
+    // 8.11.2.5.3 and 8.11.2.5.6: a retry each; 8.11.2.5.5 step 8 and 8.11.2.5.7 step 9: no more. 8.11.2.5.9 step 10:
+    // five retries and no sixth; step 18: a retry and no more; step 28: seven retries
+    retryWindows(Procedure81125) should equal((4, 15))
+  }
+
+  test("3.1r1's 8.11.2.5.9 tests the configured limit, or notes why it can't and goes on at step 19") {
+    val unsolicited = v31r1.Unsolicited.unsolicitedAndPolledResponses
+    // step 10: three retries and no fourth; step 18: a retry and no more; step 28: five retries
+    retryWindows(unsolicited, UnsolicitedOptions.retryLimit.id -> "3") should equal((4, 11))
+    retryWindows(unsolicited) should equal((4, 15))
+    // step 28 only, with more retries than the limit of 11, or seven where there's none; steps 8-10 and 16-18, which
+    // step 19 now follows, wait for none
+    retryWindows(unsolicited, UnsolicitedOptions.retryLimit.id -> "11") should equal((4, 13))
+    retryWindows(unsolicited, UnsolicitedOptions.retryLimitConfigurable.id -> "false") should equal((4, 7))
   }
 
   test("the unsolicited response to generated events must carry them") {

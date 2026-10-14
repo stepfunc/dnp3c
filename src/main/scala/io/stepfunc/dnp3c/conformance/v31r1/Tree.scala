@@ -13,7 +13,8 @@ import io.stepfunc.dnp3c.conformance.s8.s86.s864.SupervisoryControl.Numbering
  * their titles and, where they differ from 1, 2 and 3, the subset levels they apply to.
  *
  * A test 3.1r1 numbers has its number, whether in a heading or on its "Test Procedure" line. One it doesn't has its
- * section's number and its place among that section's unnumbered tests, e.g. 8.6.5-2. Material that isn't a test, such
+ * section's number and its place among that section's unnumbered tests, e.g. 8.6.5-2, except for Unsolicited and
+ * Polled Responses, one test in sections, whose numbers 8.11.2.5.1 to 8.11.2.5.9 give it 8.11.2.5. Material that isn't a test, such
  * as desired behavior, terminology and setup, isn't in the tree. 3.1r1's 8.21 and 8.22 run the 8.13 and 8.14 tests with double-bit inputs, so their
  * tests are named after those, e.g. 8.22-8.14.2-3.
  *
@@ -277,18 +278,10 @@ object Tree {
       section("8.11", "Unsolicited Responses")(
         section("8.11.2", "Test Procedure")(
           test("8.11.2-1", "Unsolicited Response Configuration/Startup", s8.s811.Procedure81121),
-          notYet("8.11.2-2", "Unsolicited Response - Class 1 Data"),
-          notYet("8.11.2-3", "Unsolicited Response - Class 2 Data"),
-          notYet("8.11.2-4", "Unsolicited Response - Class 3 Data"),
-          notYet("8.11.2.5.1", "Transmits data-filled unsolicited responses"),
-          notYet("8.11.2.5.2", "Clears transmitted data upon confirmation"),
-          notYet("8.11.2.5.3", "Processes non-READ requests immediately"),
-          notYet("8.11.2.5.4", "Defers READ requests until after confirmation received"),
-          notYet("8.11.2.5.5", "Defers READ requests until after confirmation timeout"),
-          notYet("8.11.2.5.6", "Abandons READ requests upon subsequent non-READ requests"),
-          notYet("8.11.2.5.7", "Abandons READ requests upon subsequent READ requests"),
-          notYet("8.11.2.5.8", "Inhibits Unsolicited responses until after polled confirmation"),
-          notYet("8.11.2.5.9", "Retries unsolicited responses configurable number of times"),
+          test("8.11.2-2", "Unsolicited Response - Class 1 Data", s8.s811.Procedure81122),
+          test("8.11.2-3", "Unsolicited Response - Class 2 Data", s8.s811.Procedure81123),
+          test("8.11.2-4", "Unsolicited Response - Class 3 Data", s8.s811.Procedure81124),
+          test("8.11.2.5", "Unsolicited and Polled Responses", Unsolicited.unsolicitedAndPolledResponses),
           test("8.11.2-5", "Unsolicited Responses Off", s8.s811.Procedure81126)
         )
       ),

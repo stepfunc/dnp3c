@@ -35,6 +35,25 @@ object UnsolicitedOptions extends OptionGroup {
     Some(0),
     None)
 
+  val retryLimitConfigurable: BooleanOption = OptionTypes.boolean(
+    this,
+    "retryLimitConfigurable",
+    true,
+    "Can the DUT's maximum number of unsolicited retries be configured to a limited number? If not, 3.1r1's " +
+      "8.11.2.5.9 notes it and tests only unlimited retries. 2.7 requires it"
+  )
+
+  val retryLimit: IntegerOption = OptionTypes.integer(
+    this,
+    "retryLimit",
+    5,
+    "The limited number of unsolicited retries, closest to 5, that the DUT can be configured to, which 3.1r1's " +
+      "8.11.2.5.9 configures; if it's more than 10, the test notes it and tests only unlimited retries. 2.7 always " +
+      "configures 5",
+    Some(1),
+    None
+  )
+
   override def prefix: String = "unsolicited"
   override def description: String = "Unsolicited response options"
 
@@ -42,5 +61,7 @@ object UnsolicitedOptions extends OptionGroup {
     unsolicitedConfirmTimeoutMs,
     otherMasterAddress,
     hasMinNumEventsBeforeUnsolicited,
-    holdOffMs)
+    holdOffMs,
+    retryLimitConfigurable,
+    retryLimit)
 }
