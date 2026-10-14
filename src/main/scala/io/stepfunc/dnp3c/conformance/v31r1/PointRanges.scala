@@ -11,7 +11,6 @@ import io.stepfunc.dnp3c.conformance.common.Validations._
 import io.stepfunc.dnp3c.dnp3._
 import io.stepfunc.dnp3c.dnp3.app._
 import io.stepfunc.dnp3c.dnp3.app.objects._
-import io.stepfunc.dnp3c.protocol.parsing.{ UInt16LE, UInt8 }
 
 /**
  * 3.1r1's 8.23, Specific Point Ranges: reads of a point type with a start/stop range (qualifier 0x00 or 0x01), which
@@ -44,14 +43,8 @@ object PointRanges {
     def group: Group = anyVariation.group
   }
 
-  private val levelOneOrTwoErrors = IIN.FUNC_NOT_SUPPORTED | IIN.OBJECT_UNKNOWN | IIN.PARAM_ERROR
-
   private def rangeRead(seq: Sequence, variation: Variation, twoByte: Boolean, start: Int, stop: Int): Message =
-    Requests.readHeaders(
-      seq,
-      if (twoByte) TwoByteStartStopHeader(variation, UInt16LE(start), UInt16LE(stop), FieldHeaderPayload.empty)
-      else OneByteStartStopHeader(variation, UInt8(start.toShort), UInt8(stop.toShort), FieldHeaderPayload.empty)
-    )
+    Requests.readHeaders(seq, ObjectHeader.startStop(variation, start, stop, twoByte))
 
   private def describedRead(seq: Sequence, variation: Variation, twoByte: Boolean, range: String) =
     describe(
@@ -143,7 +136,7 @@ object PointRanges {
       Option.when(t.escapeStep)(OptionCondition(SupportOptions.rangeReads)).toList)*)
 
   // a level 1 or 2 device without range reads answers with IIN2.0, 2.1 or 2.2
-  private val unsupported = isEmpty && containingAnyOf(levelOneOrTwoErrors)
+  private val unsupported = isEmpty && containingAnyOf(IIN.errors)
 
   /** x.2: a range of points the DUT has gets those points, and only those */
   def validRequest(t: RangedPoints): ProcedureDefinition = new ProcedureDefinition {

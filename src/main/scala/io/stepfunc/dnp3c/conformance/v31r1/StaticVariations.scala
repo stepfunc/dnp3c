@@ -68,7 +68,7 @@ object StaticVariations {
       lenientWide: Option[Set[Variation]] = None)
 
   private val ONLINE = 0x01
-  private val nullError = isEmpty && containingAnyOf(IIN.OBJECT_UNKNOWN | IIN.PARAM_ERROR) &&
+  private val nullError = isEmpty && containingAnyOf(IIN.objectErrors) &&
     without(IIN.FUNC_NOT_SUPPORTED)
 
   def test(t: StaticType): ProcedureDefinition = new ProcedureDefinition {
@@ -88,14 +88,7 @@ object StaticVariations {
       var only32Reported: Set[Int] = Set.empty
       // the flags the first point came back with once one was set abnormal, which the result notes
       var reported: Option[Int] = None
-      val normal = new TestStep {
-        def description: List[Comment] = List(s"Set every ${t.kind.name} point's flags normal")
-        def run(driver: TestDriver): List[DeferredCheck] = {
-          driver.reporter.plugin.setFlagsNormal(driver.reporter.pluginReporter(), t.kind)
-          abnormal = false
-          Nil
-        }
-      }
+      val normal = PluginSteps.setFlagsNormal(t.kind) + TestStep(Nil)(_ => abnormal = false)
 
       // the width of a request, and the variations a point may come back in
       def widthOf(v: Variation): Width = if (t.narrow.exists(_.all.contains(v))) t.narrow.get else t.wide

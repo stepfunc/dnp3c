@@ -95,18 +95,14 @@ object MultiDrop {
 
   // the other devices' late answers, read until the line is quiet for the link timeout, so none mixes with the
   // DUT's response; a frame from the DUT fails
-  private val quiet: TestStep = new TestStep {
-    def description: List[Comment] = List("Wait until the line is quiet, with nothing from the DUT")
-    def run(driver: TestDriver): List[DeferredCheck] = {
-      var frame = driver.readFrame()
-      while (frame.isDefined) {
-        frame.foreach { f =>
-          if (f.header.src == driver.remote) throw new Exception(s"The DUT sent a frame: $f")
-          driver.reporter.info(s"A frame from address ${f.header.src.value}: $f")
-        }
-        frame = driver.readFrame()
+  private val quiet: TestStep = TestStep(List("Wait until the line is quiet, with nothing from the DUT")) { driver =>
+    var frame = driver.readFrame()
+    while (frame.isDefined) {
+      frame.foreach { f =>
+        if (f.header.src == driver.remote) throw new Exception(s"The DUT sent a frame: $f")
+        driver.reporter.info(s"A frame from address ${f.header.src.value}: $f")
       }
-      Nil
+      frame = driver.readFrame()
     }
   }
 
@@ -120,14 +116,11 @@ object MultiDrop {
         .toList
   }
 
-  private def setDelays(delays: Option[RtsDelays]): TestStep = new TestStep {
-    def description: List[Comment] = List(delays.fold("Restore the DUT's usual RTS delays")(d =>
-      s"Set the DUT to raise carrier (RTS) ${d.beforeMs} ms before transmitting, and to drop it ${d.afterMs} ms after"))
-    def run(driver: TestDriver): List[DeferredCheck] = {
-      driver.reporter.plugin.setRtsDelays(driver.reporter.pluginReporter(), delays)
-      Nil
+  private def setDelays(delays: Option[RtsDelays]): TestStep =
+    PluginSteps.action(delays.fold("Restore the DUT's usual RTS delays")(d =>
+      s"Set the DUT to raise carrier (RTS) ${d.beforeMs} ms before transmitting, and to drop it ${d.afterMs} ms after")) {
+      (plugin, reporter) => plugin.setRtsDelays(reporter, delays)
     }
-  }
 
   val multiDrop: ProcedureDefinition = new ProcedureDefinition {
     override protected def requiredOptions: List[OptionCondition] = List(SerialOptions.enabled, SerialOptions.multiDrop)

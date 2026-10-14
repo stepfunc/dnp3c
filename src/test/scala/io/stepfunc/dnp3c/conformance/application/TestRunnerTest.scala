@@ -163,12 +163,12 @@ class TestRunnerTest extends AnyFunSuite with Matchers {
     def apply(element: TestElement): RunSummary =
       TestRunner.run(Revisions.v2_7, element, options, new Plugin(fail), new Environment(fail))
 
-    def saved(id: String): Option[TestResult.Saved] = {
+    def saved(id: String): Option[SavedResult] = {
       val file = folder.resolve(id).resolve("results.properties").toFile
-      if (file.exists()) Some(TestResult.read(file)) else None
+      if (file.exists()) Some(SavedResult.read(file)) else None
     }
 
-    def result(id: String): Option[TestResult] = saved(id).map(_.result)
+    def result(id: String): Option[ProcedureOutcome] = saved(id).map(_.outcome)
 
     def logged(id: String): Boolean = Files.exists(folder.resolve(id).resolve("log.html"))
   }
@@ -184,7 +184,7 @@ class TestRunnerTest extends AnyFunSuite with Matchers {
       "end",
       "driver close",
       "capture close"))
-    run.result("a") should equal(Some(TestResult.Pass))
+    run.result("a") should equal(Some(ProcedureOutcome.Passed))
     run.logged("a") should equal(true)
   }
 
@@ -195,14 +195,14 @@ class TestRunnerTest extends AnyFunSuite with Matchers {
       equal(RunSummary(List(ProcedureResult("a", Passed), ProcedureResult("b", Failed("step b failed"))), List("c")))
     summary.succeeded should equal(false)
     run.events.list should not contain "step c"
-    run.result("b") should equal(Some(TestResult.Fail))
+    run.result("b") should matchPattern { case Some(ProcedureOutcome.Failed(_)) => }
   }
 
   test("a step that throws an exception without a message fails its procedure, like any other") {
     val run = new Run("silent step a")
     run(procedure("a", run.fail)) should
       equal(RunSummary(List(ProcedureResult("a", Failed("java.lang.Exception"))), Nil))
-    run.result("a") should equal(Some(TestResult.Fail))
+    run.result("a") should matchPattern { case Some(ProcedureOutcome.Failed(_)) => }
   }
 
   test("a procedure's cleanup runs after its steps, with its checks, and after a step that fails") {
@@ -250,7 +250,7 @@ class TestRunnerTest extends AnyFunSuite with Matchers {
     summary.results.map(_.outcome) should matchPattern { case List(Skipped(_)) => }
     summary.succeeded should equal(true)
     run.events.list should not contain "step a"
-    run.result("a") should equal(Some(TestResult.Skip))
+    run.result("a") should matchPattern { case Some(ProcedureOutcome.Skipped(_)) => }
   }
 
   test("a skipped procedure opens nothing and calls no plugin method, but still has a log and a result") {
@@ -258,15 +258,15 @@ class TestRunnerTest extends AnyFunSuite with Matchers {
     run(procedure("a", run.fail, List(SupportOptions.selfAddress)))
     run.events.list should equal(Nil)
     run.logged("a") should equal(true)
-    run.result("a") should equal(Some(TestResult.Skip))
+    run.result("a") should matchPattern { case Some(ProcedureOutcome.Skipped(_)) => }
   }
 
   test("a skip replaces an earlier result, so a pass can't outlive a skip that fails to be recorded") {
     val run = new Run()
     val folder = run.folder.resolve("a")
     Files.createDirectories(folder)
-    TestResult.write(
-      TestResult.Saved(TestResult.Pass, Some("2.7"), Some(2), None),
+    SavedResult.write(
+      SavedResult(ProcedureOutcome.Passed, Some("2.7"), Some(2)),
       folder.resolve("results.properties"))
     // the log can't be written: log.html is a folder
     Files.createDirectories(folder.resolve("log.html"))
@@ -329,14 +329,16 @@ class TestRunnerTest extends AnyFunSuite with Matchers {
     val saved = run.saved("a").get
     saved.revision should equal(Some("2.7"))
     saved.level should equal(Some(2))
-    saved.reason.get should include(SupportOptions.selfAddress.id)
+    saved.outcome should matchPattern {
+      case ProcedureOutcome.Skipped(reason) if reason.contains(SupportOptions.selfAddress.id) =>
+    }
   }
 
   test("a plugin that fails to start aborts the run, and the procedure gets no result") {
     val run = new Run("start#2")
     Files.createDirectories(run.folder.resolve("b"))
-    TestResult.write(
-      TestResult.Saved(TestResult.Pass, Some("2.7"), Some(2), None),
+    SavedResult.write(
+      SavedResult(ProcedureOutcome.Passed, Some("2.7"), Some(2)),
       run.folder.resolve("b").resolve("results.properties"))
 
     val ex = intercept[HarnessExecutionException](run(section(
@@ -388,7 +390,7 @@ class TestRunnerTest extends AnyFunSuite with Matchers {
     val run = new Run()
     run(deferring("a", run.fail, "1", "2")) should equal(RunSummary(List(ProcedureResult("a", Passed)), Nil))
     run.events.list.drop(3).take(5) should equal(List("step 1", "step 2", "check 1", "check 2", "end"))
-    run.result("a") should equal(Some(TestResult.Pass))
+    run.result("a") should equal(Some(ProcedureOutcome.Passed))
   }
 
   test("a failing deferred check fails the procedure, skips the later checks, and still cleans up") {
@@ -396,7 +398,7 @@ class TestRunnerTest extends AnyFunSuite with Matchers {
     run(deferring("a", run.fail, "1", "2")).results should equal(List(ProcedureResult("a", Failed("check 1 failed"))))
     run.events.list should not contain "check 2"
     run.events.list.takeRight(3) should equal(List("end", "driver close", "capture close"))
-    run.result("a") should equal(Some(TestResult.Fail))
+    run.result("a") should matchPattern { case Some(ProcedureOutcome.Failed(_)) => }
   }
 
   test("a failing step means the deferred checks are never run") {

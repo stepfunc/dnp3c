@@ -11,7 +11,7 @@ import io.stepfunc.dnp3c.dnp3.DeferredCheck
 object PluginSteps {
 
   // a step that has the plugin act on the DUT
-  private def action(desc: Comment*)(act: (IntegrationPlugin, PluginReporter) => Unit): TestStep =
+  def action(desc: Comment*)(act: (IntegrationPlugin, PluginReporter) => Unit): TestStep =
     new TestStep {
       override def description: List[Comment] = desc.toList
 

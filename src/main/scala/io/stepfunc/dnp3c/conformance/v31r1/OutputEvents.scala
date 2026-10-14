@@ -4,6 +4,7 @@
 package io.stepfunc.dnp3c.conformance.v31r1
 
 import io.stepfunc.dnp3c.conformance.api._
+import io.stepfunc.dnp3c.conformance.api.PluginSteps.action
 import io.stepfunc.dnp3c.conformance.api.options.{
   AnalogOutputOptions, CommandConfig, BinaryOutputOptions, OutstationOptions
 }
@@ -65,14 +66,6 @@ object OutputEvents {
       val s = seq()
       driver.writeMessage(Requests.readClass123(s))
       expectSingleResponse(s, AutoConfirm.Yes, validation).run(driver)
-    }
-  }
-
-  private def action(text: String)(act: (IntegrationPlugin, PluginReporter) => Unit): TestStep = new TestStep {
-    def description: List[Comment] = List(text)
-    def run(driver: TestDriver): List[DeferredCheck] = {
-      act(driver.reporter.plugin, driver.reporter.pluginReporter())
-      Nil
     }
   }
 
@@ -479,37 +472,25 @@ object OutputEvents {
           def run(driver: TestDriver): List[DeferredCheck] = { sent = System.currentTimeMillis(); step.run(driver) }
         },
         (5 to 10) --> poll(seq, commandEvent(Group43, primary.index.value, 0, sent, Set(Group43Var2, Group43Var4))),
-        11 --> new TestStep {
-          def description: List[Comment] = List(s"Select: $header")
-          def run(driver: TestDriver): List[DeferredCheck] = {
-            s = seq()
-            driver.writeMessage(Message.request(s, AppFunction.select, List(header)))
-            Nil
-          }
+        11 --> TestStep(List(s"Select: $header")) { driver =>
+          s = seq()
+          driver.writeMessage(Message.request(s, AppFunction.select, List(header)))
         },
         12 --> new TestStep {
           def description: List[Comment] = expectSingleResponse(Sequence.zero, echoes(header)).description
           def run(driver: TestDriver): List[DeferredCheck] = expectSingleResponse(s, echoes(header)).run(driver)
         },
         13 --> delay(timeoutMs + 1000),
-        14 --> new TestStep {
-          def description: List[Comment] = List(s"Operate: $header")
-          def run(driver: TestDriver): List[DeferredCheck] = {
-            s = seq()
-            sent = System.currentTimeMillis()
-            driver.writeMessage(Message.request(s, AppFunction.operate, List(header)))
-            Nil
-          }
+        14 --> TestStep(List(s"Operate: $header")) { driver =>
+          s = seq()
+          sent = System.currentTimeMillis()
+          driver.writeMessage(Message.request(s, AppFunction.operate, List(header)))
         },
-        15 --> new TestStep {
-          def description: List[Comment] = List("Verify that the response has status TIMEOUT (1)")
-          def run(driver: TestDriver): List[DeferredCheck] = {
-            val responses = driver.readAllResponses(s, AutoConfirm.No)
-            operateStatus = responses.headOption.map(echoedStatus).getOrElse(throw new Exception("No response"))
-            if (operateStatus != CommandStatus.TIMEOUT.value)
-              throw new Exception(s"Expected status TIMEOUT (1), but the response has $operateStatus")
-            Nil
-          }
+        15 --> TestStep(List("Verify that the response has status TIMEOUT (1)")) { driver =>
+          val responses = driver.readAllResponses(s, AutoConfirm.No)
+          operateStatus = responses.headOption.map(echoedStatus).getOrElse(throw new Exception("No response"))
+          if (operateStatus != CommandStatus.TIMEOUT.value)
+            throw new Exception(s"Expected status TIMEOUT (1), but the response has $operateStatus")
         },
         (16 to 20) -->
           poll(seq, commandEvent(Group43, primary.index.value, operateStatus, sent, Set(Group43Var2, Group43Var4)))

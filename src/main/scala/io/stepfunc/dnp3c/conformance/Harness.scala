@@ -7,7 +7,7 @@ import java.nio.file.{ Files, Path }
 
 import io.stepfunc.dnp3c.conformance.api.{ Options, RunSummary }
 import io.stepfunc.dnp3c.conformance.api.options.TestOptions
-import io.stepfunc.dnp3c.conformance.application.{ TestRunner, TextFile }
+import io.stepfunc.dnp3c.conformance.application.{ ResultFiles, TestRunner, TextFile }
 import io.stepfunc.dnp3c.conformance.application.report.{ Report, Resources }
 import io.stepfunc.dnp3c.dnp3.IntegrationPlugin
 import io.stepfunc.dnp3c.protocol.logging.Colors
@@ -79,12 +79,12 @@ object Harness {
     val report = Report.create(path, revision, level)
 
     Colors.text.printLine("creating HTML report...")
-    val file = path.resolve("report.html")
+    val file = path.resolve(ResultFiles.report)
     TextFile.write(file.toFile)(writer =>
       report.toHTML(options.get(TestOptions.deviceUnderTest)).foreach(writer.println))
 
     // the stylesheet is the tool's, rewritten each time, so a report always looks as the version that wrote it draws it
-    Resources.extract("report.css", path.resolve("report.css").toFile)
+    Resources.extract(ResultFiles.stylesheet, path.resolve(ResultFiles.stylesheet).toFile)
 
     file
   }

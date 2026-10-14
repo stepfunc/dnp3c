@@ -145,15 +145,13 @@ object TestRunner {
       environment: ProcedureEnvironment): ProcedureResult = {
 
     val path = revision.runDirectory(options).resolve(procedure.id)
-    val resultsFile = path.resolve("results.properties")
+    val resultsFile = path.resolve(ResultFiles.result)
     val title = s"${procedure.id} ${procedure.description} (revision ${revision.id}, subset level $level)"
 
     // a pass keeps the notes the procedure made about it
     def save(result: ProcedureOutcome, notes: List[String] = Nil): Unit = {
       val kept = if (result == ProcedureOutcome.Passed) notes else Nil
-      TestResult.write(
-        TestResult.Saved(TestResult.from(result), Some(revision.id), Some(level), TestResult.reason(result), kept),
-        resultsFile)
+      SavedResult.write(SavedResult(result, Some(revision.id), Some(level), kept), resultsFile)
     }
 
     skipReason(revision, level, procedure, options) match {
@@ -172,15 +170,15 @@ object TestRunner {
         Files.createDirectories(path)
         // results from an earlier run must not look like this run's
         Files.deleteIfExists(resultsFile)
-        Files.deleteIfExists(path.resolve("dump.pcap"))
+        Files.deleteIfExists(path.resolve(ResultFiles.capture))
 
         val htmlLogger = new ReportLogger(
-          path.resolve("log.html").toFile,
+          path.resolve(ResultFiles.log).toFile,
           title,
           options.get(TestOptions.deviceUnderTest))
         cleanup ::= (() => htmlLogger.write())
 
-        environment.openCapture(options, path.resolve("dump.pcap")).foreach(c => cleanup ::= (() => c.close()))
+        environment.openCapture(options, path.resolve(ResultFiles.capture)).foreach(c => cleanup ::= (() => c.close()))
 
         val testReporter = new ProcedureReporter(Logger.aggregate(ConsoleLogger, htmlLogger), integrationPlugin)
         reporter = Some(testReporter)
@@ -229,10 +227,10 @@ object TestRunner {
     try {
       Files.createDirectories(path)
       // results from an earlier run must not look like this run's, even if writing this one fails
-      Files.deleteIfExists(path.resolve("results.properties"))
-      Files.deleteIfExists(path.resolve("dump.pcap"))
+      Files.deleteIfExists(path.resolve(ResultFiles.result))
+      Files.deleteIfExists(path.resolve(ResultFiles.capture))
       val htmlLogger =
-        new ReportLogger(path.resolve("log.html").toFile, title, options.get(TestOptions.deviceUnderTest))
+        new ReportLogger(path.resolve(ResultFiles.log).toFile, title, options.get(TestOptions.deviceUnderTest))
       try Logger.aggregate(ConsoleLogger, htmlLogger).info(s"Skipped procedure: ${procedure.id}, $reason")
       finally htmlLogger.write()
       save(outcome)
