@@ -634,14 +634,14 @@ object Tree {
           test("9.5.2.5.2", "Responses to Port 20000", Network.udpResponsesTo20000)
         ),
         section("9.5.3", "UDP Unsolicited")(
-          notYet("9.5.3.1.2", "Unsolicited Null 20000"),
-          notYet("9.5.3.2.2", "Unsolicited Null, Not 20000"),
-          notYet("9.5.3.3.2", "Data Filled Messages to Port 20000"),
-          notYet("9.5.3.4.2", "Data Filled Messages to Originating Port"),
-          notYet("9.5.3.5.2", "Data Filled Messages to a Fixed Port Other Than 20000")
+          test("9.5.3.1.2", "Unsolicited Null 20000", Network.unsolicitedNull20000),
+          test("9.5.3.2.2", "Unsolicited Null, Not 20000", Network.unsolicitedNullOtherPort),
+          test("9.5.3.3.2", "Data Filled Messages to Port 20000", Network.unsolicitedData20000),
+          test("9.5.3.4.2", "Data Filled Messages to Originating Port", Network.unsolicitedDataOriginatingPort),
+          test("9.5.3.5.2", "Data Filled Messages to a Fixed Port Other Than 20000", Network.unsolicitedDataFixedPort)
         ),
         section("9.5.4", "Unsolicited with Both UDP and TCP")(
-          notYet("9.5.4-1", "Test Procedure")
+          test("9.5.4-1", "Test Procedure", Network.unsolicitedUdpAndTcp)
         )
       )
     ),

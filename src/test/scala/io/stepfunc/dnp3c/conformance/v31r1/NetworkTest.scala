@@ -76,7 +76,7 @@ class NetworkTest extends AnyFunSuite with Matchers {
         })
     }
 
-    override def connect(c: Connection): InetSocketAddress = {
+    override def connect(c: Connection, keep: Boolean): InetSocketAddress = {
       c match {
         case t: TcpConnection if !answers(t) => throw new ConnectException("Connection refused")
         case _ =>

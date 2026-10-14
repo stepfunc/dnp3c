@@ -18,6 +18,7 @@ import java.io.IOException
 import java.net.{ ConnectException, InetSocketAddress, SocketTimeoutException }
 import java.nio.ByteBuffer
 import java.nio.channels.SocketChannel
+import scala.collection.mutable
 
 class DefaultTestDriver(
     val reporter: ProcedureReporter,
@@ -65,15 +66,57 @@ class DefaultTestDriver(
     writeToChannel(c)(bytes)
   }
 
+  // a UDP socket isn't a connection: it stays bound, so that what the DUT sends while it restarts arrives
   override def close(): Unit = {
-    connection.foreach { conn =>
+    connection.filterNot(_.channel.datagrams).foreach { conn =>
       conn.channel.close()
       this.connection = None
     }
   }
 
-  override def connect(c: dnp3.Connection): InetSocketAddress = {
-    close()
+  override def shutdown(): Unit = {
+    connection.foreach(_.channel.close())
+    connection = None
+    kept.values.foreach(_._1.channel.close())
+    kept.clear()
+  }
+
+  // the connection that connect made current, if it did, and those it kept open, by what was asked for, each with the
+  // factory that opens it again
+  private var current: Option[dnp3.Connection] = None
+  private val kept = mutable.Map.empty[dnp3.Connection, (Connection, ChannelFactory)]
+
+  private def localOf(c: Connection): InetSocketAddress = c.channel match {
+    case tcp: SocketReadWriteChannel => tcp.localAddress
+    case udp: UdpChannel => udp.localAddress
+    case other => throw new IllegalStateException(s"No local address for $other")
+  }
+
+  override def connect(c: dnp3.Connection, keep: Boolean): InetSocketAddress = {
+    (current, connection) match {
+      case (Some(key), Some(open)) if keep => kept(key) = (open, factory)
+      case _ => connection.foreach(_.channel.close())
+    }
+    connection = None
+    current = Some(c)
+    kept.remove(c) match {
+      case Some((open, f)) =>
+        connection = Some(open)
+        factory = f
+        localOf(open)
+      case None => open(c)
+    }
+  }
+
+  override def drainDatagrams(c: UdpConnection): Int = {
+    val open = if (current.contains(c)) connection else kept.get(c).map(_._1)
+    open.map(_.channel) match {
+      case Some(udp: UdpChannel) => udp.drain()
+      case _ => throw new IllegalStateException(s"No UDP connection is open as $c")
+    }
+  }
+
+  private def open(c: dnp3.Connection): InetSocketAddress = {
     val (opened, local) = c match {
       case tcp: TcpConnection =>
         val f = new TcpClientChannelFactory(tcp.remote, Some(tcp.local), Some(appTimeoutMs))

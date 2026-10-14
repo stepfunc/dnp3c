@@ -47,6 +47,21 @@ final class UdpChannel private (channel: DatagramChannel, remote: InetSocketAddr
     result
   }
 
+  // discards the datagrams from the remote's IP address that have arrived and not been read, and counts them
+  def drain(): Int = {
+    var count = 0
+    var more = true
+    while (more) {
+      channel.socket().setSoTimeout(1)
+      val packet = new DatagramPacket(received, received.length)
+      try {
+        channel.socket().receive(packet)
+        if (packet.getAddress == remote.getAddress && packet.getLength > 0) count += 1
+      } catch { case _: SocketTimeoutException => more = false }
+    }
+    count
+  }
+
   override def close(): Unit = channel.close()
 }
 

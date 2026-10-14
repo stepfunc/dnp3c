@@ -185,7 +185,7 @@ object TestRunner {
 
         // the revision's rules for the messages the procedure receives
         val driver = environment.openDriver(testReporter, options, new Policies(revision.policies))
-        cleanup ::= (() => driver.close())
+        cleanup ::= (() => driver.shutdown())
 
         integrationPlugin.startProcedure(testReporter.pluginReporter())
         cleanup ::= (() => integrationPlugin.endProcedure(testReporter.pluginReporter()))
