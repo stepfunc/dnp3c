@@ -3,12 +3,15 @@
 
 package io.stepfunc.dnp3c.conformance.v31r1
 
-import java.net.{ ConnectException, InetSocketAddress, SocketTimeoutException }
+import java.net.{ ConnectException, InetAddress, InetSocketAddress, SocketTimeoutException }
 
 import io.stepfunc.dnp3c.conformance.api._
 import io.stepfunc.dnp3c.conformance.api.options.{ ChannelOptions, NetworkOptions }
 import io.stepfunc.dnp3c.conformance.s6.{ expectFrame, sendLinkControl, withAnyControl }
+import io.stepfunc.dnp3c.conformance.s8.helpers.GenericSteps.{ expectAtLeastOneResponse, send }
 import io.stepfunc.dnp3c.dnp3._
+import io.stepfunc.dnp3c.dnp3.app.{ IIN, Message, Sequence }
+import io.stepfunc.dnp3c.protocol.parsing.UInt16LE
 
 /**
  * 3.1r1's section 9, network tests. Each sets up the DUT's network through the plugin (configureNetwork), in full, and
@@ -35,7 +38,8 @@ object Network {
       Option.when(!isAddress(value))(ConfigProblem(option.id, value, s"needs an IP address of this host, $why"))
     }
     val any = running.exists(_.isInstanceOf[Test])
-    val wildcard = running.contains(tcpWildcard)
+    val wildcard = running.contains(tcpWildcard) || running.contains(udpWildcard)
+    val group = options.get(NetworkOptions.multicastGroup)
     List(
       Option.when(any)(address(NetworkOptions.masterAddress, "which 3.1r1's network tests connect from")).flatten,
       Option.when(wildcard)(address(NetworkOptions.wildcardAddress, "in network.wildcardRange")).flatten,
@@ -50,7 +54,11 @@ object Network {
       Option.when(wildcard && options.get(NetworkOptions.wildcardRange).isEmpty)(
         ConfigProblem(NetworkOptions.wildcardRange.id, "", "required by 3.1r1's Wildcard IP Address tests")),
       Option.when(running.contains(tcpOtherPort) && options.get(NetworkOptions.tcpOtherPort) == port)(
-        ConfigProblem(NetworkOptions.tcpOtherPort.id, port.toString, "must be a port other than 20000"))
+        ConfigProblem(NetworkOptions.tcpOtherPort.id, port.toString, "must be a port other than 20000")),
+      Option.when(running.contains(udpOtherPort) && options.get(NetworkOptions.udpOtherPort) == port)(
+        ConfigProblem(NetworkOptions.udpOtherPort.id, port.toString, "must be a port other than 20000")),
+      Option.when(running.contains(udpMulticast) && !isMulticast(group))(
+        ConfigProblem(NetworkOptions.multicastGroup.id, group, "needs a multicast group's IP address, e.g. 239.0.0.1"))
     ).flatten
   }
 
@@ -72,6 +80,9 @@ object Network {
       s.exists(c => c != ':' && c != '0')
   }
 
+  private def isMulticast(s: String): Boolean =
+    isAddress(s) && scala.util.Try(InetAddress.getByName(s).isMulticastAddress).getOrElse(false)
+
   /** a section 9 test: restores the DUT's network once it ends */
   abstract class Test extends ProcedureDefinition {
     override protected def cleanup(options: OptionSource): Iterable[LabeledStep] =
@@ -90,6 +101,21 @@ object Network {
     if (options.get(NetworkOptions.tcpAnyAddress)) AllowedMasters.Any else AllowedMasters.Address(master(options))
 
   private def tcp(port: Int, allowed: AllowedMasters): NetworkSetup = NetworkSetup(NetworkMode.Tcp, port, allowed)
+
+  // the masters a UDP test accepts when it doesn't care: any, if the DUT can
+  private def anyUdpMaster(options: OptionSource): AllowedMasters =
+    if (options.get(NetworkOptions.udpAnyAddress)) AllowedMasters.Any else AllowedMasters.Address(master(options))
+
+  // UDP as the main method, alone if the DUT can, else with TCP
+  private def udp(
+      options: OptionSource,
+      port: Int,
+      allowed: AllowedMasters,
+      responses: UdpDestination = UdpDestination.OriginatingPort): NetworkSetup = NetworkSetup(
+    if (options.get(NetworkOptions.udpAlone)) NetworkMode.Udp else NetworkMode.Both,
+    port,
+    allowed,
+    responses)
 
   private def setUp(setup: NetworkSetup): TestStep = new TestStep {
     def description: List[Comment] = List(s"Set up the DUT's network to ${setup.describe}")
@@ -150,6 +176,49 @@ object Network {
         case ProbeResult.Answered =>
           throw new Exception("The DUT accepted the connection and answered a REQUEST LINK STATUS on it")
       }
+      Nil
+    }
+  }
+
+  /** talks to the DUT over UDP from now on, sending from the local address, which alone receives the DUT's datagrams */
+  private def udpFrom(remote: InetSocketAddress, local: InetSocketAddress): TestStep = new TestStep {
+    def description: List[Comment] = List(
+      s"Exchange UDP datagrams with the DUT's port ${remote.getPort} from ${show(local)}, processing only the " +
+        "datagrams that come back to that port")
+    def run(driver: TestDriver): List[DeferredCheck] = {
+      val bound = driver.connect(UdpConnection(remote, local))
+      driver.reporter.info(s"Sending from ${bound.getAddress.getHostAddress} port ${bound.getPort}")
+      Nil
+    }
+  }
+
+  // a REQUEST LINK STATUS that nothing answers within the link timeout
+  private val noLinkStatus: TestStep = sendLinkControl(0xC9.toByte) + new TestStep {
+    def description: List[Comment] = List("Verify that the DUT doesn't answer within the link timeout")
+    def run(driver: TestDriver): List[DeferredCheck] = {
+      driver.readFrame().foreach(f => throw new Exception(s"The DUT answered: $f"))
+      Nil
+    }
+  }
+
+  private val allStations = UInt16LE(0xFFFF)
+
+  // a broadcast that every device accepts, as IEEE 1815-2012 4.7 requires of any it accepts to its own address
+  private def broadcast(remote: InetSocketAddress, local: InetSocketAddress, seq: Sequence): TestStep = new TestStep {
+    def description: List[Comment] = List(
+      s"Send a write that clears IIN1.7 (g80v1, index 7) to DNP3 destination 0xFFFF, as UDP datagrams to " +
+        s"${remote.getAddress.getHostAddress} port ${remote.getPort} from ${show(local)}")
+    def run(driver: TestDriver): List[DeferredCheck] = {
+      driver.sendDatagrams(remote, local, Requests.clearRestartIIN(seq), LinkOverride.destination(allStations))
+      Nil
+    }
+  }
+
+  private val broadcastIndicated: ResponseValidation = new ResponseValidation {
+    def description: List[Comment] = List("Verify that the first response has IIN1.0 (all stations) set")
+    def validate(reporter: ProcedureReporter, responses: List[Message]): List[DeferredCheck] = {
+      if (!responses.headOption.flatMap(_.iin).exists(iin => (iin & IIN.BROADCAST) == IIN.BROADCAST))
+        throw new Exception("Expected IIN1.0 (all stations) set in the response")
       Nil
     }
   }
@@ -250,5 +319,119 @@ object Network {
         19 --> describe(s"Connect from ${master(options)} again")
       )
     }
+  }
+
+  /**
+   * 9.5.1's UDP broadcast tests: a broadcast over UDP to the DUT's port 20000, or to a multicast group, while a TCP
+   * connection is open, from the same address; the next poll over TCP has IIN1.0 set
+   */
+  private def udpBroadcastWithTcp(gate: BooleanOption, to: OptionSource => InetAddress, multicast: Boolean) = new Test {
+    override protected def requiredOptions: List[OptionCondition] = List(NetworkOptions.tcp, gate)
+
+    override protected def steps(options: OptionSource): Iterable[LabeledStep] = {
+      val group = Option.when(multicast)(options.get(NetworkOptions.multicastGroup))
+      List(
+        1 --> describe(
+          "The broadcast is a write that clears IIN1.7, which IEEE 1815-2012 4.7 (Table 4-16) has every device accept " +
+            "as a broadcast"),
+        2 --> setUp(tcp(port, anyMaster(options)).copy(multicastGroup = group)),
+        (3 to 4) --> connect(dut(options), from(master(options))),
+        5 --> send(Requests.readClass1230(Sequence.zero)),
+        6 --> expectAtLeastOneResponse(Sequence.zero),
+        7 --> broadcast(new InetSocketAddress(to(options), port), from(master(options)), Sequence.one),
+        8 --> send(Requests.readClass1230(Sequence.two)),
+        9 --> expectAtLeastOneResponse(Sequence.two, broadcastIndicated)
+      )
+    }
+  }
+
+  /** 9.5.1's UDP Unicast IP Address with TCP as the Main Communication Method */
+  val udpBroadcast: ProcedureDefinition =
+    udpBroadcastWithTcp(NetworkOptions.tcpUdpBroadcast, o => InetAddress.getByName(o.get(ChannelOptions.host)), false)
+
+  /** 9.5.1's UDP Multicast IP Address with TCP as the Main Communication Method */
+  val udpMulticast: ProcedureDefinition =
+    udpBroadcastWithTcp(
+      NetworkOptions.tcpMulticast,
+      o => InetAddress.getByName(o.get(NetworkOptions.multicastGroup)),
+      true)
+
+  // what every UDP Solicited test needs: the DUT answering over UDP, to the port each request came from
+  private val udpSolicited: List[OptionCondition] = List(NetworkOptions.udp, NetworkOptions.udpOriginatingPort)
+
+  /** 9.5.2's Port 20000 */
+  val udpPort20000: ProcedureDefinition = new Test {
+    override protected def requiredOptions: List[OptionCondition] = udpSolicited
+
+    override protected def steps(options: OptionSource): Iterable[LabeledStep] = List(
+      (1 to 4) --> setUp(udp(options, port, anyUdpMaster(options))),
+      5 --> udpFrom(dut(options), from(master(options))),
+      (6 to 7) --> linkStatus
+    )
+  }
+
+  /** 9.5.2's Port Other Than 20000 */
+  val udpOtherPort: ProcedureDefinition = new Test {
+    override protected def requiredOptions: List[OptionCondition] =
+      udpSolicited :+ OptionCondition(NetworkOptions.udpConfigurablePort)
+
+    override protected def steps(options: OptionSource): Iterable[LabeledStep] = {
+      val other = options.get(NetworkOptions.udpOtherPort)
+      List(
+        (1 to 2) --> setUp(udp(options, other, anyUdpMaster(options))),
+        (3 to 4) --> (udpFrom(dut(options), from(master(options))) + noLinkStatus),
+        (5 to 6) --> (udpFrom(dut(options, other), from(master(options))) + linkStatus),
+        7 --> setUp(udp(options, port, anyUdpMaster(options)))
+      )
+    }
+  }
+
+  /** 9.5.2's Specific IP Address */
+  val udpSpecificAddress: ProcedureDefinition = new Test {
+    override protected def requiredOptions: List[OptionCondition] =
+      udpSolicited :+ OptionCondition(NetworkOptions.udpSpecificAddress)
+
+    override protected def steps(options: OptionSource): Iterable[LabeledStep] = List(
+      (1 to 2) --> setUp(udp(options, port, AllowedMasters.Address(options.get(NetworkOptions.otherMasterAddress)))),
+      (3 to 4) --> (udpFrom(dut(options), from(master(options))) + noLinkStatus),
+      5 --> setUp(udp(options, port, AllowedMasters.Address(master(options)))),
+      (6 to 7) --> linkStatus
+    )
+  }
+
+  /** 9.5.2's Wildcard IP Address */
+  val udpWildcard: ProcedureDefinition = new Test {
+    override protected def requiredOptions: List[OptionCondition] =
+      udpSolicited :+ OptionCondition(NetworkOptions.udpWildcard)
+
+    override protected def steps(options: OptionSource): Iterable[LabeledStep] = {
+      val wildcard = options.get(NetworkOptions.wildcardAddress)
+      val outside = options.get(NetworkOptions.outsideAddress)
+      List(
+        (1 to 2) --> setUp(udp(options, port, AllowedMasters.Wildcard(options.get(NetworkOptions.wildcardRange)))),
+        (3 to 4) --> (udpFrom(dut(options), from(master(options))) + linkStatus),
+        5 --> describe(s"Send from $wildcard, which is also in the range"),
+        (6 to 7) --> (udpFrom(dut(options), from(wildcard)) + linkStatus),
+        8 --> describe(s"Send from $outside, which is outside the range"),
+        (9 to 10) --> (udpFrom(dut(options), from(outside)) + noLinkStatus),
+        11 --> describe(s"Send from ${master(options)} again")
+      )
+    }
+  }
+
+  /**
+   * 9.5.2's Responses to Port 20000: the harness sends from port 20000, where it receives, as IEEE 1815-2012
+   * 13.2.3.2.2 b) has a master do
+   */
+  val udpResponsesTo20000: ProcedureDefinition = new Test {
+    // without responses to the originating port, 9.5.2.1 step 2 skips every UDP test
+    override protected def requiredOptions: List[OptionCondition] =
+      udpSolicited :+ OptionCondition(NetworkOptions.udpRespondTo20000)
+
+    override protected def steps(options: OptionSource): Iterable[LabeledStep] = List(
+      (1 to 3) --> setUp(udp(options, port, anyUdpMaster(options), UdpDestination.Fixed(port))),
+      4 --> udpFrom(dut(options), from(master(options), port)),
+      (5 to 6) --> linkStatus
+    )
   }
 }

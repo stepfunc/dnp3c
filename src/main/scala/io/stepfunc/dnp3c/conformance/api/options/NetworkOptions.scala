@@ -105,6 +105,99 @@ object NetworkOptions extends OptionGroup {
     "An IP address of this host outside network.wildcardRange, for 3.1r1's Wildcard IP Address tests"
   )
 
+  val tcpUdpBroadcast: BooleanOption = OptionTypes.boolean(
+    this,
+    "tcp.udpBroadcast",
+    false,
+    "Does the DUT, while using TCP, accept broadcasts sent to its port 20000 over UDP? 3.1r1's 9.5.1 tests it, and " +
+      "requires it of a device that accepts broadcasts, as IEEE 1815-2012 13.2.3.2 does"
+  )
+
+  val tcpMulticast: BooleanOption = OptionTypes.boolean(
+    this,
+    "tcp.multicast",
+    false,
+    "Does the DUT, while using TCP, accept broadcasts sent over UDP to a multicast group (network.multicastGroup)? " +
+      "3.1r1's 9.5.1 tests it"
+  )
+
+  val multicastGroup: StringOption = OptionTypes.string(
+    this,
+    "multicastGroup",
+    "",
+    "The multicast group 3.1r1's UDP Multicast test has the DUT join, e.g. 239.0.0.1"
+  )
+
+  val udp: BooleanOption = OptionTypes.boolean(
+    this,
+    "udp",
+    false,
+    "Can the DUT answer requests over UDP? 3.1r1's UDP Solicited tests (9.5.2) run where it can, connecting to its " +
+      "port 20000 over UDP from network.master.address"
+  )
+
+  val udpAlone: BooleanOption = OptionTypes.boolean(
+    this,
+    "udp.alone",
+    true,
+    "Can the DUT use UDP alone? Where it can't, 3.1r1's UDP tests set it to use TCP and UDP at once"
+  )
+
+  val udpAnyAddress: BooleanOption = OptionTypes.boolean(
+    this,
+    "udp.anyAddress",
+    true,
+    "Can the DUT accept UDP requests from any IP address? Where it can't, 3.1r1's UDP tests set it to accept " +
+      "network.master.address"
+  )
+
+  val udpOriginatingPort: BooleanOption = OptionTypes.boolean(
+    this,
+    "udp.respondToOriginatingPort",
+    false,
+    "Can the DUT send its UDP responses to the port each request came from? 3.1r1 requires it of a device that " +
+      "answers over UDP, and runs its UDP tests (9.5.2) only where it can"
+  )
+
+  val udpRespondTo20000: BooleanOption = OptionTypes.boolean(
+    this,
+    "udp.respondTo20000",
+    false,
+    "Can the DUT send its UDP responses to port 20000, whatever port each request came from? 3.1r1 requires it of a " +
+      "device that answers over UDP, and tests it in 9.5.2"
+  )
+
+  val udpConfigurablePort: BooleanOption = OptionTypes.boolean(
+    this,
+    "udp.configurablePort",
+    false,
+    "Can the DUT listen for UDP requests on a port other than 20000 (network.udp.otherPort)? 3.1r1's 9.5.2 tests it"
+  )
+
+  val udpOtherPort: IntegerOption = OptionTypes.integer(
+    this,
+    "udp.otherPort",
+    20001,
+    "The port other than 20000 that 3.1r1's 9.5.2 has the DUT listen on, where network.udp.configurablePort is true",
+    Some(1),
+    Some(65535)
+  )
+
+  val udpSpecificAddress: BooleanOption = OptionTypes.boolean(
+    this,
+    "udp.specificAddress",
+    false,
+    "Can the DUT accept UDP requests from one IP address only? 3.1r1's 9.5.2 tests it, with network.otherMasterAddress"
+  )
+
+  val udpWildcard: BooleanOption = OptionTypes.boolean(
+    this,
+    "udp.wildcard",
+    false,
+    "Can the DUT accept UDP requests from a range of IP addresses given by a wildcard (network.wildcardRange)? 3.1r1's " +
+      "9.5.2 tests it, as 9.5.1 does for TCP"
+  )
+
   def options: List[TestOption] = List(
     masterAddress,
     tcp,
@@ -114,6 +207,18 @@ object NetworkOptions extends OptionGroup {
     tcpSpecificAddress,
     otherMasterAddress,
     tcpWildcard,
+    tcpUdpBroadcast,
+    tcpMulticast,
+    multicastGroup,
+    udp,
+    udpAlone,
+    udpAnyAddress,
+    udpOriginatingPort,
+    udpRespondTo20000,
+    udpConfigurablePort,
+    udpOtherPort,
+    udpSpecificAddress,
+    udpWildcard,
     wildcardRange,
     wildcardAddress,
     outsideAddress

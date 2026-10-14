@@ -623,15 +623,15 @@ object Tree {
           test("9.5.1.2.2", "Port Other Than 20000", Network.tcpOtherPort),
           test("9.5.1.3.2", "Specific IP Address", Network.tcpSpecificAddress),
           test("9.5.1.4.2", "Wildcard IP Address", Network.tcpWildcard),
-          notYet("9.5.1.5.2", "UDP Unicast IP address with TCP as the Main Communication Method"),
-          notYet("9.5.1.6.2", "UDP Multicast IP address with TCP as the Main Communication Method")
+          test("9.5.1.5.2", "UDP Unicast IP address with TCP as the Main Communication Method", Network.udpBroadcast),
+          test("9.5.1.6.2", "UDP Multicast IP address with TCP as the Main Communication Method", Network.udpMulticast)
         ),
         section("9.5.2", "UDP Solicited")(
-          notYet("9.5.2.1.2", "Port 20000"),
-          notYet("9.5.2.2.2", "Port Other Than 20000"),
-          notYet("9.5.2.3.2", "Specific IP Address"),
-          notYet("9.5.2.4.2", "Wildcard IP Address"),
-          notYet("9.5.2.5.2", "Responses to Port 20000")
+          test("9.5.2.1.2", "Port 20000", Network.udpPort20000),
+          test("9.5.2.2.2", "Port Other Than 20000", Network.udpOtherPort),
+          test("9.5.2.3.2", "Specific IP Address", Network.udpSpecificAddress),
+          test("9.5.2.4.2", "Wildcard IP Address", Network.udpWildcard),
+          test("9.5.2.5.2", "Responses to Port 20000", Network.udpResponsesTo20000)
         ),
         section("9.5.3", "UDP Unsolicited")(
           notYet("9.5.3.1.2", "Unsolicited Null 20000"),

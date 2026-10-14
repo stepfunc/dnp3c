@@ -108,10 +108,58 @@ class LinkFrameParser(channel: ReadableChannel, clock: Clock) {
 
   // bytes received but not yet decoded
   private val received = mutable.ArrayBuffer.empty[Byte]
-  private val buffer = ByteBuffer.allocate(4096)
+  private val buffer = ByteBuffer.allocate(if (channel.datagrams) 65535 else 4096)
 
-  // the next frame, read until one arrives or the timeout runs out; a frame can arrive over several reads
-  def read(reporter: TestReporter)(timeoutMs: Int): Option[LinkFrame] = {
+  // the frames of the last datagram not yet read
+  private val frames = mutable.Queue.empty[LinkFrame]
+
+  // the next frame, read until one arrives or the timeout runs out; a frame can arrive over several reads, unless the
+  // channel's reads are datagrams
+  def read(reporter: TestReporter)(timeoutMs: Int): Option[LinkFrame] =
+    if (channel.datagrams) readDatagrams(reporter)(timeoutMs) else readStream(reporter)(timeoutMs)
+
+  // each read is a whole datagram, decoded at once, and IEEE 1815-2012 13.2.3.2.3 keeps a frame within one: one that
+  // doesn't end in its datagram fails, even after frames that do
+  private def readDatagrams(reporter: TestReporter)(timeoutMs: Int): Option[LinkFrame] = {
+    val deadline = clock.deadline(timeoutMs)
+
+    @tailrec
+    def decodeAll(): Unit = LinkFrameParser.decode(received, reporter) match {
+      case LinkFrameParser.Decoded.Frame(frame, length) =>
+        received.remove(0, length)
+        frames.enqueue(frame)
+        decodeAll()
+      case LinkFrameParser.Decoded.Skip(count) =>
+        received.remove(0, count)
+        decodeAll()
+      case LinkFrameParser.Decoded.Incomplete =>
+        if (received.nonEmpty) {
+          val count = received.size
+          received.clear()
+          frames.clear()
+          throw new Exception(
+            s"A datagram from the DUT ends with $count byte(s) of a link frame that doesn't end there")
+        }
+    }
+
+    @tailrec
+    def next(): Option[LinkFrame] =
+      if (frames.nonEmpty) {
+        val frame = frames.dequeue()
+        reporter.receive(frame)
+        Some(frame)
+      } else {
+        val left = clock.msLeft(deadline)
+        if (left > 0 && receive(left.toInt)) {
+          decodeAll()
+          next()
+        } else None
+      }
+
+    next()
+  }
+
+  private def readStream(reporter: TestReporter)(timeoutMs: Int): Option[LinkFrame] = {
     val deadline = clock.deadline(timeoutMs)
 
     @tailrec
