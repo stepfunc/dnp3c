@@ -26,8 +26,12 @@ object InputEvents {
     import input._
 
     // an event response: the events the plugin generated, a request for confirmation, the rules, and the flags
-    protected def events(events: MessageValidation, requested: Variation, options: OptionSource): MessageValidation =
-      Validations.eventResponse(events, EventRules.consistent(input, requested, options))
+    protected def events(
+        events: MessageValidation,
+        requested: Variation,
+        options: OptionSource,
+        clock: => EventRules.Clock = EventRules.Clock.Unknown): MessageValidation =
+      Validations.eventResponse(events, EventRules.consistent(input, requested, options, clock))
 
     // steps 1 to 3: read the events left and confirm them; a response with events must ask for confirmation
     protected def empty(seq: Sequence): List[LabeledStep] = List(
@@ -205,6 +209,173 @@ object InputEvents {
     }
   }
 
+  // a step that runs only if `condition` holds when it's reached, e.g. one an earlier answer of the device skips
+  private def when(condition: => Boolean, what: String)(step: TestStep): TestStep = new TestStep {
+    def description: List[Comment] = step.description :+ Comment(s"(Only if $what)")
+    def run(driver: TestDriver): List[DeferredCheck] =
+      if (condition) step.run(driver)
+      else {
+        driver.reporter.info(s"Skipped: not $what")
+        Nil
+      }
+  }
+
+  // the note on a device that answers a read of events with relative time with IIN2.1
+  private val relativeCompliantWith2012Only = "the DUT answers a read of events with relative time with IIN2.1: it " +
+    "complies with IEEE 1815-2012, but not with IEEE 1815-202x"
+
+  private def noting(text: String): TestStep = new TestStep {
+    def description: List[Comment] = List(Comment(s"Note the result: $text"))
+    def run(driver: TestDriver): List[DeferredCheck] = {
+      driver.reporter.note(text)
+      Nil
+    }
+  }
+
+  /**
+   * With relative time, qualifier 0x06 (8.14.2-13), in three phases: after a restart, while the clock is
+   * unsynchronized; after a time write, synchronized; and after the synchronization expires. A device without events
+   * with relative time may answer with IIN2.1, if it's configured to: that passes, noted as compliant with 1815-2012
+   * but not 1815-202x, and the rest of 8.14 and 8.15 are skipped.
+   */
+  final class AllQualifierWithRelativeTime(input: InputType) extends EventTest(input) {
+    import input._
+    import io.stepfunc.dnp3c.conformance.api.options.TimeSyncOptions
+    import EventRules.Clock
+
+    override protected def steps(options: OptionSource): Iterable[LabeledStep] = {
+      val start = List(
+        1 --> PluginSteps.cyclePower,
+        2 --> send(Requests.readAllObjects(Sequence.zero, anyVariation)))
+      if (options.get(withRelativeTimeRejected))
+        start ++ List(
+          (3 to 4) --> expectEventsEmptied(Sequence.zero),
+          6 --> generateEvents,
+          7 -->
+            (send(Requests.readAllObjects(Sequence.one, relativeTimeVariation)) +
+              expectSingleResponse(Sequence.one, Validations.isEmpty && Validations.containing(IIN.OBJECT_UNKNOWN)) +
+              noting(relativeCompliantWith2012Only)),
+          (8 to 38) --> describe("Skipped, with the rest of 8.14 and all of 8.15")
+        )
+      else {
+        // whether the DUT asked for the time after the restart: the first phase needs it
+        var needTime = false
+        val noteNeedTime = MessageValidation.check("Note whether IIN1.4 (NEED_TIME) is set") { m =>
+          needTime = needTime || m.iin.exists(i => (i & IIN.NEED_TIME) == IIN.NEED_TIME)
+        }
+        val unsynchronized = "IIN1.4 was set in step 3's response"
+        // the master can write the device's time, and the device asks for it (sets IIN1.4)
+        val synchronize = options.get(TimeSyncOptions.supportSynchronizingTimeFromMaster)
+        val written = unsynchronized + ", and the master can write the time"
+        // the third phase: a device that reports relative time and asks for the time
+        val expires = options.get(withRelativeTime) && synchronize
+        val expiry = "the DUT reports events with relative time and asks for the time"
+        // after step 17's time write the clock is synchronized; with no write, its state isn't known
+        def afterSync: Clock = if (synchronize && needTime) Clock.Synchronized else Clock.Unknown
+        start ++ List(
+          (3 to 4) -->
+            expectAtLeastOneResponse(Sequence.zero, Validations.verifyConfirmRequestedIfNotNull && noteNeedTime),
+          5 --> describe("If IIN1.4 wasn't set in step 3's response, skip to step 19"),
+          6 --> when(needTime, unsynchronized)(generateEvents),
+          7 --> when(needTime, unsynchronized)(send(Requests.readAllObjects(Sequence.one, relativeTimeVariation))),
+          (8 to 14) --> when(needTime, unsynchronized)(expectSingleResponse(
+            Sequence.one,
+            AutoConfirm.Yes,
+            events(verifyLatestEvents, relativeTimeVariation, options, Clock.Unsynchronized))),
+          15 --> when(needTime, unsynchronized)(send(Requests.readAllObjects(Sequence.two, anyVariation))),
+          16 --> when(needTime, unsynchronized)(expectNullResponse(Sequence.two)),
+          // skipped with steps 6 to 16, as step 5 says: a device that didn't ask for the time keeps its clock
+          17 --> when(synchronize && needTime, written)(
+            writeCurrentTime(Sequence.three, options.get(TimeSyncOptions.timeWriteLatencyMs))),
+          18 --> when(synchronize && needTime, written)(
+            expectSingleResponse(Sequence.three, Validations.isNull && Validations.without(IIN.NEED_TIME))),
+          19 --> generateEvents,
+          20 --> send(Requests.readAllObjects(Sequence.four, relativeTimeVariation)),
+          (21 to 28) --> expectSingleResponse(
+            Sequence.four,
+            AutoConfirm.Yes,
+            events(verifyLatestEvents, relativeTimeVariation, options, afterSync)),
+          29 --> send(Requests.readAllObjects(Sequence.five, anyVariation)),
+          30 --> expectNullResponse(Sequence.five),
+          31 --> describe(
+            "If the DUT doesn't report events with relative time, or never sets IIN1.4, skip the rest of this test"),
+          32 --> when(expires, expiry)(delay(options.get(TimeSyncOptions.maxTimeFromResetToIIN14Ms))),
+          33 --> when(expires, expiry)(delay(options.get(TimeSyncOptions.timeToUnsynchronizedMs).getOrElse(0))),
+          34 --> when(expires, expiry)(generateEvents),
+          35 --> when(expires, expiry)(send(Requests.readAllObjects(Sequence(6), relativeTimeVariation))),
+          (36 to 38) --> when(expires, expiry)(expectSingleResponse(
+            Sequence(6),
+            AutoConfirm.Yes,
+            events(verifyLatestEvents, relativeTimeVariation, options, Clock.Unsynchronized)))
+        )
+      }
+    }
+  }
+
+  // the input's events with relative time can be read: not a device that answers such a read with IIN2.1
+  private def relativeReadable(input: InputType): List[OptionCondition] = !input.withRelativeTimeRejected :: Nil
+
+  /** With relative time, qualifier 0x07 (8.14.2-14), or 0x08 with twoByteCount (8.14.2-15) */
+  final class CountQualifierWithRelativeTime(input: InputType, twoByteCount: Boolean) extends EventTest(input) {
+    import input._
+    override protected def requiredOptions: List[OptionCondition] = super.requiredOptions ++ relativeReadable(input)
+    override protected def steps(options: OptionSource): Iterable[LabeledStep] = {
+      val count = options.get(numEventsGenerated)
+      empty(Sequence.one) ++ List(
+        4 --> generateExactEvents(count),
+        5 --> send(Requests.readCount(Sequence.two, relativeTimeVariation, 1, twoByteCount)),
+        (6 to 12) -->
+          expectSingleResponse(Sequence.two, AutoConfirm.Yes, events(verifyFirstEvent, relativeTimeVariation, options)),
+        13 --> send(Requests.readCount(Sequence.three, relativeTimeVariation, count - 1, twoByteCount)),
+        (14 to 16) -->
+          expectSingleResponse(
+            Sequence.three,
+            AutoConfirm.Yes,
+            events(verifyRestEvents, relativeTimeVariation, options)),
+        17 --> send(Requests.readAllObjects(Sequence.four, anyVariation)),
+        18 --> expectNullResponse(Sequence.four)
+      )
+    }
+  }
+
+  /**
+   * With relative time, a long interval (8.14.2-16): events more than 0xFFFF ms apart need a CTO each. Only for a device
+   * that reports events with relative time.
+   */
+  final class RelativeTimeLongInterval(input: InputType) extends EventTest(input) {
+    import input._
+    override protected def requiredOptions: List[OptionCondition] =
+      super.requiredOptions ++ relativeReadable(input) :+ OptionCondition(withRelativeTime)
+    override protected def steps(options: OptionSource): Iterable[LabeledStep] = {
+      val ctos: Set[Variation] =
+        Set(io.stepfunc.dnp3c.dnp3.app.objects.Group51Var1, io.stepfunc.dnp3c.dnp3.app.objects.Group51Var2)
+      val twoCtos = MessageValidation.check(
+        "Verify that a CTO (g51v1 or g51v2) precedes each group of events more than 0xFFFF ms apart: at least two") {
+        m =>
+          if (m.headers.count(h => ctos.contains(h.variation)) < 2)
+            throw new Exception("Expected at least two CTOs, for the events generated more than 0xFFFF ms apart")
+      }
+      List(
+        1 --> describe("For a DUT that reports events with relative time"),
+        2 --> send(Requests.readAllObjects(Sequence.one, anyVariation)),
+        (3 to 4) --> expectEventsEmptied(Sequence.one),
+        5 --> generateEvents,
+        // "longer than 0xFFFF ms", with a margin for when the DUT detects and timestamps each batch
+        6 --> delay(0xFFFF + 5000),
+        7 --> generateEvents,
+        8 --> send(Requests.readAllObjects(Sequence.two, relativeTimeVariation)),
+        (9 to 16) --> expectSingleResponse(
+          Sequence.two,
+          AutoConfirm.Yes,
+          Validations.eventResponse(
+            verifyOldAndNewEvents,
+            Validations.eventsWithCtos(List(relativeTimeVariation)) && twoCtos)),
+        17 --> send(Requests.readAllObjects(Sequence.three, relativeTimeVariation)),
+        18 --> expectNullResponse(Sequence.three)
+      )
+    }
+  }
+
   /**
    * A device without the input's events (8.14.2-2): as 2.7's, but only for a device whose events can be read, since a
    * subset level 1 device that can't read them answers with an error, which 8.14.2-1 tests
@@ -225,6 +396,10 @@ object InputEvents {
   val binaryCount08WithoutTime = new CountQualifierWithoutTime(BinaryInput, twoByteCount = true)
   val binaryNoConfirm = new NoConfirm(BinaryInput)
   val binaryAllWithTime = new AllQualifierWithTime(BinaryInput)
+  val binaryAllWithRelativeTime = new AllQualifierWithRelativeTime(BinaryInput)
+  val binaryCount07WithRelativeTime = new CountQualifierWithRelativeTime(BinaryInput, twoByteCount = false)
+  val binaryCount08WithRelativeTime = new CountQualifierWithRelativeTime(BinaryInput, twoByteCount = true)
+  val binaryLongInterval = new RelativeTimeLongInterval(BinaryInput)
   val binaryCount07WithTime = new CountQualifierWithTime(BinaryInput, twoByteCount = false)
   val binaryCount08WithTime = new CountQualifierWithTime(BinaryInput, twoByteCount = true)
 
@@ -237,6 +412,10 @@ object InputEvents {
   val doubleBitCount08WithoutTime = new CountQualifierWithoutTime(DoubleBitBinaryInput, twoByteCount = true)
   val doubleBitNoConfirm = new NoConfirm(DoubleBitBinaryInput)
   val doubleBitAllWithTime = new AllQualifierWithTime(DoubleBitBinaryInput)
+  val doubleBitAllWithRelativeTime = new AllQualifierWithRelativeTime(DoubleBitBinaryInput)
+  val doubleBitCount07WithRelativeTime = new CountQualifierWithRelativeTime(DoubleBitBinaryInput, twoByteCount = false)
+  val doubleBitCount08WithRelativeTime = new CountQualifierWithRelativeTime(DoubleBitBinaryInput, twoByteCount = true)
+  val doubleBitLongInterval = new RelativeTimeLongInterval(DoubleBitBinaryInput)
   val doubleBitCount07WithTime = new CountQualifierWithTime(DoubleBitBinaryInput, twoByteCount = false)
   val doubleBitCount08WithTime = new CountQualifierWithTime(DoubleBitBinaryInput, twoByteCount = true)
 }

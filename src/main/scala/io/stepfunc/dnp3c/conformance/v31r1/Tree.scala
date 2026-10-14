@@ -323,10 +323,19 @@ object Tree {
           test("8.14.2-10", "Binary Input Change with Time, Qualifier 0x06", InputEvents.binaryAllWithTime),
           test("8.14.2-11", "Binary Input Change with Time, Qualifier 0x07", InputEvents.binaryCount07WithTime),
           test("8.14.2-12", "Binary Input Change with Time, Qualifier 0x08", InputEvents.binaryCount08WithTime),
-          notYet("8.14.2-13", "Binary Input Change with Relative Time, Qualifier 0x06"),
-          notYet("8.14.2-14", "Binary Input Change with Relative Time, Qualifier 0x07"),
-          notYet("8.14.2-15", "Binary Input Change with Relative Time, Qualifier 0x08"),
-          notYet("8.14.2-16", "Binary Input Change with Relative Time, Long Interval")
+          test(
+            "8.14.2-13",
+            "Binary Input Change with Relative Time, Qualifier 0x06",
+            InputEvents.binaryAllWithRelativeTime),
+          test(
+            "8.14.2-14",
+            "Binary Input Change with Relative Time, Qualifier 0x07",
+            InputEvents.binaryCount07WithRelativeTime),
+          test(
+            "8.14.2-15",
+            "Binary Input Change with Relative Time, Qualifier 0x08",
+            InputEvents.binaryCount08WithRelativeTime),
+          test("8.14.2-16", "Binary Input Change with Relative Time, Long Interval", InputEvents.binaryLongInterval)
         )
       ),
       section("8.15", "Common Time of Occurrence")(
@@ -419,10 +428,10 @@ object Tree {
         test("8.22-8.14.2-10", "None, with double-bit inputs", InputEvents.doubleBitAllWithTime),
         test("8.22-8.14.2-11", "None, with double-bit inputs", InputEvents.doubleBitCount07WithTime),
         test("8.22-8.14.2-12", "None, with double-bit inputs", InputEvents.doubleBitCount08WithTime),
-        notYet("8.22-8.14.2-13", "None, with double-bit inputs"),
-        notYet("8.22-8.14.2-14", "None, with double-bit inputs"),
-        notYet("8.22-8.14.2-15", "None, with double-bit inputs"),
-        notYet("8.22-8.14.2-16", "None, with double-bit inputs")
+        test("8.22-8.14.2-13", "None, with double-bit inputs", InputEvents.doubleBitAllWithRelativeTime),
+        test("8.22-8.14.2-14", "None, with double-bit inputs", InputEvents.doubleBitCount07WithRelativeTime),
+        test("8.22-8.14.2-15", "None, with double-bit inputs", InputEvents.doubleBitCount08WithRelativeTime),
+        test("8.22-8.14.2-16", "None, with double-bit inputs", InputEvents.doubleBitLongInterval)
       ),
       section("8.23", "Specific Point Ranges")(
         section("8.23.2", "Test Procedure")(

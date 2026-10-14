@@ -3,7 +3,9 @@
 
 package io.stepfunc.dnp3c.conformance.api.options
 
-import io.stepfunc.dnp3c.conformance.api.{ BooleanOption, IntegerOption, OptionGroup, OptionTypes, TestOption }
+import io.stepfunc.dnp3c.conformance.api.{
+  BooleanOption, IntegerOption, OptionGroup, OptionTypes, TestOption, RequiredIntegerOption
+}
 
 object TimeSyncOptions extends OptionGroup {
 
@@ -49,6 +51,31 @@ object TimeSyncOptions extends OptionGroup {
       "1815-2012 allows? 3.1r1 then notes it as compliant with 1815-2012 but not 1815-202x, and skips its other " +
       "with-time tests"
   )
+  // 3.1r1: a device without events with relative time may answer a read for them with IIN2.1
+  val binaryInputChangeWithRelativeTimeRejected: BooleanOption = OptionTypes.boolean(
+    this,
+    "binaryInputChangeWithRelativeTimeRejected",
+    false,
+    "For a DUT without Binary Input Change with Relative Time events: does it answer a read of g2v3 with IIN2.1, as " +
+      "IEEE 1815-2012 allows? 3.1r1 then notes it as compliant with 1815-2012 but not 1815-202x, and skips the rest " +
+      "of 8.14 and 8.15"
+  )
+  val doubleBitInputChangeWithRelativeTimeRejected: BooleanOption = OptionTypes.boolean(
+    this,
+    "doubleBitInputChangeWithRelativeTimeRejected",
+    false,
+    "For a DUT without Double-bit Input Change with Relative Time events: does it answer a read of g4v3 with IIN2.1, " +
+      "as IEEE 1815-2012 allows? 3.1r1 then notes it as compliant with 1815-2012 but not 1815-202x, and skips its " +
+      "other relative-time tests"
+  )
+  val timeToUnsynchronizedMs: RequiredIntegerOption = OptionTypes.requiredIntegerAtLeast(
+    this,
+    "timeToUnsynchronizedMs",
+    "The manufacturer's time (in milliseconds) after the maximum time from reset to IIN1-4 assertion until the DUT's " +
+      "clock is unsynchronized, which 3.1r1's 8.14.2-13 waits for a DUT that reports events with relative time and " +
+      "asks for the time",
+    0
+  )
   val maxTimeFromResetToIIN14Ms: IntegerOption = OptionTypes.integer(
     this,
     "maxTimeFromResetToIIN14Ms",
@@ -77,6 +104,9 @@ object TimeSyncOptions extends OptionGroup {
     doubleBitInputChangeWithRelativeTime,
     binaryInputChangeWithTimeRejected,
     doubleBitInputChangeWithTimeRejected,
+    binaryInputChangeWithRelativeTimeRejected,
+    doubleBitInputChangeWithRelativeTimeRejected,
+    timeToUnsynchronizedMs,
     maxTimeFromResetToIIN14Ms,
     maxTimeBetweenSyncRequestsMs,
     timeWriteLatencyMs

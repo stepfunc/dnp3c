@@ -84,7 +84,9 @@ class EventRulesTest extends AnyFunSuite with Matchers {
     Revisions.v2_7.validate(Options.from(level)) should equal(2)
     val set = level ++ Map(
       BinaryInputOptions.defaultEventVariation.id -> "1",
-      io.stepfunc.dnp3c.conformance.api.options.DoubleBitInputOptions.defaultEventVariation.id -> "1")
+      io.stepfunc.dnp3c.conformance.api.options.DoubleBitInputOptions.defaultEventVariation.id -> "1",
+      TimeSyncOptions.timeToUnsynchronizedMs.id -> "0"
+    )
     Revisions.v3_1r1.validate(Options.from(set)) should equal(2)
   }
 
@@ -97,12 +99,30 @@ class EventRulesTest extends AnyFunSuite with Matchers {
     Revisions.v3_1r1.validate(level, procedures(linkLayer)) should equal(2)
   }
 
+  test("8.14.2-13 needs the manufacturer's time to an unsynchronized clock, where its third phase runs") {
+    val base = Map(
+      OutstationOptions.subsetLevel.id -> "2",
+      BinaryInputOptions.defaultEventVariation.id -> "1",
+      io.stepfunc.dnp3c.conformance.api.options.DoubleBitInputOptions.defaultEventVariation.id -> "1"
+    )
+    val test =
+      List(Revisions.v3_1r1.elements("8.14.2-13").asInstanceOf[io.stepfunc.dnp3c.conformance.api.TestProcedure])
+    an[ConfigurationException] should be thrownBy Revisions.v3_1r1.validate(Options.from(base), test)
+    Revisions.v3_1r1.validate(Options.from(base + (TimeSyncOptions.timeToUnsynchronizedMs.id -> "0")), test) should
+      equal(2)
+    // a device whose time the master can't write never asks for it, so there's no third phase
+    Revisions.v3_1r1.validate(
+      Options.from(base + (TimeSyncOptions.supportSynchronizingTimeFromMaster.id -> "false")),
+      test) should equal(2)
+  }
+
   test("only a subset level 1 device may lack reads of its events") {
     def withoutReads(level: String) = Options.from(Map(
       OutstationOptions.subsetLevel.id -> level,
       io.stepfunc.dnp3c.conformance.api.options.SupportOptions.Inputs.binary.eventReads.id -> "false",
       BinaryInputOptions.defaultEventVariation.id -> "1",
-      io.stepfunc.dnp3c.conformance.api.options.DoubleBitInputOptions.defaultEventVariation.id -> "1"
+      io.stepfunc.dnp3c.conformance.api.options.DoubleBitInputOptions.defaultEventVariation.id -> "1",
+      TimeSyncOptions.timeToUnsynchronizedMs.id -> "0"
     ))
     Revisions.v3_1r1.validate(withoutReads("1")) should equal(1)
     an[ConfigurationException] should be thrownBy Revisions.v3_1r1.validate(withoutReads("2"))
