@@ -17,21 +17,19 @@ import org.scalatest.funsuite.AnyFunSuite
 @RunWith(classOf[JUnitRunner])
 class FragmentChecksTest extends AnyFunSuite with Matchers {
 
-  private val reporter = StubDriver.reporter()
-
   // a response fragment with the control byte's FIR and FIN, and sequence 0
   private def fragment(fir: Boolean, fin: Boolean): Message =
     Message.parse(Hex.from("%02X 81 00 00".format((if (fir) 0x80 else 0) | (if (fin) 0x40 else 0))))
 
   test("the first of several fragments has FIR set and FIN clear") {
-    def passes(m: Message) = scala.util.Try(Validations.isFirstOfSeveralFragments.validate(reporter, m)).isSuccess
+    def passes(m: Message) = Validate.passes(Validations.isFirstOfSeveralFragments, m)
     passes(fragment(fir = true, fin = false)) should equal(true)
     passes(fragment(fir = true, fin = true)) should equal(false)
     passes(fragment(fir = false, fin = false)) should equal(false)
   }
 
   test("a response in several fragments has more than one") {
-    def passes(ms: Message*) = scala.util.Try(Validations.inSeveralFragments.validate(reporter, ms.toList)).isSuccess
+    def passes(ms: Message*) = Validate.passes(Validations.inSeveralFragments, ms.toList)
     passes(fragment(fir = true, fin = false), fragment(fir = false, fin = true)) should equal(true)
     passes(fragment(fir = true, fin = true)) should equal(false)
   }

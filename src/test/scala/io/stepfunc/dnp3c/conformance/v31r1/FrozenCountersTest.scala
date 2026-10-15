@@ -3,11 +3,9 @@
 
 package io.stepfunc.dnp3c.conformance.v31r1
 
-import scala.util.Try
-
 import io.stepfunc.dnp3c.conformance.api.Options
 import io.stepfunc.dnp3c.conformance.api.options.SupportOptions.Inputs
-import io.stepfunc.dnp3c.dnp3.{ ResponseValidation, StubDriver }
+import io.stepfunc.dnp3c.dnp3.{ ResponseValidation, Validate }
 import io.stepfunc.dnp3c.dnp3.app.Message
 import io.stepfunc.dnp3c.protocol.Hex
 import org.junit.runner.RunWith
@@ -25,8 +23,7 @@ class FrozenCountersTest extends AnyFunSuite with Matchers {
   private val frozenAt1 = "15 01 00 01 01 01 05 00 00 00"
 
   private def passes(v: ResponseValidation, fragments: String*): Boolean =
-    Try(v.validate(StubDriver.reporter(), fragments.map(f => Message.parse(Hex.from(s"E0 81 00 00 $f"))).toList))
-      .isSuccess
+    Validate.passes(v, fragments.map(f => Message.parse(Hex.from(s"E0 81 00 00 $f"))).toList)
 
   test("the response reports the frozen counter events first, then the frozen counters") {
     passes(FrozenCounters.eventsThenFrozenCounters, s"${event(5)} ${frozen(5)}") should equal(true)
@@ -58,9 +55,7 @@ class FrozenCountersTest extends AnyFunSuite with Matchers {
 
   test("after the second freeze and clear, frozen values are zero, but for counters that can't be kept from counting") {
     def zero(counting: Int*)(hex: String): Boolean =
-      Try(FrozenCounters.zeroExcept(counting.toSet).validate(
-        StubDriver.reporter(),
-        Message.parse(Hex.from(s"C0 81 00 00 $hex")))).isSuccess
+      Validate.passes(FrozenCounters.zeroExcept(counting.toSet), hex)
     zero()(frozen(0)) should equal(true)
     zero()(frozen(5)) should equal(false)
     zero(0)(frozen(5)) should equal(true)

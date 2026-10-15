@@ -4,7 +4,7 @@
 package io.stepfunc.dnp3c.conformance.common
 
 import io.stepfunc.dnp3c.conformance.common.SupervisoryControl._
-import io.stepfunc.dnp3c.dnp3.{ ResponseValidation, StubDriver }
+import io.stepfunc.dnp3c.dnp3.{ ResponseValidation, StubDriver, Validate }
 import io.stepfunc.dnp3c.dnp3.app.Message
 import io.stepfunc.dnp3c.protocol.Hex
 import org.junit.runner.RunWith
@@ -20,7 +20,7 @@ class SupervisoryControlTest extends AnyFunSuite with Matchers {
     Message.parse(Hex.from(s"C0 81 00 00 0A 02 00 00 ${"%02X".format(flags.size - 1)} " + flags.mkString(" ")))
 
   private def passes(validation: ResponseValidation, message: Message): Boolean =
-    scala.util.Try(validation.validate(StubDriver.reporter(), List(message))).isSuccess
+    Validate.passes(validation, List(message))
 
   // a snapshot of the first read: outputs 0 and 1 online, 0 with its state set
   private def first: Snapshot = {

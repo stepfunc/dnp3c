@@ -3,14 +3,12 @@
 
 package io.stepfunc.dnp3c.conformance.v31r1
 
-import scala.util.Try
-
 import io.stepfunc.dnp3c.conformance.Revisions
 import io.stepfunc.dnp3c.conformance.api.{ ConfigurationException, Options }
 import io.stepfunc.dnp3c.conformance.api.options.{ BinaryInputOptions, OutstationOptions, TimeSyncOptions }
 import io.stepfunc.dnp3c.conformance.common.InputType.BinaryInput
 import io.stepfunc.dnp3c.conformance.v31r1.EventRules.Clock
-import io.stepfunc.dnp3c.dnp3.StubDriver
+import io.stepfunc.dnp3c.dnp3.Validate
 import io.stepfunc.dnp3c.dnp3.app.Message
 import io.stepfunc.dnp3c.dnp3.app.objects.{ Group2Var0, Group2Var1, Group2Var2, Group2Var3 }
 import io.stepfunc.dnp3c.protocol.Hex
@@ -39,7 +37,7 @@ class EventRulesTest extends AnyFunSuite with Matchers {
     ))
 
   private def passes(message: Message, read: io.stepfunc.dnp3c.dnp3.app.Variation, o: Options, clock: Clock): Boolean =
-    Try(EventRules.consistent(BinaryInput, read, o, clock).validate(StubDriver.reporter(), message)).isSuccess
+    Validate.passes(EventRules.consistent(BinaryInput, read, o, clock), message)
 
   test("without time preferred: only g2v1") {
     passes(response(withoutTime), Group2Var1, options(2), Clock.Unknown) should equal(true)

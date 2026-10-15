@@ -3,8 +3,7 @@
 
 package io.stepfunc.dnp3c.conformance.common
 
-import java.io.StringReader
-
+import io.stepfunc.dnp3c.conformance.Run
 import io.stepfunc.dnp3c.conformance.api.{ LabeledStep, Options }
 import io.stepfunc.dnp3c.conformance.api.options.BinaryOutputOptions
 import io.stepfunc.dnp3c.dnp3._
@@ -70,8 +69,6 @@ class SelectExpiryTest extends AnyFunSuite with Matchers {
     checks.foreach((c: DeferredCheck) => c.check())
   }
 
-  private def answering(input: String)(f: => Unit): Unit = Console.withIn(new StringReader(input))(f)
-
   // the manual plugin, recording on the DUT's timeline when its notice and questions are actually asked
   private class Manual(dut: => Dut) extends DefaultIntegrationPlugin {
     override def prepare(reporter: PluginReporter, notice: String): Unit = {
@@ -93,14 +90,14 @@ class SelectExpiryTest extends AnyFunSuite with Matchers {
     var dut: Dut = null
     dut = new Dut(new Manual(dut), keepsSelectAfterMismatch = false)
     // ENTER for the notice, then pass for each question
-    answering("\np\np\n")(run(steps, dut))
+    Run.answering("\np\np\n")(run(steps, dut))
     dut.events.toList should equal(List("notice", "Select 0", "Operate 2", "Operate 1", "question", "question"))
   }
 
   test("with the question deferred, a DUT that keeps its select after a mismatched OPERATE is caught") {
     var dut: Dut = null
     dut = new Dut(new Manual(dut), keepsSelectAfterMismatch = true)
-    answering("\np\np\n")(an[Exception] should be thrownBy run(steps, dut))
+    Run.answering("\np\np\n")(an[Exception] should be thrownBy run(steps, dut))
     // the OPERATE in step 7 came within the select timeout, and the faulty DUT acted on it; no question was asked
     dut.operations should have size 1
     dut.events.toList should equal(List("notice", "Select 0", "Operate 2", "Operate 1"))

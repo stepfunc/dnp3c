@@ -23,8 +23,6 @@ import org.scalatestplus.junit.JUnitRunner
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.funsuite.AnyFunSuite
 
-import java.io.StringReader
-
 import scala.collection.mutable
 
 // how long the steps that expect silence wait for it
@@ -59,7 +57,7 @@ class SilenceWaitsTest extends AnyFunSuite with Matchers {
       procedure: ProcedureDefinition,
       settings: Map[String, String],
       driver: Silent = new Silent): Silent = {
-    Console.withIn(new StringReader(""))(Run.everyStep(procedure, driver, settings))
+    Run.everyStep(procedure, driver, settings)
     driver
   }
 

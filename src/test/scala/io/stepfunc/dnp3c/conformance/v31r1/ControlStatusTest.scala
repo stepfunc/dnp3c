@@ -3,11 +3,9 @@
 
 package io.stepfunc.dnp3c.conformance.v31r1
 
-import scala.util.Try
-
 import io.stepfunc.dnp3c.conformance.api.{ Index, Options }
 import io.stepfunc.dnp3c.conformance.api.options.BinaryOutputOptions
-import io.stepfunc.dnp3c.dnp3.StubDriver
+import io.stepfunc.dnp3c.dnp3.Validate
 import io.stepfunc.dnp3c.dnp3.app.Message
 import io.stepfunc.dnp3c.dnp3.app.objects.CommandStatus
 import org.junit.runner.RunWith
@@ -29,8 +27,7 @@ class ControlStatusTest extends AnyFunSuite with Matchers {
 
   private def result(message: Message): (Boolean, Boolean) = {
     var zero = false
-    val passes =
-      Try(ControlStatus.echoesWithAnyStatus(select, { zero = true }).validate(StubDriver.reporter(), message)).isSuccess
+    val passes = Validate.passes(ControlStatus.echoesWithAnyStatus(select, { zero = true }), message)
     (passes, zero)
   }
 

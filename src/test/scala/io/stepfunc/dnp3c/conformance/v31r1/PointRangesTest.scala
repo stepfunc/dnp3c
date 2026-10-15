@@ -101,7 +101,7 @@ class PointRangesTest extends AnyFunSuite with Matchers {
   test("the binary inputs are reinstalled even when the first range read fails") {
     val plugin = new Plugin
     // answers the range reads without an error
-    val d = new ScriptedDut(StubDriver.reporter(plugin), _ => (IIN.empty, Nil))
+    val d = ScriptedDut.iinOnly(StubDriver.reporter(plugin), IIN.empty)
     Run.passes(PointRanges.withoutPoints(binary), d) should equal(false)
     plugin.uninstalled should equal(false)
   }

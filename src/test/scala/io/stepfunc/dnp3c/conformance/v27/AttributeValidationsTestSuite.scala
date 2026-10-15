@@ -4,9 +4,8 @@
 package io.stepfunc.dnp3c.conformance.v27
 
 import io.stepfunc.dnp3c.conformance.api.options.AttributeOptions
-import io.stepfunc.dnp3c.dnp3.{
-  DefaultIntegrationPlugin, MessageRecorder, MessageValidation, ProcedureReporter, Requests
-}
+import io.stepfunc.dnp3c.dnp3.{ DefaultIntegrationPlugin, MessageRecorder, ProcedureReporter, Requests }
+import io.stepfunc.dnp3c.dnp3.Validate.passes
 import io.stepfunc.dnp3c.dnp3.app._
 import io.stepfunc.dnp3c.dnp3.app.objects.{ Group0, ReceivedAttribute }
 import io.stepfunc.dnp3c.protocol.Hex
@@ -25,12 +24,6 @@ class AttributeValidationsTestSuite extends AnyFunSuite with Matchers {
   private val config = AttributeOptions.Config(List(240, 245), List(245))
 
   private def response(hex: String): Message = Message.parse(Hex.from("C0 81 00 00 " + hex))
-
-  // the fixture is parsed outside the Try, so only the validation can fail
-  private def passes(validation: MessageValidation, hex: String): Boolean = {
-    val message = response(hex)
-    scala.util.Try(validation.validate(reporter, message)).isSuccess
-  }
 
   // g0v255 with qualifier 0x00 or 0x17 for set 0, listing 240 (read only) and 245 (read/write)
   private val listRange = "00 FF 00 00 00 FE 04 F0 00 F5 01 "
@@ -107,8 +100,8 @@ class AttributeValidationsTestSuite extends AnyFunSuite with Matchers {
     val first = response(uint("F0"))
     val second = response(vstr("F5"))
     val v = verifyAllAttributes(config, onlyStandardSet = true)
-    scala.util.Try(v.acrossFragments.validate(reporter, List(first, second))).isSuccess should be(true)
-    scala.util.Try(v.toResponseValidation.validate(reporter, List(first, second))).isSuccess should be(false)
+    passes(v.acrossFragments, List(first, second)) should be(true)
+    passes(v.toResponseValidation, List(first, second)) should be(false)
   }
 
   test("Accepts only the response qualifiers IEEE 1815 Table 14-5 allows for attributes") {
@@ -139,6 +132,6 @@ class AttributeValidationsTestSuite extends AnyFunSuite with Matchers {
   test("Rejects an attribute repeated in a later fragment") {
     val v = verifyAllAttributes(config, onlyStandardSet = true)
     val fragments = List(response(uint("F0") + vstr("F5")), response(vstr("F5")))
-    scala.util.Try(v.acrossFragments.validate(reporter, fragments)).isSuccess should be(false)
+    passes(v.acrossFragments, fragments) should be(false)
   }
 }

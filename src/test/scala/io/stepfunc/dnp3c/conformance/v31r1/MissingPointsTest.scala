@@ -3,14 +3,12 @@
 
 package io.stepfunc.dnp3c.conformance.v31r1
 
-import java.io.StringReader
-
 import io.stepfunc.dnp3c.conformance.Run
 import io.stepfunc.dnp3c.conformance.api.{ BooleanOption, Options, ProcedureDefinition }
 import io.stepfunc.dnp3c.conformance.api.options.OutstationOptions
 import io.stepfunc.dnp3c.conformance.api.options.SupportOptions.{ Inputs, Outputs }
 import io.stepfunc.dnp3c.dnp3._
-import io.stepfunc.dnp3c.dnp3.app.{ IIN, Message, ObjectHeader }
+import io.stepfunc.dnp3c.dnp3.app.IIN
 import org.junit.runner.RunWith
 import org.scalatestplus.junit.JUnitRunner
 import org.scalatest.matchers.should.Matchers
@@ -23,10 +21,8 @@ class MissingPointsTest extends AnyFunSuite with Matchers {
 
   // answers every read with nothing but the IIN bits
   private def passes(procedure: ProcedureDefinition, options: Options, iin: IIN): Boolean = {
-    val dut = new ScriptedDut(
-      StubDriver.reporter(new DefaultIntegrationPlugin),
-      (_: Message) => (iin, List.empty[ObjectHeader]))
-    Console.withIn(new StringReader(""))(Run.passes(procedure, dut, options))
+    val dut = ScriptedDut.iinOnly(StubDriver.reporter(new DefaultIntegrationPlugin), iin)
+    Run.passes(procedure, dut, options)
   }
 
   private def without(options: BooleanOption*): Options =

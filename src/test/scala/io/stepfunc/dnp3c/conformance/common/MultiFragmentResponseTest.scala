@@ -19,8 +19,6 @@ import org.scalatestplus.junit.JUnitRunner
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.funsuite.AnyFunSuite
 
-import java.io.StringReader
-
 // responses that take more than one fragment
 @RunWith(classOf[JUnitRunner])
 class MultiFragmentResponseTest extends AnyFunSuite with Matchers {
@@ -76,7 +74,7 @@ class MultiFragmentResponseTest extends AnyFunSuite with Matchers {
   // runs every step, carrying on past failures; a manual question gets no answer (end of input), so it fails rather
   // than waits. Returns how many steps failed.
   private def failedSteps(procedure: ProcedureDefinition, dut: Dut): Int =
-    Console.withIn(new StringReader(""))(Run.everyStep(procedure, dut, Map(OutstationOptions.subsetLevel.id -> "2")))
+    Run.everyStep(procedure, dut, Map(OutstationOptions.subsetLevel.id -> "2"))
 
   test("8.5.5.2.2: the last fragment needn't ask for confirmation when it carries only static data") {
     def classes1230(fragments: Fragment*) = failedSteps(Procedure8_5_5_2_2, new Dut(1, fragments.toList)) == 0

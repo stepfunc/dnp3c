@@ -3,8 +3,6 @@
 
 package io.stepfunc.dnp3c.conformance.v27
 
-import java.io.StringReader
-
 import scala.collection.mutable
 
 import io.stepfunc.dnp3c.conformance.common.SupervisoryControl
@@ -89,8 +87,7 @@ class SupervisoryControlProceduresTest extends AnyFunSuite with Matchers {
   private def passes(procedure: ProcedureDefinition, localForced: Boolean = false): Boolean = {
     val outstation = new Outstation(localForced)
     val dut = new ScriptedDut(StubDriver.reporter(new Plugin(outstation)), outstation.answer)
-    Console.withIn(new StringReader(""))(
-      Run.passes(procedure, dut, options))
+    Run.passes(procedure, dut, options)
   }
 
   test("8.6.4.2 passes an outstation whose outputs in local mode clear ONLINE and refuse controls") {

@@ -4,7 +4,7 @@
 package io.stepfunc.dnp3c.conformance.v27
 
 import io.stepfunc.dnp3c.conformance.Run
-import io.stepfunc.dnp3c.dnp3.{ DefaultIntegrationPlugin, PluginReporter, ScriptedDut, StubDriver }
+import io.stepfunc.dnp3c.dnp3.{ DefaultIntegrationPlugin, PluginReporter, ScriptedDut, StubDriver, Validate }
 import io.stepfunc.dnp3c.dnp3.app.{ AppFunction, IIN, Message }
 import io.stepfunc.dnp3c.protocol.Hex
 import org.junit.runner.RunWith
@@ -18,9 +18,7 @@ class Procedure8_8_2Test extends AnyFunSuite with Matchers {
   // the wait step 4 asks for after the restart response, or None if the response is rejected
   private def waitFor(objects: String): Option[Long] = {
     val restart = new Procedure8_8_2.RestartDelay
-    val accepted = scala.util
-      .Try(restart.record.validate(StubDriver.reporter(), Message.parse(Hex.from("C0 81 00 00 " + objects))))
-      .isSuccess
+    val accepted = Validate.passes(restart.record, objects)
     Option.when(accepted) {
       val driver = new StubDriver(StubDriver.reporter()) {}
       restart.waitOut.run(driver)
@@ -48,7 +46,7 @@ class Procedure8_8_2Test extends AnyFunSuite with Matchers {
       override def close(): Unit = closedAfter += requests.count(_.function != AppFunction.confirm)
     }
     val dut = new Dut
-    Console.withIn(new java.io.StringReader(""))(Run.everyStep(Procedure8_8_2, dut))
+    Run.everyStep(Procedure8_8_2, dut)
     // the restart is the first request, then the READ
     dut.closedAfter.toList should equal(List(1))
     dut.requests.map(_.function).filter(_ != AppFunction.confirm).take(2).toList should equal(

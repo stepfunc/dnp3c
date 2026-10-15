@@ -16,8 +16,6 @@ import org.scalatestplus.junit.JUnitRunner
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.funsuite.AnyFunSuite
 
-import java.io.StringReader
-
 import scala.collection.mutable
 
 // requests and actions that follow the procedure document
@@ -48,7 +46,7 @@ class FollowDocumentTest extends AnyFunSuite with Matchers {
   // answer (end of input), so it fails rather than waits
   private def runEachStep(procedure: ProcedureDefinition, settings: Map[String, String] = Map()): Dut = {
     val dut = new Dut
-    Console.withIn(new StringReader(""))(Run.everyStep(procedure, dut, settings))
+    Run.everyStep(procedure, dut, settings)
     dut
   }
 
