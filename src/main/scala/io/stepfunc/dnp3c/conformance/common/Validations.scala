@@ -53,9 +53,6 @@ object Validations {
   def isNullErrorResponse(allowed: IIN): MessageValidation =
     isEmpty && containingAnyOf(allowed) && without(errorsExcept(allowed))
 
-  // a Null Response, or 3.1r1's Null Error Response: no objects, and no error bit but those allowed
-  def isNullOrNullErrorResponse(allowed: IIN): MessageValidation = isEmpty && without(errorsExcept(allowed))
-
   // Null Response, or an Error Response whose error bits are all in `allowed` (an Error Response may contain data)
   def isNullOrErrorResponse(allowed: IIN): MessageValidation = new MessageValidation {
     override def description: List[Comment] =

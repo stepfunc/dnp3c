@@ -19,7 +19,10 @@ import io.stepfunc.dnp3c.dnp3.app.{ IIN, Sequence }
  */
 private[v31r1] object MissingPoints {
 
-  /** a Null Error Response: no objects, IIN2.1 or IIN2.2 set, and IIN2.0 clear */
+  /**
+   * a Null Error Response: no objects, IIN2.1 or IIN2.2 set, and IIN2.0 clear; also the answer with which 8.24 and 8.25
+   * let a level 1 or 2 device decline their first read
+   */
   val answer: MessageValidation = Validations.isNullErrorResponse(IIN.objectErrors)
 
   def expect(seq: Sequence): TestStep = expectSingleResponse(seq, answer)

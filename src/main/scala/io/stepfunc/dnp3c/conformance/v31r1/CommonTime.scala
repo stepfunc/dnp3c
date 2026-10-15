@@ -8,7 +8,7 @@ import io.stepfunc.dnp3c.conformance.common.GenericSteps._
 import io.stepfunc.dnp3c.conformance.common.{ InputType, Validations }
 import io.stepfunc.dnp3c.conformance.v27.RelativeTimeSupported
 import io.stepfunc.dnp3c.dnp3.{ AutoConfirm, Requests }
-import io.stepfunc.dnp3c.dnp3.app.{ IIN, Sequence }
+import io.stepfunc.dnp3c.dnp3.app.Sequence
 import io.stepfunc.dnp3c.dnp3.app.objects.Group2Var3
 
 /**
@@ -32,8 +32,7 @@ object CommonTime {
       2 --> send(Requests.readAllObjects(Sequence.one, Group2Var3)),
       3 -->
         (if (options.get(input.withRelativeTimeRejected))
-           expectSingleResponse(Sequence.one, Validations.isEmpty && Validations.containing(IIN.OBJECT_UNKNOWN)) +
-             noting(InputEvents.relativeCompliantWith2012Only)
+           InputEvents.rejectedWithIIN21(Sequence.one, "relative time")
          else
            // confirmed, though the step doesn't say to, so the event isn't left for the tests that follow
            expectSingleResponse(

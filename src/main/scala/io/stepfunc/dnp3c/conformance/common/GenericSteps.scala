@@ -135,15 +135,15 @@ object GenericSteps {
       override def description: List[Comment] =
         s"Read a single fragment response w/ $seq" :: validation.description ::: autoConfirm.description
 
-      override def run(driver: TestDriver): List[DeferredCheck] = {
-        driver.readAllResponses(seq, autoConfirm) match {
-          case message :: Nil =>
-            validation.validate(driver.reporter, message)
-          case x =>
-            throw new Exception(s"Expected a single message response, but received: ${x.size}")
-        }
-      }
+      override def run(driver: TestDriver): List[DeferredCheck] =
+        validation.validate(driver.reporter, singleResponse(driver.readAllResponses(seq, autoConfirm)))
     }
+
+  // the response's one fragment, failing where it has several
+  def singleResponse(responses: List[Message]): Message = responses match {
+    case message :: Nil => message
+    case x => throw new Exception(s"Expected a single message response, but received: ${x.size}")
+  }
 
   def expectAtLeastOneResponse(seq: Sequence): TestStep = {
     expectAtLeastOneResponse(seq, FrameValidator.none, ResponseValidation.none)

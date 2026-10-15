@@ -72,8 +72,6 @@ object StaticVariations {
       lenientWide: Option[Set[Variation]] = None)
 
   private val ONLINE = 0x01
-  private val nullError = isEmpty && containingAnyOf(IIN.objectErrors) &&
-    without(IIN.FUNC_NOT_SUPPORTED)
 
   def test(t: StaticType): ProcedureDefinition = new ProcedureDefinition {
     override protected def requirement: Requirement =
@@ -221,7 +219,7 @@ object StaticVariations {
                 def run(driver: TestDriver): List[DeferredCheck] = {
                   val responses = driver.readAllResponses(seq, AutoConfirm.Yes)
                   if (responses.size == 1 &&
-                    scala.util.Try(nullError.validate(driver.reporter, responses.head)).isSuccess) {
+                    scala.util.Try(MissingPoints.answer.validate(driver.reporter, responses.head)).isSuccess) {
                     driver.reporter.note(s"the DUT answers a read of ${read.variation} with IIN2.1 or IIN2.2, as a " +
                       "subset level 1 or 2 device may")
                     throw new EndProcedure("the DUT answered the first read as a level 1 or 2 device may")

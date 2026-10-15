@@ -27,9 +27,13 @@ class AssignClassTest extends AnyFunSuite with Matchers {
   /**
    * Keeps each binary input's class, which Assign Class changes unless the DUT ignores it, doesn't implement it, or
    * rejects it, as it does each one after the first `accepts`, and its events, which a read of their class reports and a
-   * confirmation clears
+   * confirmation clears; if split, it answers the first Assign Class request in two fragments
    */
-  private class Dut(ignoresAssign: Boolean = false, notImplemented: Boolean = false, accepts: Int = Int.MaxValue)
+  private class Dut(
+      ignoresAssign: Boolean = false,
+      notImplemented: Boolean = false,
+      accepts: Int = Int.MaxValue,
+      split: Boolean = false)
       extends RespondingDriver {
     val classes: mutable.Map[Int, Int] = mutable.Map.from(startup)
     private var events = List.empty[(Int, Int)] // point, class
@@ -84,7 +88,10 @@ class AssignClassTest extends AnyFunSuite with Matchers {
                 }
               }
             }
-            enqueue("%02X 81 %02X 00".format(0xC0 | seq, classBits(events)))
+            if (split && assigned == 1) {
+              enqueue("%02X 81 %02X 00".format(0x80 | seq, classBits(events)))
+              enqueue("%02X 81 %02X 00".format(0x40 | (seq + 1), classBits(events)))
+            } else enqueue("%02X 81 %02X 00".format(0xC0 | seq, classBits(events)))
           }
         case _ =>
           val requested = message.headers.map(_.variation).collect {
@@ -138,6 +145,11 @@ class AssignClassTest extends AnyFunSuite with Matchers {
     passed should equal(true)
     notes.exists(_.contains("IIN2.0")) should equal(true)
     run(new Dut(notImplemented = true), level = 3)._1 should equal(false)
+  }
+
+  test("an answer to Assign Class in two fragments fails, at level 2 as at level 3") {
+    run(new Dut(split = true), level = 3)._1 should equal(false)
+    run(new Dut(split = true), level = 2)._1 should equal(false)
   }
 
   test("8.26.2 needs a class 1 binary input and two class 2 ones, and 8.26.3 two in each class") {
