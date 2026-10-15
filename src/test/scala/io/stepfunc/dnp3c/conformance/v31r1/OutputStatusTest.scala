@@ -48,8 +48,8 @@ class OutputStatusTest extends AnyFunSuite with Matchers {
     passes(v27.Procedure8_1_2, noBinaryOutputs, IIN.empty) should equal(true)
   }
 
-  test("8.3.2: without analog outputs, 3.1r1 takes a Null Response or a Null Error Response, but no objects") {
-    passes(Definitions.analogOutputStatus, noAnalogOutputs, IIN.empty) should equal(true)
+  test("8.3.2: without analog outputs, 3.1r1 needs a Null Error Response, with no objects") {
+    passes(Definitions.analogOutputStatus, noAnalogOutputs, IIN.empty) should equal(false)
     passes(Definitions.analogOutputStatus, noAnalogOutputs, IIN.OBJECT_UNKNOWN) should equal(true)
     // an error response with objects: 2.7 took it, 3.1r1 doesn't
     val objects = "28 02 00 00 00 01 0A 00" // g40v2, index 0

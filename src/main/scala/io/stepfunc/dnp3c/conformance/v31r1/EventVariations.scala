@@ -18,13 +18,15 @@ import io.stepfunc.dnp3c.dnp3.app.objects._
  * and which a second read gets again. Each event comes back in the variation requested, or in the other width for a
  * point the DUT keeps only in that one (counter.only16Bit and the like), with its value and its flags normal.
  *
- * A device without the type (the points; for frozen counters, their events), or a level 1 or 2 device, may answer the
- * first read with a Null Error Response with IIN2.1 or IIN2.2 (steps 3 and 4); and a device without the events with a
- * Null Response or IIN2.1, as 8.25.1 allows. The rest of the test is then skipped.
+ * A device without the points answers the first read with a Null Error Response with IIN2.1 or IIN2.2 (steps 3 and 4;
+ * see MissingPoints). A device without the type's events (for frozen counters, the type is their events), or a level 1
+ * or 2 device, may answer it with the same; and a device with the points but not the events with a Null Response or
+ * IIN2.1, as 8.25.1 allows. The rest of the test is then skipped.
  */
 object EventVariations {
 
   /**
+   * @param points whether the DUT has the points, without which it must answer the first read with an error
    * @param supported whether the DUT supports the type, as step 3 asks: the points, or for frozen counters, their
    *   events
    * @param has whether the DUT has the events
@@ -33,6 +35,7 @@ object EventVariations {
   final case class EventType(
       name: String,
       kind: PointKind,
+      points: BooleanOption,
       supported: List[OptionCondition],
       has: List[OptionCondition],
       wide: Variation,
@@ -47,6 +50,7 @@ object EventVariations {
 
   def test(t: EventType): ProcedureDefinition = new ProcedureDefinition {
     override protected def steps(options: OptionSource): Iterable[LabeledStep] = {
+      val present = options.get(t.points)
       val has = Requirement.all(t.has*).unmet(options).isEmpty
       val supported = Requirement.all(t.supported*).unmet(options).isEmpty
       val levelThree = options.get(OutstationOptions.subsetLevel).contains(3)
@@ -96,9 +100,10 @@ object EventVariations {
       val firstResponse = new TestStep {
         private val full = expectSingleResponse(Sequence.one, AutoConfirm.Yes, check(t.wide) && response)
         def description: List[Comment] =
-          "If the DUT doesn't support the type, or isn't tested at subset level 3, and answers with a Null Error Response " +
-            "with IIN2.1 or IIN2.2, it passes and the rest of the test is skipped; without the events, a Null " +
-            "Response or IIN2.1 passes too" :: full.description
+          "If the DUT has no points of the type, it must answer with a Null Error Response with IIN2.1 or IIN2.2, and " +
+            "the rest of the test is skipped. If it doesn't support the type, or isn't tested at subset level 3, the " +
+            "same answer passes too, and with the points but not the events, a Null Response or IIN2.1" ::
+            full.description
         def run(driver: TestDriver): List[DeferredCheck] =
           if (has && supported && levelThree) full.run(driver)
           else {
@@ -106,15 +111,24 @@ object EventVariations {
             val answer = responses.headOption.filter(_ => responses.size == 1)
             def answers(v: MessageValidation): Boolean =
               answer.exists(m => scala.util.Try(v.validate(driver.reporter, m)).isSuccess)
-            val nullError = ((!supported || !levelThree) && answers(isNullErrorResponse(IIN.objectErrors))) ||
-              (!has && answers(isNullErrorResponse(IIN.OBJECT_UNKNOWN)))
-            val plainNull = !has && answers(isNull)
+            val nullError =
+              if (!present) answers(MissingPoints.answer)
+              else
+                ((!supported || !levelThree) && answers(isNullErrorResponse(IIN.objectErrors))) ||
+                (!has && answers(isNullErrorResponse(IIN.OBJECT_UNKNOWN)))
+            val plainNull = present && !has && answers(isNull)
             if (nullError || plainNull) {
+              val why =
+                if (!present) ", having no such points"
+                else if (has && supported) ", as a subset level 1 or 2 device may"
+                else ", having no such events"
               driver.reporter.note(
-                s"the DUT answers a read of ${t.wide} with ${if (nullError) "IIN2.1 or IIN2.2" else "a Null Response"}" +
-                  (if (has && supported) ", as a subset level 1 or 2 device may" else ", having no such events"))
+                s"the DUT answers a read of ${t.wide} with ${
+                    if (nullError) "IIN2.1 or IIN2.2" else "a Null Response"
+                  }$why")
               throw new EndProcedure("the DUT answered the first read as the test allows, without events")
-            } else (check(t.wide) && response).toResponseValidation.validate(driver.reporter, responses)
+            } else if (!present) MissingPoints.answer.toResponseValidation.validate(driver.reporter, responses)
+            else (check(t.wide) && response).toResponseValidation.validate(driver.reporter, responses)
           }
       }
 
@@ -150,6 +164,7 @@ object EventVariations {
   val counters: EventType = EventType(
     "counter events",
     PointKind.Counter,
+    Inputs.counter.points,
     List(OptionCondition(Inputs.counter.points)),
     List(OptionCondition(Inputs.counter.points), OptionCondition(Inputs.counter.events)),
     Group22Var1,
@@ -164,6 +179,7 @@ object EventVariations {
   val frozenCounters: EventType = EventType(
     "frozen counter events",
     PointKind.FrozenCounter,
+    Inputs.frozenCounter.points,
     List(OptionCondition(Inputs.frozenCounter.events)),
     List(OptionCondition(Inputs.frozenCounter.points), OptionCondition(Inputs.frozenCounter.events)),
     Group23Var1,
@@ -178,6 +194,7 @@ object EventVariations {
   val analogInputs: EventType = EventType(
     "analog input events",
     PointKind.AnalogInput,
+    Inputs.analog.points,
     List(OptionCondition(Inputs.analog.points)),
     List(OptionCondition(Inputs.analog.points), OptionCondition(Inputs.analog.events)),
     Group32Var1,

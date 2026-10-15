@@ -84,7 +84,10 @@ object PointRanges {
       }
     }
 
-  /** x.1: a device without the points, or with them disabled, answers range reads with an error */
+  /**
+   * x.1: a device without the points, or with them disabled, answers range reads with a Null Error Response with IIN2.1 or
+   * IIN2.2 (3.1r1's steps accept any error response; see MissingPoints)
+   */
   def withoutPoints(t: RangedPoints): ProcedureDefinition = new ProcedureDefinition {
     override protected def requirement: Requirement =
       Requirement.anyOf(!t.points, Requirement.all(OptionCondition(t.points), OptionCondition(t.disabling)))
@@ -95,10 +98,7 @@ object PointRanges {
       // type's tests at step 3
       val leaves = t.escapeStep && !options.get(SupportOptions.rangeReads)
       val e = if (t.escapeStep) 1 else 0
-      val error = MessageValidation.check(s"Verify that the response is an error response, with an error IIN bit set") {
-        message =>
-          if (message.iin.forall(i => (i & IIN.errors) == IIN.empty)) throw new Exception("Expected an error IIN bit")
-      }
+      val error = MissingPoints.answer
       // step 1 uninstalls the points, which come back after the last check, or in the cleanup if a step fails
       val removal = Undoable(t.uninstall, PluginSteps.reinstallPoints)
       def read(seq: Sequence, twoByte: Boolean): TestStep =

@@ -8,7 +8,10 @@ import io.stepfunc.dnp3c.conformance.api.options.{ CounterOptions, OutstationOpt
 import io.stepfunc.dnp3c.conformance.api.options.SupportOptions.Inputs
 import io.stepfunc.dnp3c.conformance.v27
 import io.stepfunc.dnp3c.conformance.common.CounterEventSteps
+import io.stepfunc.dnp3c.conformance.common.GenericSteps.{ expectNullResponse, reportByExceptionNotVerified, send }
 import io.stepfunc.dnp3c.conformance.v27.AnalogInputChange
+import io.stepfunc.dnp3c.dnp3.Requests
+import io.stepfunc.dnp3c.dnp3.app.Sequence
 import io.stepfunc.dnp3c.dnp3.app.objects.{ Group22Var0, Group32Var0 }
 
 /**
@@ -31,7 +34,21 @@ object CounterAnalogEvents {
   }
 
   val counterLevelOne = new StaticInputs.LevelOneWithoutReads(Inputs.counter, List(Group22Var0), events = true)
-  val counterWithout = v27.Procedure8_17_2_1.requiring(counterEventReads)
+
+  /**
+   * 8.17.2b: 2.7's 8.17.2.1 for a DUT with counters, and a Null Error Response with IIN2.1 or IIN2.2 for one without them,
+   * which 3.1r1's step doesn't print (see MissingPoints)
+   */
+  val counterWithout: ProcedureDefinition = new ProcedureDefinition {
+    override protected def requirement: Requirement = MissingPoints.withoutEvents(Inputs.counter)
+    override protected def steps(options: OptionSource): Iterable[LabeledStep] = List(
+      1 --> send(Requests.readAllObjects(Sequence.one, Group22Var0)),
+      2 --> reportByExceptionNotVerified(Some("binary counters")),
+      3 -->
+        (if (options.get(Inputs.counter.points)) expectNullResponse(Sequence.one)
+         else MissingPoints.expect(Sequence.one))
+    )
+  }
   val counterAll: ProcedureDefinition = counterTest(_ => CounterEventSteps.AllQualifierSteps(unconfirmed = true))
   val counterOneByteCount: ProcedureDefinition = counterTest(options =>
     CounterEventSteps.CountQualifierSteps(
@@ -46,6 +63,10 @@ object CounterAnalogEvents {
   val counterWithoutConfirm = v27.Procedure8_17_2_5.requiring(counterEventReads)
 
   val analogLevelOne = new StaticInputs.LevelOneWithoutReads(Inputs.analog, List(Group32Var0), events = true)
-  val analogChange = new AnalogInputChange(confirmStep = true).requiring(analogEventReads)
+  // 8.19.2b: for a DUT without analog inputs, a Null Error Response with IIN2.1 or IIN2.2 (see MissingPoints)
+  val analogChange: ProcedureDefinition = new AnalogInputChange(confirmStep = true, MissingPoints.answer) {
+    override protected def requirement: Requirement =
+      Requirement.anyOf(!Inputs.analog.points, OptionCondition(Inputs.analog.eventReads))
+  }
   val analogWithoutConfirm = v27.Procedure8_19_2_2.requiring(analogEventReads)
 }

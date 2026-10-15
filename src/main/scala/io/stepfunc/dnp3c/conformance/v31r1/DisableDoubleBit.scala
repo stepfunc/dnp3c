@@ -13,8 +13,8 @@ import io.stepfunc.dnp3c.dnp3.{ Comment, DeferredCheck, MessageValidation, Reque
 
 /**
  * 3.1r1's 8.21.1 and 8.22.1: a device with double-bit inputs is configured to disable them, failing if it can't be;
- * then a read of them gets an error (8.21.1, static) or a Null Response with IIN2.1 or IIN2.2 optional (8.22.1,
- * events). Afterwards the points are restored, so the tests after this one find the device as before.
+ * then a read of them, static (8.21.1) or events (8.22.1), gets a Null Error Response with IIN2.1 or IIN2.2.
+ * Afterwards the points are restored, so the tests after this one find the device as before.
  */
 final class DisableDoubleBit(read: Variation, answer: MessageValidation) extends ProcedureDefinition {
 
@@ -45,9 +45,12 @@ final class DisableDoubleBit(read: Variation, answer: MessageValidation) extends
 
 object DisableDoubleBit {
 
-  /** 8.21.1: a read of g3 gets an error response with IIN2.1 or IIN2.2 */
-  val static = new DisableDoubleBit(Group3Var0, Validations.isNullErrorResponse(IIN.objectErrors))
+  /** 8.21.1: a read of g3 gets a Null Error Response with IIN2.1 or IIN2.2 */
+  val static = new DisableDoubleBit(Group3Var0, MissingPoints.answer)
 
-  /** 8.22.1: a read of g4 gets a Null Response, with IIN2.1 or IIN2.2 optional */
-  val events = new DisableDoubleBit(Group4Var0, Validations.isNullOrNullErrorResponse(IIN.objectErrors))
+  /**
+   * 8.22.1: a read of g4 gets a Null Error Response with IIN2.1 or IIN2.2, as 8.21.1's does; 3.1r1's step makes the error
+   * optional (see MissingPoints)
+   */
+  val events = new DisableDoubleBit(Group4Var0, MissingPoints.answer)
 }
