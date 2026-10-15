@@ -61,7 +61,7 @@ object StaticInputs {
     }
 
     private def declined(seq: Sequence, variation: Variation): TestStep = new TestStep {
-      private val check = isEmpty && containingAnyOf(IIN.errors)
+      private val check = isNullErrorResponse(IIN.errors)
       def description: List[Comment] = check.description :+
         Comment("Note the error IIN bits set (IIN2.1 is preferred)")
       def run(driver: TestDriver): List[DeferredCheck] = {

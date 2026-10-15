@@ -13,7 +13,12 @@ object ChannelOptions extends OptionGroup {
   val host: StringOption = OptionTypes.string(this, "device.address", "127.0.0.1", "IP address of the DUT")
   private val port = OptionTypes.integer(this, "device.port", 20000, "IP port of the DUT", Some(1), Some(65535))
   private val captureNIC =
-    OptionTypes.string(this, "capture.adapter", "", "IP address of the network adapter on which to capture pcaps")
+    OptionTypes.string(
+      this,
+      "capture.adapter",
+      "",
+      "Address of the network adapter on which to capture pcaps, as -adapters prints it, e.g. /192.168.1.10; empty for no capture"
+    )
 
   def prefix: String = "tcp"
   def description: String = "TCP options"

@@ -474,7 +474,9 @@ object OutputEvents {
           driver.writeMessage(Message.request(s, AppFunction.select, List(header)))
         },
         12 --> new TestStep {
-          def description: List[Comment] = expectSingleResponse(Sequence.zero, echoes(header)).description
+          // the sequence is the Select's, known only when it runs
+          def description: List[Comment] =
+            "Read a single fragment response" :: expectSingleResponse(Sequence.zero, echoes(header)).description.tail
           def run(driver: TestDriver): List[DeferredCheck] = expectSingleResponse(s, echoes(header)).run(driver)
         },
         13 --> delay(timeoutMs + 1000),
