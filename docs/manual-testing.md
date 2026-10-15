@@ -72,10 +72,11 @@ Procedures for features the DUT doesn't support are optional. If a `supports.*` 
 A procedure that applies to the DUT, but that you can't run yet, e.g. for a known gap in the DUT that's being fixed, can be left out of runs by excluding it in the configuration, with the reason:
 
 ```
-test.exclude.8.26.2 = Assign Class isn't supported yet (stepfunc/dnp3#480)
+test.exclude.3.1r1.8.26.2 = Assign Class isn't supported yet (stepfunc/dnp3#480)
 ```
 
-- **One property per procedure,** `test.exclude.<procedure id>`, and each needs a reason. Only procedures can be excluded, not sections or `all`. Every exclusion must name a procedure of the revision given with `-rev`, even one outside what you run: `-run`, `-describe` and `-disabled` check them all, and fail on any that doesn't.
+- **One property per procedure,** `test.exclude.<revision id>.<procedure id>`, and each needs a reason. Only procedures can be excluded, not sections or `all`.
+- **Each names its revision,** as given to `-rev`, since the revisions number their procedures differently: 8.23 is Device Attributes in 2.7 and Specific Point Ranges in 3.1r1. A run excludes only its own revision's procedures, so one configuration can exclude procedures of several revisions. Every exclusion must name a revision and a procedure of it, even one for another revision or outside what you run: `-run`, `-describe` and `-disabled` check them all, and fail on any that doesn't.
 - **An excluded procedure isn't run.** dnp3c doesn't connect to the DUT, capture or prompt for it, and the run carries on to the next procedure. It's recorded as excluded, with a log saying so, replacing the procedure's earlier result, log and capture.
 - **Excluded isn't skipped.** A skipped procedure doesn't apply to the DUT or its configuration, and the DUT can still be conformant. An excluded one does apply, so the DUT hasn't been shown to conform to it. The report shows it as not run, with the reason, and counts it apart from passed, failed and skipped procedures. A run that excludes procedures still succeeds, but it ends by saying how many it excluded.
 - **A procedure that's skipped stays skipped,** e.g. one that doesn't apply at the DUT's subset level, even if it's excluded too.

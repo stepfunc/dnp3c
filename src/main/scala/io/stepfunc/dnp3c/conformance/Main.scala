@@ -131,7 +131,7 @@ object Main {
     val level =
       try {
         val level = revision.subsetLevel(options)
-        // the exclusions -disabled and -describe show must name procedures of the revision
+        // the exclusions -disabled and -describe show, and every other revision's, must name procedures of them
         if (config.listDisabled || config.describe.nonEmpty) revision.checkExclusions(options)
         level
       } catch {

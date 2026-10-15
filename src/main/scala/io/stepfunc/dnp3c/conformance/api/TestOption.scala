@@ -50,15 +50,17 @@ trait IndexListOption extends TypedTestOption[List[Index]]
 trait RequiredIntegerOption extends TypedTestOption[Option[Int]] {
   final override def required: Boolean = true
 }
-// procedures to leave out of a run, by id, each with the reason: a family of properties, one per procedure, under the
-// option's id, e.g. "test.exclude.8.26.2 = <reason>"
+// procedures to leave out of a run, by revision and id, each with the reason: a family of properties, one per
+// procedure, under the option's id, e.g. "test.exclude.3.1r1.8.26.2 = <reason>". Each is keyed by the rest of its key,
+// e.g. "3.1r1.8.26.2", which the revision checks: the options don't know the revisions
 trait ExclusionsOption extends TypedTestOption[Map[String, String]] {
 
   // a property of the family, for the configurations written and listed, commented out
   def example: String
 
-  // the procedure id and reason of a property of the family, given the rest of its key after the option's id and "."
-  def entry(procedure: String, value: String): (String, String)
+  // the revision and procedure ids and reason of a property of the family, given the rest of its key after the
+  // option's id and "."
+  def entry(excluded: String, value: String): (String, String)
 }
 
 object OptionTypes {
@@ -122,13 +124,14 @@ object OptionTypes {
 
     // the family has no value of its own
     override def parse(s: String): Map[String, String] =
-      throw new Exception(s"exclude one procedure per property, with the reason: $id.<procedure id> = <reason>")
+      throw new Exception(
+        s"exclude one procedure per property, with the reason: $id.<revision id>.<procedure id> = <reason>")
 
-    override def entry(procedure: String, value: String): (String, String) = {
-      if (procedure.isEmpty) throw new Exception(s"name the procedure: $id.<procedure id> = <reason>")
+    override def entry(excluded: String, value: String): (String, String) = {
+      if (excluded.isEmpty) throw new Exception(s"name the procedure: $id.<revision id>.<procedure id> = <reason>")
       val reason = value.trim
-      if (reason.isEmpty) throw new Exception(s"give the reason $procedure is excluded")
-      procedure -> reason
+      if (reason.isEmpty) throw new Exception(s"give the reason $excluded is excluded")
+      excluded -> reason
     }
   }
 

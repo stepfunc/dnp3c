@@ -100,23 +100,37 @@ final class Revision private[conformance] (
   private[conformance] def decide(procedure: TestProcedure, options: OptionSource, level: Int): Decision =
     skip(procedure, options, level) match {
       case Some(s) => Decision.Skip(s)
-      case None => options.get(TestOptions.exclude).get(procedure.id).fold(Decision.Run)(Decision.Exclude(_))
+      case None => options.get(TestOptions.exclude).get(s"$id.${procedure.id}").fold(Decision.Run)(Decision.Exclude(_))
     }
 
-  // every exclusion must name a procedure of this revision, whatever procedures a run selects
-  private def exclusionProblems(options: OptionSource): List[ConfigProblem] =
-    options.get(TestOptions.exclude).toList.sorted.flatMap { (procedure, reason) =>
-      val key = s"${TestOptions.exclude.id}.$procedure"
-      elements.get(procedure) match {
-        case Some(_: TestProcedure) => None
-        case Some(_) =>
-          Some(ConfigProblem(key, reason, "a section: exclude its procedures, each with its own property"))
-        case None => Some(ConfigProblem(key, reason, s"revision $id has no procedure $procedure"))
+  // every exclusion must name a revision and a procedure of it, whatever revision and procedures a run selects, so one
+  // configuration serves every revision; a test's revision isn't listed, but its own exclusions name it
+  private def exclusionProblems(options: OptionSource): List[ConfigProblem] = {
+    val revisions = (Revisions.list :+ this).distinctBy(_.id)
+    options.get(TestOptions.exclude).toList.sorted.flatMap { (excluded, reason) =>
+      val key = s"${TestOptions.exclude.id}.$excluded"
+      revisions.find(r => excluded.startsWith(r.id + ".")) match {
+        case None =>
+          Some(ConfigProblem(
+            key,
+            reason,
+            s"unknown revision, or none: write it as ${TestOptions.exclude.id}.<revision id>.<procedure id> = " +
+              s"<reason>. The revisions are: ${revisions.map(_.id).mkString(", ")}"
+          ))
+        case Some(revision) =>
+          val procedure = excluded.stripPrefix(revision.id + ".")
+          revision.elements.get(procedure) match {
+            case Some(_: TestProcedure) => None
+            case Some(_) =>
+              Some(ConfigProblem(key, reason, "a section: exclude its procedures, each with its own property"))
+            case None => Some(ConfigProblem(key, reason, s"revision ${revision.id} has no procedure $procedure"))
+          }
       }
     }
+  }
 
   /**
-   * Check that every exclusion in the configuration names a procedure of this revision
+   * Check that every exclusion in the configuration names a revision and a procedure of it
    *
    * @throws ConfigurationException listing every one that doesn't
    */
@@ -127,8 +141,8 @@ final class Revision private[conformance] (
 
   /**
    * Check that the configuration is one this revision can test: it gives a subset level the revision tests, its
-   * exclusions name procedures of the revision, and it has what the revision needs configured, whatever procedures
-   * run, and what each procedure selected needs, if it will run (see [[decide]]).
+   * exclusions name revisions and procedures of them, and it has what the revision needs configured, whatever
+   * procedures run, and what each procedure selected needs, if it will run (see [[decide]]).
    *
    * @param selected the procedures a run will run; all of them unless given
    * @return the subset level
