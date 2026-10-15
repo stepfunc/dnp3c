@@ -7,9 +7,8 @@ import io.stepfunc.dnp3c.conformance.api._
 import io.stepfunc.dnp3c.conformance.common.LinkSteps._
 import io.stepfunc.dnp3c.conformance.common.GenericSteps.expectNoAnswer
 import io.stepfunc.dnp3c.dnp3.app.Sequence
-import io.stepfunc.dnp3c.dnp3.link.{ Control, LinkFrame, LinkFunction }
-import io.stepfunc.dnp3c.dnp3.transport.Transport
-import io.stepfunc.dnp3c.dnp3.{ Requests, TestDriver }
+import io.stepfunc.dnp3c.dnp3.link.{ Control, LinkFunction }
+import io.stepfunc.dnp3c.dnp3.{ LinkOverride, Requests, TestDriver }
 import io.stepfunc.dnp3c.protocol.Hex
 import io.stepfunc.dnp3c.dnp3.DeferredCheck
 
@@ -26,8 +25,8 @@ object Procedure6_6_2_2 extends ProcedureDefinition {
 
     def run(driver: TestDriver): List[DeferredCheck] = {
       // 0xD3 (DIR, PRM, FCV set; FCB clear) with only the function code changed
-      val control = Control(Control.build(master = true, pri = true, fcb = false, fcvdfc = true, func = function))
-      driver.writeFrame(PrimaryFrames.class0Frame(driver, control))
+      val control = Control.build(master = true, pri = true, fcb = false, fcvdfc = true, func = function)
+      driver.writeMessage(Requests.readClass0(Sequence.zero), LinkOverride.control(control))
       Nil
     }
   }

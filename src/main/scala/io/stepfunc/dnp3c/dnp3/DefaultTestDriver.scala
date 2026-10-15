@@ -141,8 +141,8 @@ class DefaultTestDriver(
       options: LinkOverride): Unit = {
     val channel = UdpChannel.open(remote, local)
     try {
-      reporter.transmit(message)
-      toFrames(message, options) { bytes =>
+      toFrames(message, options) { frame =>
+        val bytes = frame.toBytes
         reporter.transmit(bytes)
         channel.write(ByteBuffer.wrap(bytes.toArray))
       }
@@ -188,8 +188,7 @@ class DefaultTestDriver(
   }
 
   override def writeMessage(message: Message, options: LinkOverride): Unit = getConnection { c =>
-    reporter.transmit(message)
-    toFrames(message, options)(writeToChannel(c))
+    toFrames(message, options)(frame => writeToChannel(c)(frame.toBytes))
   }
 
   override def writeFrame(frame: LinkFrame): Unit = getConnection { c =>

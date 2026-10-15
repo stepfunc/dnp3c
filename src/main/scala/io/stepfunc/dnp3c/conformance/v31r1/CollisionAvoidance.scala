@@ -113,7 +113,7 @@ object CollisionAvoidance {
     def attempt(driver: TestDriver, blocks: List[Int], gapMs: Double = 0): Attempt = {
       quiet(driver)
       seq = seq.next
-      val request = driver.frameBytes(Requests.readClass1(seq), LinkOverride.control(0xC4.toByte))
+      val request = driver.frames(Requests.readClass1(seq), LinkOverride.control(0xC4.toByte)).flatMap(_.toBytes)
       val clock = driver.clock
       val first = request ++ noise(driver, blocks.head)
       if (carrier) driver.setRts(true)
