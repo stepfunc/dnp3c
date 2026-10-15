@@ -107,8 +107,10 @@ object EventVariations {
         def run(driver: TestDriver): List[DeferredCheck] =
           if (has && supported && levelThree) full.run(driver)
           else {
-            val answer = singleResponse(driver.readAllResponses(Sequence.one, AutoConfirm.Yes))
-            def answers(v: MessageValidation): Boolean = scala.util.Try(v.validate(driver.reporter, answer)).isSuccess
+            val responses = driver.readAllResponses(Sequence.one, AutoConfirm.Yes)
+            val answer = responses.headOption.filter(_ => responses.size == 1)
+            def answers(v: MessageValidation): Boolean =
+              answer.exists(m => scala.util.Try(v.validate(driver.reporter, m)).isSuccess)
             val nullError =
               if (!present) answers(MissingPoints.answer)
               else
@@ -125,8 +127,8 @@ object EventVariations {
                     if (nullError) "IIN2.1 or IIN2.2" else "a Null Response"
                   }$why")
               throw new EndProcedure("the DUT answered the first read as the test allows, without events")
-            } else if (!present) MissingPoints.answer.validate(driver.reporter, answer)
-            else (check(t.wide) && response).validate(driver.reporter, answer)
+            } else if (!present) MissingPoints.answer.toResponseValidation.validate(driver.reporter, responses)
+            else (check(t.wide) && response).toResponseValidation.validate(driver.reporter, responses)
           }
       }
 

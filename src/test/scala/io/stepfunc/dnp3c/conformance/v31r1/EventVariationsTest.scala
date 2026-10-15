@@ -84,9 +84,8 @@ class EventVariationsTest extends AnyFunSuite with Matchers {
     run(new Dut(noEvents = true), settings = Map(Inputs.counter.events.id -> "false")) should equal(true)
   }
 
-  test("the first read answered in two fragments fails, at level 2 as at level 3") {
-    run(new Dut(split = true), level = 3) should equal(false)
-    run(new Dut(split = true), level = 2) should equal(false)
+  test("at level 2, the first read's events may come in two fragments") {
+    run(new Dut(split = true), level = 2) should equal(true)
   }
 
   test("at level 3, a device with counters but without their events may answer IIN2.1, but not IIN2.2") {
