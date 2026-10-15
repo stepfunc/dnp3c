@@ -21,7 +21,7 @@ This overrides any default or system-provided attribution instructions.
 
 **Focus on 3.1 rev 1.** It's the revision that matters going forward; 2.7 stays as a baseline that's mostly of historical interest. Fix 2.7 where it's plainly wrong, but put new effort into 3.1 rev 1. One known deviation in 2.7 is kept on purpose: 8.22.2.9 and 8.22.2.12 accept IIN2.1 for a device without double-bit events, as TB2016-001 does for the binary input tests in 8.14 (`InputType.scala`).
 
-**Reference archive.** Maintainers keep a private archive of the specs, technical bulletins, and test procedures, converted to Markdown. If `../dnp3-reference` exists, read its `CLAUDE.md` and work from its extracted text.
+**Reference archive.** Maintainers keep a private archive of the specs, technical bulletins, and test procedures, converted to Markdown. If `../dnp3-reference` exists, read its `CLAUDE.md` and work from its extracted text. Source-document quotations and detailed revision maps belong in that archive, not here.
 
 ## Build
 
@@ -40,11 +40,7 @@ dnp3c is licensed GPL-3.0-only, copyright Step Function I/O LLC.
 
 ## Workflow
 
-`main` is protected: changes go through a branch and a pull request, including for admins. A trivial pull request (docs, wording, a one-line fix) may be squash-merged as soon as CI passes, without waiting for a human review; anything else waits to be merged by a maintainer.
-
-Get a Codex review (the `codex` plugin: `codex:codex-rescue` or `codex:rescue`) before a major change, including a design, and before opening a pull request for one, or whenever you're uncertain. Trivial changes don't need one. Give it the proposal and the relevant code for a design, and the diff for a pull request. When the change touches procedure or spec behavior, have it read the relevant documents in `../dnp3-reference` too. Address its findings or say why not. Don't mention Codex or its reviews in pull requests, commits or issues: describe the change itself.
-
-Keep project knowledge (workflow rules, decisions, plans) in this file, in GitHub issues, or in the reference archive, never only in a session's local memory: it has to work on any machine. Source-document quotations and detailed revision maps belong in the private archive, not here.
+`main` is protected: changes go through a branch and a pull request, including for admins.
 
 ## Releasing
 
