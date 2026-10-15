@@ -8,10 +8,11 @@ import io.stepfunc.dnp3c.conformance.api.options.{ LinkOptions, SupportOptions, 
 import io.stepfunc.dnp3c.dnp3.link.FrameValidator
 import io.stepfunc.dnp3c.conformance.common.GenericSteps._
 import io.stepfunc.dnp3c.conformance.common.UnconfirmedResponse
+import io.stepfunc.dnp3c.conformance.common.UnconfirmedResponse.timingToleranceMs
 import io.stepfunc.dnp3c.conformance.common.UnsolicitedResponseSteps.expectNoEventsUnsolicited
 import io.stepfunc.dnp3c.conformance.common.Validations
 import io.stepfunc.dnp3c.dnp3.app._
-import io.stepfunc.dnp3c.dnp3.{ AutoConfirm, LinkOverride, Requests }
+import io.stepfunc.dnp3c.dnp3.{ AutoConfirm, Comment, DeferredCheck, LinkOverride, Requests, TestDriver }
 import io.stepfunc.dnp3c.protocol.parsing.UInt16LE
 
 object Procedure8_11_2_1 extends ProcedureDefinition {
@@ -50,15 +51,46 @@ object Procedure8_11_2_1 extends ProcedureDefinition {
       20 --> expectSingleResponse(Sequence.zero, Validations.isNull && Validations.without(IIN.DEVICE_RESTART)),
       (21 to 22) --> restartResponse.expectRetry(Validations.isNull && Validations.without(IIN.DEVICE_RESTART)),
       23 --> send(Requests.readClass0(Sequence.one)),
-      24 -->
-        // the procedure expects this READ answered while the startup unsolicited response is still unconfirmed
-        // (8.11.1.3), where 1815-2012 4.6.6 rule 16 requires it deferred until the confirm. The procedure is followed,
-        // but a deferred answer passes if it comes within the response timeout plus 200 ms (see issue #1)
-        expectAtLeastOneResponse(Sequence.one),
+      // the procedures pull both ways here (see the README): step 24 and 8.11.1's restart behavior read as an answer
+      // within the usual response time, while 8.11.1's unsolicited and polled responses, IEEE 1815-2012 4.6.6 rule 16
+      // and TB2015-002a have the DUT defer the READ until the confirmation or its timeout. So step 24 accepts either:
+      // an answer deferred to the startup response's confirm timeout, or one well before it, with a warning
+
+      24 --> expectDeferrableAnswer(responseTimeoutMs(options), unsolConfirmTimeoutMs, restartResponse),
       (25 to 26) --> restartResponse.expectRetry(Validations.isNull, AutoConfirm.Wrong),
       (27 to 28) --> restartResponse.expectRetry(Validations.isNull, AutoConfirm.Yes),
       29 --> PluginSteps.generateUnsolicitedEvents(),
       30 --> expectNoEventsUnsolicited(holdOffMs, unsolConfirmTimeoutMs)
     )
+  }
+
+  // the answer to step 23's READ, which the DUT may defer until the unsolicited response is confirmed or its confirm
+  // timeout expires
+  private def expectDeferrableAnswer(
+      responseTimeoutMs: Int,
+      confirmTimeoutMs: Int,
+      unsolicitedResponse: UnconfirmedResponse): TestStep = new TestStep {
+    private val read = expectAtLeastOneResponse(Sequence.one)
+    private val timeoutMs = responseTimeoutMs + confirmTimeoutMs + TestDriver.readToleranceMs
+
+    override def description: List[Comment] =
+      s"The DUT may defer its response until the startup unsolicited response is confirmed or its confirm timeout " +
+        s"expires, so wait up to $timeoutMs ms for it (the response timeout, the unsolicited confirm timeout and " +
+        s"${TestDriver.readToleranceMs} ms)" :: read.description
+
+    override def run(driver: TestDriver): List[DeferredCheck] = {
+      driver.readAllResponses(Sequence.one, AutoConfirm.Yes, firstTimeoutMs = Some(timeoutMs))
+      val leftMs = unsolicitedResponse.msUntilTimeout(driver)
+      driver.reporter.info(
+        s"The answer to the READ arrived ${confirmTimeoutMs - leftMs} ms after the unconfirmed unsolicited response, " +
+          s"whose confirm timeout is $confirmTimeoutMs ms")
+      if (leftMs > timingToleranceMs) {
+        driver.reporter.warning(
+          "the DUT answered the READ while its startup unsolicited response was unconfirmed; IEEE 1815-2012 4.6.6 " +
+            "rule 16, as amended by TB2015-002a, has the answer deferred until the confirmation arrives or the " +
+            "confirm timeout expires")
+      }
+      Nil
+    }
   }
 }

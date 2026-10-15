@@ -50,6 +50,8 @@ dnp3c resolves this the same way for every point type. A device without the poin
 
 A level 1 test of a device that can't read a type (8.13.2a and the like) runs only for a device that has the type; a device without it gets the test above instead.
 
+3.1 rev 1 is also of two minds about when a device answers a READ sent while its startup unsolicited response is unconfirmed (8.11.2a step 24; 2.7's 8.11.2.1 has the same text). Step 24, and 8.11.1's restart behavior, read as an answer within the usual response time. 8.11.1's rules for unsolicited and polled responses have the device defer a READ received while any unsolicited response awaits confirmation, until the confirmation arrives or its timeout expires, and so does IEEE 1815-2012 4.6.6 rule 16. TB2015-002a makes the intent plain: it rewrites rule 16 to say the READ is deferred for the startup response too, then answered, then the startup response sent again. dnp3c reads step 24 in that light, in both revisions: step 24 waits the response timeout plus the unsolicited confirm timeout, and an answer that comes well before that timeout passes with a warning that the standard has it deferred.
+
 ## Requirements
 
 Java 17 or newer.
@@ -81,7 +83,6 @@ The library jar, `io.stepfunc:dnp3c`, is published to Maven Central. See [Automa
 - **3.1r1's 8.10.2** (multi-drop support) runs over serial, with the DUT on a drop with other devices (`serial.otherDevices`). The tool checks what the DUT sends; whether it raised carrier or asserted RTS, and when, the plugin checks on the line, e.g. by asking the tester to read an oscilloscope.
 - **Report by exception** isn't verified: where a procedure requires a device whose class 0 response spans several link frames to also report by exception, the log notes it but the tool doesn't check it.
 - **8.11.2.5.8** covers a device that holds unsolicited responses until it has a minimum number of events, not one that holds them for a time.
-- **8.11.2.1 step 24** (3.1r1's 8.11.2a): the procedure expects a READ to be answered while the device's startup unsolicited response is still unconfirmed, while IEEE 1815-2012 (4.6.6, rule 16 of the outstation's unsolicited response rules) requires the device to defer it until the confirm. The tool follows the procedure, but waits for the answer for the response timeout plus 200 ms, so a device that defers it passes only if the unsolicited response's confirm times out before then.
 - **8.6.4:** 2.7's description of the desired behavior still has a binary output in local mode set LOCAL_FORCED. TB2017-001 replaced the tests, which the tool runs, but not that description: in local mode an output clears ONLINE and keeps its other flags.
 - **Counter events in 3.1r1** may be changes of a counter's flags alone (TB2017-003a). The default plugin's prompts for 8.17 ask for counts, so a device that reports only flag changes needs a plugin that generates and checks those instead.
 - **3.1r1's 6.6.2d** (No Inter-frame Gap) is for serial and UDP, and for TCP only where the device has more than one DNP3 address. dnp3c runs it over serial (`serial.enabled`), and over TCP only for such a device (`supports.multipleAddresses`).

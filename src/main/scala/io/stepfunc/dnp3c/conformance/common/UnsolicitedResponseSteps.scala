@@ -20,7 +20,8 @@ object UnsolicitedResponseSteps {
 
   // how long the DUT can take to send an unsolicited response to new events: its hold-off time, and any wait for the
   // confirmation of an earlier response
-  private def eventsTimeoutMs(holdOffMs: Int, unsolConfirmTimeoutMs: Int): Int = holdOffMs + unsolConfirmTimeoutMs + 200
+  private def eventsTimeoutMs(holdOffMs: Int, unsolConfirmTimeoutMs: Int): Int =
+    holdOffMs + unsolConfirmTimeoutMs + TestDriver.readToleranceMs
 
   // no unsolicited response to new events: wait as long as the DUT could take to send one
   private[conformance] def expectNoEventsUnsolicited(holdOffMs: Int, unsolConfirmTimeoutMs: Int): TestStep =
