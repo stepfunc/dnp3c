@@ -15,7 +15,6 @@ import org.scalatestplus.junit.JUnitRunner
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.funsuite.AnyFunSuite
 
-import java.io.StringReader
 import scala.collection.mutable
 
 // relative-time events and the CTOs they're timed from
@@ -53,7 +52,7 @@ class CtoChecksTest extends AnyFunSuite with Matchers {
   // runs every step, carrying on past failures; a manual question gets no answer (end of input), so it fails rather
   // than waits. Returns how many steps failed.
   private def failedSteps(procedure: ProcedureDefinition, dut: Dut, settings: Map[String, String] = Map()): Int =
-    Console.withIn(new StringReader(""))(Run.everyStep(procedure, dut, settings))
+    Run.everyStep(procedure, dut, settings)
 
   private val unsynchronizedCto = "33 02 07 01 00 00 00 00 00 00" // g51v2, qualifier 0x07
   private val event = "02 03 17 01 05 81 10 00" // g2v3, qualifier 0x17, index 5

@@ -3,8 +3,6 @@
 
 package io.stepfunc.dnp3c.conformance.v31r1
 
-import java.io.StringReader
-
 import io.stepfunc.dnp3c.conformance.Run
 import io.stepfunc.dnp3c.conformance.api.ProcedureDefinition
 import io.stepfunc.dnp3c.dnp3._
@@ -54,8 +52,7 @@ class BroadcastTest extends AnyFunSuite with Matchers {
 
   // runs the steps in order, stopping at the first that fails
   private def passes(procedure: ProcedureDefinition, dut: Outstation): Boolean =
-    Console.withIn(new StringReader(""))(
-      Run.passes(procedure, dut))
+    Run.passes(procedure, dut)
 
   test("8.6.5a passes an outstation that acts on a broadcast sent as confirmed user data") {
     passes(Broadcast.allStationsIndication, new Outstation(actsOnConfirmed = true)) should equal(true)

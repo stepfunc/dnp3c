@@ -15,7 +15,6 @@ import org.scalatestplus.junit.JUnitRunner
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.funsuite.AnyFunSuite
 
-import java.io.StringReader
 import scala.collection.mutable
 
 // what each procedure expects of the events it asks the plugin to check
@@ -67,7 +66,7 @@ class EventExpectationsTest extends AnyFunSuite with Matchers {
 
   private def expectations(procedure: ProcedureDefinition): List[(String, EventExpectation)] = {
     val dut = new Dut
-    Console.withIn(new StringReader(""))(Run.everyStep(procedure, dut, Map(OutstationOptions.subsetLevel.id -> "2")))
+    Run.everyStep(procedure, dut, Map(OutstationOptions.subsetLevel.id -> "2"))
     dut.plugin.expected.toList
   }
 

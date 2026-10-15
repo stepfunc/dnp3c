@@ -17,7 +17,6 @@ import org.scalatestplus.junit.JUnitRunner
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.funsuite.AnyFunSuite
 
-import java.io.StringReader
 import scala.collection.mutable
 import scala.util.Try
 
@@ -108,8 +107,7 @@ class UnsolicitedChecksTest extends AnyFunSuite with Matchers {
     // runs every step, carrying on past failures; a manual action gets no answer (end of input), so it fails
     def failedSteps(delayMs: Long): Int = {
       val dut = new Responder(delayMs)
-      Console.withIn(new StringReader(""))(
-        Run.everyStep(Procedure8_11_2_5, dut, Map(OutstationOptions.subsetLevel.id -> "2")))
+      Run.everyStep(Procedure8_11_2_5, dut, Map(OutstationOptions.subsetLevel.id -> "2"))
     }
     // the default confirm timeout is 5000 ms: an unsolicited response at once can't be either retry
     failedSteps(0) should equal(failedSteps(5000) + 2)
@@ -150,7 +148,7 @@ class UnsolicitedChecksTest extends AnyFunSuite with Matchers {
         UnsolicitedOptions.holdOffMs.id -> "1000",
         OutstationOptions.subsetLevel.id -> "2") ++
         options)
-    Console.withIn(new StringReader(""))(Run.everyStep(procedure, dut, all))
+    Run.everyStep(procedure, dut, all)
     def inRetryWindow(retryLimitSet: Boolean) = waits.count(_ == (retryLimitSet, Some(2500)))
     (inRetryWindow(false), inRetryWindow(true))
   }

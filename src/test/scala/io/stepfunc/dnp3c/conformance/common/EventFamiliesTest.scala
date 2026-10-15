@@ -9,6 +9,7 @@ import io.stepfunc.dnp3c.conformance.api.ProcedureDefinition
 import io.stepfunc.dnp3c.conformance.api.options.BinaryInputOptions
 import io.stepfunc.dnp3c.conformance.v27.Procedure8_6_6_2_1
 import io.stepfunc.dnp3c.dnp3._
+import io.stepfunc.dnp3c.dnp3.Validate.passes
 import io.stepfunc.dnp3c.dnp3.app._
 import io.stepfunc.dnp3c.dnp3.app.objects.{ Group2Var0, Group60Var3 }
 import io.stepfunc.dnp3c.protocol.Hex
@@ -21,11 +22,6 @@ import scala.collection.mutable
 
 @RunWith(classOf[JUnitRunner])
 class EventFamiliesTest extends AnyFunSuite with Matchers {
-
-  private val reporter = StubDriver.reporter()
-
-  private def passes(validation: MessageValidation, objects: String): Boolean =
-    scala.util.Try(validation.validate(reporter, Message.parse(Hex.from("C0 81 00 00 " + objects)))).isSuccess
 
   test("a counted read uses qualifier 0x07, or 0x08 for a two-byte count") {
     Requests.readCount(Sequence.zero, Group2Var0, 3, twoByte = false).toBytes should equal(

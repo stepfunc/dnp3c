@@ -11,8 +11,6 @@ import org.scalatestplus.junit.JUnitRunner
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.funsuite.AnyFunSuite
 
-import java.io.StringReader
-
 @RunWith(classOf[JUnitRunner])
 class Procedure8_17_2_2Test extends AnyFunSuite with Matchers {
 
@@ -25,8 +23,8 @@ class Procedure8_17_2_2Test extends AnyFunSuite with Matchers {
 
   test("the counter values are recorded before more counts are generated") {
     val plugin = new Plugin
-    val dut = new ScriptedDut(StubDriver.reporter(plugin), _ => (IIN.empty, Nil))
-    Console.withIn(new StringReader(""))(Run.everyStep(Procedure8_17_2_2, dut))
+    val dut = ScriptedDut.iinOnly(StubDriver.reporter(plugin), IIN.empty)
+    Run.everyStep(Procedure8_17_2_2, dut)
     plugin.actions.toList should equal(List("generate", "record", "generate"))
   }
 }

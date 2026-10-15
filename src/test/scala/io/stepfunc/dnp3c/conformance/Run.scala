@@ -7,16 +7,21 @@ import io.stepfunc.dnp3c.conformance.api.{ OptionSource, Options, ProcedureDefin
 import io.stepfunc.dnp3c.conformance.application.TestRunner
 import io.stepfunc.dnp3c.dnp3.TestDriver
 
+import java.io.StringReader
+
 import scala.util.Try
 
 // runs a definition against a test DUT as a run does: its steps until one fails, then their deferred checks if none did,
-// then its cleanup
-object Run {
+// then its cleanup; with the input on stdin, which answers the plugin's prompts, so a test never waits on the terminal
+class Run(input: String) {
+
+  // runs f with the input on stdin
+  def apply[A](f: => A): A = Console.withIn(new StringReader(input))(f)
 
   def outcome(definition: ProcedureDefinition, driver: TestDriver, options: OptionSource): ProcedureOutcome = {
     // a run skips a procedure the configuration disables, without running it
     definition.disabledBy(options).foreach(unmet => throw new IllegalArgumentException(s"disabled: ${unmet.message}"))
-    TestRunner.runSteps(TestProcedure("test", "test", definition), options, driver)
+    apply(TestRunner.runSteps(TestProcedure("test", "test", definition), options, driver))
   }
 
   def outcome(
@@ -47,9 +52,16 @@ object Run {
    */
   def everyStep(definition: ProcedureDefinition, driver: TestDriver, options: OptionSource): Int = {
     val config = definition.configure(options)
-    (config.steps ++ config.cleanup).count(s => Try(s.step.run(driver)).isFailure)
+    apply((config.steps ++ config.cleanup).count(s => Try(s.step.run(driver)).isFailure))
   }
 
   def everyStep(definition: ProcedureDefinition, driver: TestDriver, settings: Map[String, String] = Map()): Int =
     everyStep(definition, driver, Options.from(settings))
+}
+
+// with nothing on stdin: a prompt fails its step, as it does when stdin isn't a terminal
+object Run extends Run("") {
+
+  // with the given lines on stdin, e.g. "\np\n" to press ENTER, then answer pass
+  def answering(input: String): Run = new Run(input)
 }

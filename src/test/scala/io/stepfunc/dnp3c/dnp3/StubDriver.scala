@@ -88,3 +88,8 @@ class ScriptedDut(reporter: ProcedureReporter, answer: Message => (IIN, List[Obj
     respond(message, iin, headers)
   }
 }
+
+object ScriptedDut {
+  // a DUT that answers every request with nothing but the IIN bits
+  def iinOnly(reporter: ProcedureReporter, iin: IIN): ScriptedDut = new ScriptedDut(reporter, _ => (iin, Nil))
+}

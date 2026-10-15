@@ -63,8 +63,7 @@ class Procedure8_20_2Test extends AnyFunSuite with Matchers {
 
   test("static objects must come in the order requested; events may come anywhere before them") {
     val order = MultipleObjectTypes.verifyStaticOrder(List(AllObjectsHeader(Group1Var0), AllObjectsHeader(Group20Var0)))
-    def passes(objects: String) = scala.util.Try(
-      order.validate(StubDriver.reporter(), Message.parse(Hex.from("C0 81 00 00 " + objects)))).isSuccess
+    def passes(objects: String) = Validate.passes(order, objects)
 
     val binary = "01 02 00 00 00 01" // g1v2, index 0
     val counter = "14 01 00 00 00 01 2A 00 00 00" // g20v1, index 0
@@ -75,10 +74,10 @@ class Procedure8_20_2Test extends AnyFunSuite with Matchers {
   }
 
   test("only objects of the groups requested, and CTOs for events, each with its type's qualifier") {
-    def passes(requested: List[Variation], objects: String) = scala.util.Try(
-      io.stepfunc.dnp3c.conformance.common.Validations
-        .verifyOnlyRequestedObjects(requested.map(AllObjectsHeader.apply))
-        .validate(StubDriver.reporter(), Message.parse(Hex.from("C0 81 00 00 " + objects)))).isSuccess
+    def passes(requested: List[Variation], objects: String) = {
+      val headers = requested.map(AllObjectsHeader.apply)
+      Validate.passes(io.stepfunc.dnp3c.conformance.common.Validations.verifyOnlyRequestedObjects(headers), objects)
+    }
 
     val eventsAndBinary = List(Group2Var0, Group1Var0)
     val binary = "01 02 00 00 00 01" // g1v2, index 0
@@ -127,10 +126,10 @@ class Procedure8_20_2Test extends AnyFunSuite with Matchers {
   }
 
   test("event objects must come before static ones, across the fragments of the response") {
-    def passes(fragments: String*) = scala.util.Try(
-      io.stepfunc.dnp3c.conformance.common.Validations.verifyEventDataPrecedesStaticData.validate(
-        StubDriver.reporter(),
-        fragments.map(f => Message.parse(Hex.from("C0 81 00 00 " + f))).toList)).isSuccess
+    def passes(fragments: String*) = Validate.passes(
+      io.stepfunc.dnp3c.conformance.common.Validations.verifyEventDataPrecedesStaticData,
+      fragments.map(f => Message.parse(Hex.from("C0 81 00 00 " + f))).toList
+    )
 
     val event = "02 01 17 01 05 81"
     val static = "01 02 00 00 00 01"

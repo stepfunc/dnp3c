@@ -3,15 +3,13 @@
 
 package io.stepfunc.dnp3c.conformance.v31r1
 
-import java.io.StringReader
-
 import scala.collection.mutable
 
 import io.stepfunc.dnp3c.conformance.Run
 import io.stepfunc.dnp3c.conformance.api.{ Options, ProcedureDefinition }
 import io.stepfunc.dnp3c.conformance.api.options.SupportOptions.Inputs
 import io.stepfunc.dnp3c.dnp3._
-import io.stepfunc.dnp3c.dnp3.app.{ IIN, Message, ObjectHeader }
+import io.stepfunc.dnp3c.dnp3.app.IIN
 import org.junit.runner.RunWith
 import org.scalatestplus.junit.JUnitRunner
 import org.scalatest.matchers.should.Matchers
@@ -29,8 +27,8 @@ class LevelOneAndDisableTest extends AnyFunSuite with Matchers {
   // answers every read with nothing but the IIN bits
   private def run(procedure: ProcedureDefinition, options: Options, iin: IIN, plugin: Plugin = new Plugin) = {
     val reporter = StubDriver.reporter(plugin)
-    val dut = new ScriptedDut(reporter, (_: Message) => (iin, List.empty[ObjectHeader]))
-    val passed = Console.withIn(new StringReader(""))(Run.passes(procedure, dut, options))
+    val dut = ScriptedDut.iinOnly(reporter, iin)
+    val passed = Run.passes(procedure, dut, options)
     (passed, reporter.notes, plugin.calls.toList)
   }
 

@@ -3,8 +3,6 @@
 
 package io.stepfunc.dnp3c.conformance.v31r1
 
-import java.io.StringReader
-
 import io.stepfunc.dnp3c.conformance.Run
 import io.stepfunc.dnp3c.conformance.api.{ Options, ProcedureDefinition }
 import io.stepfunc.dnp3c.conformance.api.options.{ OutstationOptions, SupportOptions }
@@ -31,8 +29,7 @@ class OutputStatusTest extends AnyFunSuite with Matchers {
       case _ => (IIN.empty, request.headers)
     }
     val dut = new ScriptedDut(StubDriver.reporter(), answer)
-    Console.withIn(new StringReader(""))(
-      Run.passes(procedure, dut, options))
+    Run.passes(procedure, dut, options)
   }
 
   private val noBinaryOutputs = options(SupportOptions.Outputs.binary.statusPoints.id -> "false")

@@ -4,6 +4,7 @@
 package io.stepfunc.dnp3c.conformance.common
 
 import io.stepfunc.dnp3c.dnp3.{ DefaultIntegrationPlugin, MessageValidation, ProcedureReporter }
+import io.stepfunc.dnp3c.dnp3.Validate.passes
 import io.stepfunc.dnp3c.dnp3.app._
 import io.stepfunc.dnp3c.dnp3.app.objects._
 import io.stepfunc.dnp3c.protocol.Hex
@@ -20,9 +21,6 @@ class ValidationsTestSuite extends AnyFunSuite with Matchers {
 
   private def response(iin: IIN, headers: List[ObjectHeader] = Nil): Message =
     Message(Control.request(Sequence.zero), AppFunction.response, Some(iin), headers)
-
-  private def passes(validation: MessageValidation, message: Message): Boolean =
-    scala.util.Try(validation.validate(reporter, message)).isSuccess
 
   test("generated events: at least one, all of the allowed variations") {
     def events(objects: String) = Message.parse(Hex.from("C0 81 00 00 " + objects))
