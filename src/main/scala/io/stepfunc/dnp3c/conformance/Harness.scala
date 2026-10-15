@@ -34,7 +34,7 @@ final class Harness(options: Options, plugin: IntegrationPlugin, revision: Revis
    * Run the procedures of a procedure or section, or "all" of them, in order, stopping at the first that fails.
    *
    * A procedure fails when one of its steps or validations does, including a plugin action or verification that
-   * throws. One the configuration excludes for the revision (`test.exclude.<revision id>.<id>`) isn't run: it's
+   * throws. One the configuration excludes for the revision (`test.exclude.<revision id>/<id>`) isn't run: it's
    * recorded as excluded, without touching the device or the plugin, and the run carries on.
    *
    * @param id a procedure or section of the revision, e.g. "8.6.5.4" or "8.6", or "all"

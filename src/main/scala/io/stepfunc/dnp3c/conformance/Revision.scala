@@ -100,30 +100,29 @@ final class Revision private[conformance] (
   private[conformance] def decide(procedure: TestProcedure, options: OptionSource, level: Int): Decision =
     skip(procedure, options, level) match {
       case Some(s) => Decision.Skip(s)
-      case None => options.get(TestOptions.exclude).get(s"$id.${procedure.id}").fold(Decision.Run)(Decision.Exclude(_))
+      case None =>
+        val exclude = TestOptions.exclude
+        options.get(exclude).get(exclude.key(id, procedure.id)).fold(Decision.Run)(Decision.Exclude(_))
     }
 
   // every exclusion must name a revision and a procedure of it, whatever revision and procedures a run selects, so one
   // configuration serves every revision; a test's revision isn't listed, but its own exclusions name it
   private def exclusionProblems(options: OptionSource): List[ConfigProblem] = {
+    val exclude = TestOptions.exclude
     val revisions = (Revisions.list :+ this).distinctBy(_.id)
-    options.get(TestOptions.exclude).toList.sorted.flatMap { (excluded, reason) =>
-      val key = s"${TestOptions.exclude.id}.$excluded"
-      revisions.find(r => excluded.startsWith(r.id + ".")) match {
-        case None =>
-          Some(ConfigProblem(
-            key,
-            reason,
-            s"unknown revision, or none: write it as ${TestOptions.exclude.id}.<revision id>.<procedure id> = " +
-              s"<reason>. The revisions are: ${revisions.map(_.id).mkString(", ")}"
-          ))
-        case Some(revision) =>
-          val procedure = excluded.stripPrefix(revision.id + ".")
-          revision.elements.get(procedure) match {
-            case Some(_: TestProcedure) => None
-            case Some(_) =>
-              Some(ConfigProblem(key, reason, "a section: exclude its procedures, each with its own property"))
-            case None => Some(ConfigProblem(key, reason, s"revision ${revision.id} has no procedure $procedure"))
+    options.get(exclude).toList.sorted.flatMap { (excluded, reason) =>
+      def problem(message: String) = Some(ConfigProblem(s"${exclude.id}.$excluded", reason, message))
+      exclude.split(excluded) match {
+        case None => problem(s"name the revision: ${exclude.syntax}. The revisions are: ${Revisions.ids}")
+        case Some((rev, procedure)) =>
+          revisions.find(_.id == rev) match {
+            case None => problem(Revisions.unknown(rev))
+            case Some(revision) =>
+              revision.elements.get(procedure) match {
+                case Some(_: TestProcedure) => None
+                case Some(_) => problem("a section: exclude its procedures, each with its own property")
+                case None => problem(s"revision $rev has no procedure $procedure")
+              }
           }
       }
     }
@@ -241,4 +240,9 @@ object Revisions {
   val list: List[Revision] = List(v2_7, v3_1r1)
 
   def find(id: String): Option[Revision] = list.find(_.id == id)
+
+  private[conformance] def ids: String = list.map(_.id).mkString(", ")
+
+  // for an id that isn't one of them, as -rev or an exclusion gives it
+  private[conformance] def unknown(id: String): String = s"Unknown revision: $id. The revisions are: $ids"
 }

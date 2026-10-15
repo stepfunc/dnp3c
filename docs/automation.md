@@ -57,7 +57,7 @@ A procedure that won't run is skipped before any of that: one that isn't impleme
 A device with a known gap would stop every run at the procedure that tests it. Exclude the procedure in the configuration, with the reason, and the run carries on past it:
 
 ```
-test.exclude.3.1r1.8.26.2 = Assign Class isn't supported yet (stepfunc/dnp3#480)
+test.exclude.3.1r1/8.26.2 = Assign Class isn't supported yet (stepfunc/dnp3#480)
 ```
 
 [Testing a device by hand](manual-testing.md#exclude-procedures) has the rules: one property per procedure, naming its revision, each with a reason, checked before anything runs, and a procedure that's skipped stays skipped. A run excludes only its own revision's procedures, so one configuration can serve every revision. Exclude a procedure for a feature the device has; turn off a `supports.*` option only for one it lacks.

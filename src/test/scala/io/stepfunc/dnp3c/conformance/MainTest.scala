@@ -146,8 +146,8 @@ class MainTest extends AnyFunSuite with Matchers {
   test("-disabled lists an exclusion with its reason, and a procedure that's skipped anyway as skipped") {
     val options = Options.from(Map(
       OutstationOptions.subsetLevel.id -> "2",
-      s"${TestOptions.exclude.id}.3.1r1.8.26.2" -> "Assign Class isn't supported yet",
-      s"${TestOptions.exclude.id}.3.1r1.8.26.3" -> "nor no-class assignment"
+      s"${TestOptions.exclude.id}.3.1r1/8.26.2" -> "Assign Class isn't supported yet",
+      s"${TestOptions.exclude.id}.3.1r1/8.26.3" -> "nor no-class assignment"
     ))
     val lines = Main.disabledLines(options, Revisions.v3_1r1, 2)
     lines.sliding(2).toList should
@@ -156,7 +156,7 @@ class MainTest extends AnyFunSuite with Matchers {
     lines.mkString should not include "nor no-class assignment"
   }
 
-  // excluding a procedure of a revision, e.g. "3.1r1.8.26.2"
+  // excluding a procedure of a revision, given its key, e.g. "3.1r1/8.26.2"
   private def withExclusion(id: String, reason: String = "Assign Class isn't supported yet") =
     level2 + s"${TestOptions.exclude.id}.$id = $reason\n"
 
@@ -181,51 +181,52 @@ class MainTest extends AnyFunSuite with Matchers {
         plugin)))
 
   test("-disabled and -describe show an exclusion's reason, without the procedure's steps") {
-    val (disabled, listed) = command31r1(withExclusion("3.1r1.8.26.2"), disabled = true)
+    val (disabled, listed) = command31r1(withExclusion("3.1r1/8.26.2"), disabled = true)
     disabled should equal(0)
     listed should include("Procedure: 8.26.2")
     listed should include("NOT RUN — EXCLUDED: Assign Class isn't supported yet")
 
-    val (described, procedure) = command31r1(withExclusion("3.1r1.8.26.2"), describe = Some("8.26.2"))
+    val (described, procedure) = command31r1(withExclusion("3.1r1/8.26.2"), describe = Some("8.26.2"))
     described should equal(0)
     procedure should include("NOT RUN — EXCLUDED 8.26.2: Assign Class isn't supported yet")
     procedure should not include "step"
 
-    val (section, tree) = command31r1(withExclusion("3.1r1.8.26.2"), describe = Some("8.26"))
+    val (section, tree) = command31r1(withExclusion("3.1r1/8.26.2"), describe = Some("8.26"))
     section should equal(0)
     tree should include("Test Procedures  [NOT RUN — EXCLUDED: Assign Class isn't supported yet]")
     tree should include("No-Class Assignment Test Procedures")
   }
 
   test("an exclusion must name a revision and a procedure of it, and give a reason, whichever revision runs") {
-    // unqualified, an unknown revision, an id the revision doesn't have, a section, and all
-    for (revision <- List("2.7", "3.1r1");
-      id <- List("8.26.2", "3.0.8.26.2", "2.7.8.26.2", "3.1r1.9.9", "3.1r1.8.26", "3.1r1.all")) {
+    // without a revision, an unknown revision, an id the revision doesn't have, a section, and all
+    val ids = List("8.26.2", "3.1r1.8.26.2", "3.0/8.26.2", "2.7/8.26.2", "3.1r1/9.9", "3.1r1/8.26", "3.1r1/all")
+    for (revision <- List("2.7", "3.1r1"); id <- ids) {
       withClue(s"$revision $id: ") {
         command31r1(withExclusion(id), revision, describe = Some("8.1.2"))._1 should not equal 0
         command31r1(withExclusion(id), revision, disabled = true)._1 should not equal 0
       }
     }
-    command31r1(withExclusion("3.1r1.8.26.2", reason = ""), disabled = true)._1 should not equal 0
+    command31r1(withExclusion("3.1r1/8.26.2", reason = ""), disabled = true)._1 should not equal 0
     command31r1(level2 + s"${TestOptions.exclude.id} = 8.26.2\n", disabled = true)._1 should not equal 0
-    // the syntax and the revisions
-    val (_, printed) = command31r1(withExclusion("8.26.2"), disabled = true)
-    printed should include("test.exclude.<revision id>.<procedure id> = <reason>")
-    printed should include("The revisions are: 2.7, 3.1r1")
+    // the syntax and the revisions, or the revisions as for -rev
+    val (_, printed) = command31r1(withExclusion("3.1r1.8.26.2"), disabled = true)
+    printed should include("test.exclude.<revision id>/<procedure id> = <reason>. The revisions are: 2.7, 3.1r1")
+    command31r1(withExclusion("3.0/8.26.2"), "2.7", disabled = true)._2 should include(
+      "Unknown revision: 3.0. The revisions are: 2.7, 3.1r1")
   }
 
   test("one configuration serves every revision: a run excludes only its own revision's procedures") {
-    val (code, listed) = command31r1(withExclusion("3.1r1.8.26.2"), "2.7", disabled = true)
+    val (code, listed) = command31r1(withExclusion("3.1r1/8.26.2"), "2.7", disabled = true)
     code should equal(0)
     listed should not include "EXCLUDED"
-    command31r1(withExclusion("3.1r1.8.26.2"), "2.7", describe = Some("8.1.2"))._1 should equal(0)
+    command31r1(withExclusion("3.1r1/8.26.2"), "2.7", describe = Some("8.1.2"))._1 should equal(0)
 
     // 8.1.2 is in both, and 8.23.2.1 is a procedure of 2.7's but a section of 3.1r1's
     val options = Options.from(Map(
       OutstationOptions.subsetLevel.id -> "2",
-      s"${TestOptions.exclude.id}.3.1r1.8.26.2" -> "Assign Class isn't supported yet",
-      s"${TestOptions.exclude.id}.3.1r1.8.1.2" -> "3.1r1's",
-      s"${TestOptions.exclude.id}.2.7.8.23.2.1" -> "2.7's"
+      s"${TestOptions.exclude.id}.3.1r1/8.26.2" -> "Assign Class isn't supported yet",
+      s"${TestOptions.exclude.id}.3.1r1/8.1.2" -> "3.1r1's",
+      s"${TestOptions.exclude.id}.2.7/8.23.2.1" -> "2.7's"
     ))
     def decision(revision: Revision, id: String) =
       revision.decide(revision.elements(id).asInstanceOf[TestProcedure], options, 2)
@@ -251,7 +252,7 @@ class MainTest extends AnyFunSuite with Matchers {
   private val oneExcluded = "1 procedure was excluded and not run. Conformance has not been demonstrated for it."
 
   test("a run that excludes a procedure records it, says so, and succeeds") {
-    val (contents, output) = withOutput(withExclusion("3.1r1.8.26.2"))
+    val (contents, output) = withOutput(withExclusion("3.1r1/8.26.2"))
     val (code, printed) = command31r1(contents, run = Some("8.26"))
     code should equal(0)
     printed should include("NOT RUN — EXCLUDED 8.26.2: Assign Class isn't supported yet")
@@ -267,7 +268,8 @@ class MainTest extends AnyFunSuite with Matchers {
     val plugin = new DefaultIntegrationPlugin {
       override def cyclePower(reporter: PluginReporter): Unit = throw new Exception("can't cycle power")
     }
-    val (contents, _) = withOutput(withExclusion("3.1r1.6.1.2", "no link layer access") + "tcp.device.port = 1\n")
+    val (contents, _) =
+      withOutput(withExclusion("3.1r1/6.1.2", "no link layer access") + "tcp.device.port = 1\n")
     val (code, printed) = command31r1(contents, run = Some("6"), plugin = plugin)
     code should not equal 0
     printed should include("NOT RUN — EXCLUDED 6.1.2: no link layer access")
@@ -278,7 +280,8 @@ class MainTest extends AnyFunSuite with Matchers {
     val failing = new DefaultIntegrationPlugin {
       override def startProcedure(reporter: PluginReporter): Unit = throw new Exception("can't start")
     }
-    val (aborted, told) = command31r1(withOutput(withExclusion("3.1r1.6.1.2"))._1, run = Some("6"), plugin = failing)
+    val (aborted, told) =
+      command31r1(withOutput(withExclusion("3.1r1/6.1.2"))._1, run = Some("6"), plugin = failing)
     aborted should not equal 0
     told.indexOf(oneExcluded) should be > told.indexOf("can't start")
   }

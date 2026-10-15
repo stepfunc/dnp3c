@@ -52,7 +52,7 @@ object Main {
           Revisions.find(id) match {
             case Some(revision) => printHelp(Some(revision))
             case None =>
-              Colors.error.printLine(unknownRevision(id))
+              Colors.error.printLine(Revisions.unknown(id))
               return -1
           }
       }
@@ -109,7 +109,7 @@ object Main {
         Revisions.find(id) match {
           case Some(r) => r
           case None =>
-            Colors.error.printLine(unknownRevision(id))
+            Colors.error.printLine(Revisions.unknown(id))
             return -1
         }
     }
@@ -281,9 +281,6 @@ object Main {
     }
     Colors.text.printLine("")
   }
-
-  private def unknownRevision(id: String): String =
-    s"Unknown revision: $id. The revisions are: ${Revisions.list.map(_.id).mkString(", ")}"
 
   def listDisabled(options: OptionSource, revision: Revision, level: Int): Unit = {
     Colors.text.printLine("Listing the test procedures the configuration skips or excludes: ")
