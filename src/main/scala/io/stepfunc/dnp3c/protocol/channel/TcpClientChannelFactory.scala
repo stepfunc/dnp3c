@@ -46,10 +46,14 @@ object TcpClientChannelFactory {
     }
 
   // connects the socket; a failure to use its local address, e.g. one whose port is still held by a connection to the
-  // same remote address and port that closed moments ago, is LocalBindException
+  // same remote address and port that closed moments ago, is LocalBindException. Nagle's algorithm is off, as in DNP3
+  // stacks, so a small write goes out at once rather than waiting for the previous one to be acknowledged, which would
+  // shift the timing the procedures check
   def connect(socket: SocketChannel, remote: SocketAddress, local: Option[InetSocketAddress], timeoutMs: Int): Unit =
-    try socket.socket().connect(remote, timeoutMs)
-    catch {
+    try {
+      socket.setOption(StandardSocketOptions.TCP_NODELAY, java.lang.Boolean.TRUE)
+      socket.socket().connect(remote, timeoutMs)
+    } catch {
       case ex: java.net.BindException =>
         throw new LocalBindException(local.getOrElse(new InetSocketAddress(0)), ex)
     }
