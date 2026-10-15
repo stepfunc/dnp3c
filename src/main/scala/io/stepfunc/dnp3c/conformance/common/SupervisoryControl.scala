@@ -9,7 +9,7 @@ import io.stepfunc.dnp3c.conformance.common.GenericSteps._
 import io.stepfunc.dnp3c.conformance.common.Validations._
 import io.stepfunc.dnp3c.dnp3.app._
 import io.stepfunc.dnp3c.dnp3.app.objects.{ CommandStatus, Group10Var0, Group10Var1, Group10Var2 }
-import io.stepfunc.dnp3c.dnp3.{ Comment, DeferredCheck, ProcedureReporter, Requests, ResponseValidation }
+import io.stepfunc.dnp3c.dnp3.{ Comment, DeferredCheck, PointKind, ProcedureReporter, Requests, ResponseValidation }
 import io.stepfunc.dnp3c.protocol.Hex
 
 /**
@@ -183,6 +183,6 @@ private[conformance] object SupervisoryControl {
     expectSingleResponse(seq, echoes(control(options, index, status)) && iin)
   }
 
-  def operates(index: Index): PluginCheck = OperationType.BinaryOutput.checkOperate(index.value)
-  def doesNotOperate: PluginCheck = OperationType.BinaryOutput.checkNotOperate
+  def operates(index: Index): PluginCheck = PluginSteps.checkOperate(PointKind.BinaryOutputStatus, index.value)
+  def doesNotOperate: PluginCheck = PluginSteps.checkNotOperate(PointKind.BinaryOutputStatus)
 }

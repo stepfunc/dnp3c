@@ -10,8 +10,8 @@ import io.stepfunc.dnp3c.dnp3.app._
 
 class OperationSteps(opType: OperationType) {
 
-  def expectOperation(index: Int): PluginCheck = opType.checkOperate(index)
-  val expectNoOperation: PluginCheck = opType.checkNotOperate
+  def expectOperation(index: Int): PluginCheck = PluginSteps.checkOperate(opType.kind, index)
+  val expectNoOperation: PluginCheck = PluginSteps.checkNotOperate(opType.kind)
 
   private def output(index: Int): String = s"${opType.name} $index"
 

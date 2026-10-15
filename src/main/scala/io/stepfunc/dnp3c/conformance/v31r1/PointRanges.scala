@@ -37,7 +37,7 @@ object PointRanges {
       points: BooleanOption,
       disabling: BooleanOption,
       reads: Option[BooleanOption],
-      uninstall: TestStep,
+      kind: PointKind,
       secondAndThird: Boolean,
       escapeStep: Boolean) {
     def group: Group = anyVariation.group
@@ -100,7 +100,7 @@ object PointRanges {
       val e = if (t.escapeStep) 1 else 0
       val error = MissingPoints.answer
       // step 1 uninstalls the points, which come back after the last check, or in the cleanup if a step fails
-      val removal = Undoable(t.uninstall, PluginSteps.reinstallPoints)
+      val removal = PluginSteps.removal(t.kind)
       def read(seq: Sequence, twoByte: Boolean): TestStep =
         describedRead(seq, t.anyVariation, twoByte, "0 to 0") + send(rangeRead(seq, t.anyVariation, twoByte, 0, 0))
       val first = 1 --> (if (has) removal.apply else describe(s"The DUT has no ${t.name}"))
@@ -223,7 +223,7 @@ object PointRanges {
     Inputs.binary.points,
     Inputs.binary.disabling,
     Some(Inputs.binary.reads),
-    PluginSteps.uninstallBinaryInputs,
+    PointKind.BinaryInput,
     secondAndThird = true,
     escapeStep = false
   )
@@ -233,7 +233,7 @@ object PointRanges {
     Outputs.binary.statusPoints,
     Outputs.binary.disabling,
     None,
-    PluginSteps.uninstallBinaryOutputs,
+    PointKind.BinaryOutputStatus,
     secondAndThird = false,
     escapeStep = false
   )
@@ -243,7 +243,7 @@ object PointRanges {
     Inputs.counter.points,
     Inputs.counter.disabling,
     Some(Inputs.counter.reads),
-    PluginSteps.uninstallCounterInputs,
+    PointKind.Counter,
     secondAndThird = false,
     escapeStep = false
   )
@@ -253,7 +253,7 @@ object PointRanges {
     Inputs.frozenCounter.points,
     Inputs.frozenCounter.disabling,
     Some(Inputs.frozenCounter.reads),
-    PluginSteps.uninstallFrozenCounters,
+    PointKind.FrozenCounter,
     secondAndThird = false,
     escapeStep = true
   )
@@ -263,7 +263,7 @@ object PointRanges {
     Inputs.analog.points,
     Inputs.analog.disabling,
     Some(Inputs.analog.reads),
-    PluginSteps.uninstallAnalogInputs,
+    PointKind.AnalogInput,
     secondAndThird = false,
     escapeStep = true
   )
@@ -273,7 +273,7 @@ object PointRanges {
     Outputs.analog.statusPoints,
     Outputs.analog.disabling,
     None,
-    PluginSteps.uninstallAnalogOutputs,
+    PointKind.AnalogOutputStatus,
     secondAndThird = false,
     escapeStep = true
   )

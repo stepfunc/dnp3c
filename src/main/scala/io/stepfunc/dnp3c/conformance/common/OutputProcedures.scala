@@ -34,7 +34,7 @@ object OutputProcedures {
       List(output.support.commands, output.support.disabling)
 
     override protected def plan(options: OptionSource): Plan = {
-      val outputs = Undoable(output.uninstall, PluginSteps.reinstallPoints)
+      val outputs = PluginSteps.removal(output.kind)
       Plan(
         List(
           1 --> describe(s"The DUT's ${output.name}s can be uninstalled or disabled through its configuration"),

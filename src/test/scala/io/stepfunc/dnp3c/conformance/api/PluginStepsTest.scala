@@ -32,7 +32,7 @@ class PluginStepsTest extends AnyFunSuite with Matchers {
   private class Driver(val plugin: Plugin) extends StubDriver(StubDriver.reporter(plugin))
 
   test("an action has the plugin of the driver that runs it act, and defers nothing") {
-    val step = PluginSteps.uninstallBinaryOutputs
+    val step = PluginSteps.uninstall(PointKind.BinaryOutputStatus)
     val (first, second) = (new Driver(new Plugin), new Driver(new Plugin))
 
     step.run(second) should equal(Nil)

@@ -8,6 +8,7 @@ import io.stepfunc.dnp3c.conformance.api.options.{ AnalogOutputOptions, CommandC
 import io.stepfunc.dnp3c.conformance.api.options.SupportOptions.Outputs
 import io.stepfunc.dnp3c.conformance.common.GenericSteps._
 import io.stepfunc.dnp3c.conformance.common.Validations._
+import io.stepfunc.dnp3c.dnp3.PointKind
 import io.stepfunc.dnp3c.dnp3.app._
 import io.stepfunc.dnp3c.dnp3.app.objects.{ CommandStatus, Group41Var1 }
 
@@ -56,7 +57,7 @@ object AnalogOutput32 {
           5 --> expectSingleResponse(Sequence.zero, echoes(header)),
           6 --> send(AppFunction.operate, Sequence.one, header),
           7 --> expectSingleResponse(Sequence.one, echoes(header)),
-          8 --> PluginSteps.checkAnalogOutputOperate(index)
+          8 --> PluginSteps.checkOperate(PointKind.AnalogOutputStatus, index)
         )
     }
   }

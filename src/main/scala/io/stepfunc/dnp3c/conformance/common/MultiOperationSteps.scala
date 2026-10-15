@@ -46,7 +46,7 @@ class MultiOperationSteps(output: OperationType) {
           3 --> expectSingleResponse(Sequence.zero, echoes(request)),
           4 --> send(AppFunction.operate, Sequence.one, request),
           5 --> expectSingleResponse(Sequence.one, echoes(request)),
-          6 --> output.checkOperate(points.map(_.value))
+          6 --> PluginSteps.checkOperate(output.kind, points.map(_.value))
         )
       }
 
@@ -70,7 +70,7 @@ class MultiOperationSteps(output: OperationType) {
           10 --> describe("Devices that support control operations must support direct operate"),
           11 --> send(AppFunction.directOp, Sequence.three, request),
           12 --> expectSingleResponse(Sequence.three, echoes(reply)) +
-            output.checkOperate(installed.take(max).map(_.value)) +
+            PluginSteps.checkOperate(output.kind, installed.take(max).map(_.value)) +
             describe("Not verified by this tool: that the last point, refused with status 8, didn't operate")
         )
       }
