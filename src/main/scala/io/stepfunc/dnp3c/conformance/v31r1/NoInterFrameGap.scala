@@ -7,7 +7,7 @@ import io.stepfunc.dnp3c.conformance.api._
 import io.stepfunc.dnp3c.conformance.api.options.{ LinkOptions, SerialOptions, SupportOptions }
 import io.stepfunc.dnp3c.conformance.common.GenericSteps._
 import io.stepfunc.dnp3c.dnp3._
-import io.stepfunc.dnp3c.dnp3.app.{ IIN, Message, Sequence, Unsolicited }
+import io.stepfunc.dnp3c.dnp3.app.{ IIN, ItemIndex, Message, Qualifier, Sequence, Unsolicited, Variation }
 import io.stepfunc.dnp3c.dnp3.link.{ Control, LinkFrame, LinkFunction }
 import io.stepfunc.dnp3c.dnp3.transport.Transport
 import io.stepfunc.dnp3c.protocol.parsing.UInt16LE
@@ -41,9 +41,8 @@ object NoInterFrameGap {
 
   // what the responses report, but for the values: each point's variation, qualifier and index, however headers and
   // fragments divide them, and the IIN bits that shouldn't change
-  private def shape(responses: List[Message]): (List[(String, String, String)], IIN) = (
-    responses.flatMap(_.headers).flatMap(h =>
-      h.iterate.map(p => (h.variation.toString, h.qualifier.toString, p.idx.toString))),
+  private def shape(responses: List[Message]): (List[(Variation, Qualifier, ItemIndex)], IIN) = (
+    responses.flatMap(_.headers).flatMap(h => h.iterate.map(p => (h.variation, h.qualifier, p.idx))),
     responses.foldLeft(IIN.empty)((all, m) => all | (m.iin.getOrElse(IIN.empty) & ~changing)))
 
   val noInterFrameGap: ProcedureDefinition = new ProcedureDefinition {
@@ -57,7 +56,7 @@ object NoInterFrameGap {
       if (other == options.get(LinkOptions.destination))
         throw new Exception(
           s"${LinkOptions.otherDestination.id} is the DUT's own address, ${LinkOptions.destination.id}")
-      var reference: Option[(List[(String, String, String)], IIN)] = None
+      var reference: Option[(List[(Variation, Qualifier, ItemIndex)], IIN)] = None
 
       val record = new ResponseValidation {
         def description: List[Comment] = List("Record the objects the response reports")

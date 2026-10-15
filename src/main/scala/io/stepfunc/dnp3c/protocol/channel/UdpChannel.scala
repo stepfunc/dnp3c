@@ -16,9 +16,6 @@ final class UdpChannel private (channel: DatagramChannel, remote: InetSocketAddr
 
   private val received = new Array[Byte](65535)
 
-  // the address and port the DUT's last datagram came from
-  @volatile var lastSource: Option[InetSocketAddress] = None
-
   // the address and port the channel is bound to
   def localAddress: InetSocketAddress = channel.getLocalAddress.asInstanceOf[InetSocketAddress]
 
@@ -39,7 +36,6 @@ final class UdpChannel private (channel: DatagramChannel, remote: InetSocketAddr
       channel.socket().receive(packet)
       // an empty datagram carries nothing, and a read of nothing would end the wait
       if (packet.getAddress == remote.getAddress && packet.getLength > 0) {
-        lastSource = Some(packet.getSocketAddress.asInstanceOf[InetSocketAddress])
         buffer.put(received, 0, packet.getLength)
         result = packet.getLength
       }

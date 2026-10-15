@@ -240,11 +240,11 @@ object AssignClass {
       val c3 = new Startup(options, ClassOptions.class3.binaryInputs, 2)
       // one point of each class goes to no class, and another of each keeps its class
       def gone: List[Int] = List(c1(0), c2(0), c3(0))
-      var before: Set[(String, String)] = Set.empty
-      def static(messages: List[Message]): Set[(String, String)] =
+      var before: Set[(Group, ItemIndex)] = Set.empty
+      def static(messages: List[Message]): Set[(Group, ItemIndex)] =
         messages.flatMap(_.headers).filter(_.variation.objectType == Static).flatMap(h =>
-          h.iterate.map(i => (h.variation.group.toString, i.idx.toString))).toSet
-      def binary(index: Int): (String, String) = (Group1.toString, Indexed(index).toString)
+          h.iterate.map(i => (h.variation.group, i.idx))).toSet
+      def binary(index: Int): (Group, ItemIndex) = (Group1, Indexed(index))
 
       def restoreRequest =
         assign(Sequence(5), Nil, Group60Var2 -> List(c1(0)), Group60Var3 -> List(c2(0)), Group60Var4 -> List(c3(0)))

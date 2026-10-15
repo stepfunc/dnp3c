@@ -10,7 +10,6 @@ package object api {
 
   implicit def toLabel(i: Int): Label = Label.apply(i)
   implicit def toLabel(range: Range): Label = Label.apply(range.start, range.end)
-  implicit def stringToComment(value: String): Comment = Comment(value)
 
   def delay(ms: Int): TestStep = TestStep(List("Wait for " + ms + " milliseconds")) { driver =>
     driver.clock.sleep(ms)

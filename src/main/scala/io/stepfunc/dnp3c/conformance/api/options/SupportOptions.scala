@@ -99,7 +99,9 @@ object SupportOptions extends OptionGroup {
     val frozenCounter: InputOptions = InputOptions("frozenCounter", "Frozen Counter")
     val analog: InputOptions = InputOptions("analogInput", "Analog Input")
 
-    val allOptions: List[BooleanOption] = List(binary, doubleBit, counter, frozenCounter, analog).flatMap(_.allOptions)
+    val all: List[InputOptions] = List(binary, doubleBit, counter, frozenCounter, analog)
+
+    val allOptions: List[BooleanOption] = all.flatMap(_.allOptions)
   }
 
   object Outputs {
