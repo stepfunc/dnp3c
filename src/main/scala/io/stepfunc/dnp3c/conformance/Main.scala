@@ -144,15 +144,21 @@ object Main {
       case Some(id) =>
         revision.elements.get(id) match {
           case Some(section: TestSection) => print(section, Int.MaxValue, 0)
-          case Some(procedure: TestProcedure) if !revision.levelsOf(procedure).contains(level) =>
-            println(s"Not applicable at subset level $level: ${notApplicable(revision, procedure)}")
           case Some(procedure: TestProcedure) =>
-            // building the steps checks the options the procedure uses, e.g. 8.23's device attributes
-            try printDescription(procedure, options)
-            catch {
-              case NonFatal(ex) =>
-                Colors.error.printLine(s"Can't describe ${procedure.id}: ${ErrorText.of(ex)}")
-                return -1
+            revision.skip(procedure, options, level) match {
+              case Some(Skip.NotApplicable(levels)) =>
+                println(
+                  s"Not applicable at subset level $level: ${procedure.id} applies to subset level(s) " +
+                    levels.mkString(", "))
+              case _ =>
+                // the description says if it isn't implemented, or which options disable it; building the steps checks
+                // the options the procedure uses, e.g. 8.23's device attributes
+                try printDescription(procedure, options)
+                catch {
+                  case NonFatal(ex) =>
+                    Colors.error.printLine(s"Can't describe ${procedure.id}: ${ErrorText.of(ex)}")
+                    return -1
+                }
             }
           case None =>
             Colors.error.printLine(s"Unknown id in revision ${revision.id}: $id")
@@ -255,25 +261,23 @@ object Main {
   private def unknownRevision(id: String): String =
     s"Unknown revision: $id. The revisions are: ${Revisions.list.map(_.id).mkString(", ")}"
 
-  private def notApplicable(revision: Revision, p: TestProcedure): String =
-    s"${p.id} applies to subset level(s) ${revision.levelsOf(p).toList.sorted.mkString(", ")}"
-
   def listDisabled(options: OptionSource, revision: Revision, level: Int): Unit = {
     Colors.text.printLine("Listing optional test procedures disabled by configuration: ")
     Colors.text.printLine("")
+    disabledLines(options, revision, level).foreach(Colors.text.printLine)
+  }
 
-    revision.flatMapProcedures(p => Option.when(!revision.levelsOf(p).contains(level))(p)).foreach { p =>
-      Colors.text.printLine("Procedure: " + p.id)
-      Colors.text.printLine(s"    Not applicable at subset level $level")
+  // each procedure the configuration keeps from running, once: those that don't apply at the level, then those that
+  // options disable. One that isn't implemented isn't the configuration's doing.
+  private[conformance] def disabledLines(options: OptionSource, revision: Revision, level: Int): List[String] = {
+    val skipped = revision.flatMapProcedures(p => revision.skip(p, options, level).map(p -> _)).toList
+    val notApplicable = skipped.collect { case (p, Skip.NotApplicable(_)) =>
+      List("Procedure: " + p.id, s"    Not applicable at subset level $level")
     }
-
-    val disabled: Iterable[(TestProcedure, Unmet)] =
-      revision.flatMapProcedures(p => p.disabledBy(options).map(u => (p, u)))
-
-    disabled.foreach { (p, unmet) =>
-      Colors.text.printLine("Procedure: " + p.id)
-      unmet.values.foreach((option, value) => Colors.text.printLine("    Option: " + option.id + " == " + value))
+    val disabled = skipped.collect { case (p, Skip.Disabled(unmet)) =>
+      ("Procedure: " + p.id) :: unmet.values.map((option, value) => "    Option: " + option.id + " == " + value)
     }
+    (notApplicable ++ disabled).flatten
   }
 
   def printNetworkAdapters(): Unit = {

@@ -6,6 +6,8 @@ package io.stepfunc.dnp3c.conformance
 import java.io.File
 import java.nio.file.Files
 
+import io.stepfunc.dnp3c.conformance.api.{ BooleanOption, OptionGroups, Options }
+import io.stepfunc.dnp3c.conformance.api.options.{ OutstationOptions, SupportOptions }
 import io.stepfunc.dnp3c.conformance.application.Console
 import io.stepfunc.dnp3c.dnp3.DefaultIntegrationPlugin
 import org.junit.runner.RunWith
@@ -112,5 +114,27 @@ class MainTest extends AnyFunSuite with Matchers {
     val missing = new File(Files.createTempDirectory("dnp3c").toFile, "missing/device.properties")
     Main.execute(command(Some("8.1.2"), None, Some(missing)), new DefaultIntegrationPlugin()) should not equal 0
     Main.execute(command(None, Some(missing), None), new DefaultIntegrationPlugin()) should not equal 0
+  }
+
+  test("-disabled lists a procedure that doesn't apply at the level once, even if an option disables it too") {
+    // 8.26.3 applies at level 3 only, and needs an option that's off by default
+    val options = Options.from(Map(OutstationOptions.subsetLevel.id -> "2", SupportOptions.assignNoClass.id -> "false"))
+    val lines = Main.disabledLines(options, Revisions.v3_1r1, 2)
+    lines.count(_ == "Procedure: 8.26.3") should equal(1)
+    lines(lines.indexOf("Procedure: 8.26.3") + 1) should equal("    Not applicable at subset level 2")
+  }
+
+  test("-disabled lists each procedure once, whatever the level and options") {
+    val booleans = OptionGroups.list.flatMap(_.options).collect { case o: BooleanOption => o.id }
+    for {
+      revision <- Revisions.list
+      level <- revision.subsetLevels
+      value <- List(None, Some("true"), Some("false"))
+    } {
+      val options =
+        Options.from(booleans.flatMap(id => value.map(id -> _)).toMap + (OutstationOptions.subsetLevel.id -> s"$level"))
+      val ids = Main.disabledLines(options, revision, level).filter(_.startsWith("Procedure: "))
+      withClue(s"${revision.id} L$level $value: ")(ids.diff(ids.distinct) should equal(Nil))
+    }
   }
 }
