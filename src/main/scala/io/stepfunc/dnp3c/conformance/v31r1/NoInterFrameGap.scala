@@ -8,8 +8,6 @@ import io.stepfunc.dnp3c.conformance.api.options.{ LinkOptions, SerialOptions, S
 import io.stepfunc.dnp3c.conformance.common.GenericSteps._
 import io.stepfunc.dnp3c.dnp3._
 import io.stepfunc.dnp3c.dnp3.app.{ IIN, ItemIndex, Message, Qualifier, Sequence, Unsolicited, Variation }
-import io.stepfunc.dnp3c.dnp3.link.{ Control, LinkFrame, LinkFunction }
-import io.stepfunc.dnp3c.dnp3.transport.Transport
 import io.stepfunc.dnp3c.protocol.parsing.UInt16LE
 
 /**
@@ -23,17 +21,6 @@ import io.stepfunc.dnp3c.protocol.parsing.UInt16LE
  * other address (LinkOptions.otherDestination either way).
  */
 object NoInterFrameGap {
-
-  // an unconfirmed user data frame from the master, carrying the message in one transport segment
-  private def frame(driver: TestDriver, destination: Int, message: Message, transportSeq: Int): List[Byte] =
-    LinkFrame
-      .withData(
-        Control(master = true, fcb = false, fcv = false, LinkFunction.UNCONFIRMED_USER_DATA),
-        UInt16LE(destination),
-        driver.local,
-        Transport.function(fir = true, fin = true, transportSeq.toByte) :: message.toBytes
-      )
-      .toBytes
 
   // IIN bits that may change between two reads: new events, a broadcast, an event buffer that overflows
   private val changing =
@@ -84,9 +71,10 @@ object NoInterFrameGap {
           s"In one transmission, with no gap: an application layer confirm to address $other, then a READ of class 0 " +
             s"to the DUT w/ ${Sequence.one}")
         def run(driver: TestDriver): List[DeferredCheck] = {
-          driver.write(
-            frame(driver, other, Requests.confirm(Sequence.zero, Unsolicited.No), 0) ++
-              frame(driver, driver.remote.value, Requests.readClass0(Sequence.one), 1))
+          val confirm =
+            driver.frames(Requests.confirm(Sequence.zero, Unsolicited.No), LinkOverride.destination(UInt16LE(other)))
+          val read = driver.frames(Requests.readClass0(Sequence.one), transportSeq = 1)
+          driver.write((confirm ++ read).flatMap(_.toBytes))
           Nil
         }
       }

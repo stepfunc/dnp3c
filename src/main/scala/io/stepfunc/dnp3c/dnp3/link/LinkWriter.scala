@@ -12,12 +12,12 @@ object LinkWriter {
       src: UInt16LE,
       dest: UInt16LE,
       block: Option[Byte],
-      reporter: TestReporter)(data: List[Byte])(fun: List[Byte] => Unit): Unit = {
+      reporter: TestReporter)(data: List[Byte])(fun: LinkFrame => Unit): Unit = {
     val control =
       block.map(Control.apply).getOrElse(Control(true, false, false, LinkFunction.UNCONFIRMED_USER_DATA))
     val frame = LinkFrame.withData(control, dest, src, data)
     reporter.transmit(frame)
-    fun(frame.toBytes)
+    fun(frame)
   }
 
 }

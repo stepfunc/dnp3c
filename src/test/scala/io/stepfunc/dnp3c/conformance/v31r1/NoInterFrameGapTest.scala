@@ -9,8 +9,10 @@ import io.stepfunc.dnp3c.conformance.Run
 import io.stepfunc.dnp3c.conformance.api.Options
 import io.stepfunc.dnp3c.conformance.api.options.{ LinkOptions, SupportOptions }
 import io.stepfunc.dnp3c.dnp3._
-import io.stepfunc.dnp3c.dnp3.app.{ AppFunction, Message }
-import io.stepfunc.dnp3c.dnp3.link.{ LinkFrame, LinkFrameParser }
+import io.stepfunc.dnp3c.dnp3.app.{ AppFunction, Message, Sequence, Unsolicited }
+import io.stepfunc.dnp3c.dnp3.link.{ Control, LinkFrame, LinkFrameParser, LinkFunction }
+import io.stepfunc.dnp3c.dnp3.transport.Transport
+import io.stepfunc.dnp3c.protocol.parsing.UInt16LE
 import org.junit.runner.RunWith
 import org.scalatestplus.junit.JUnitRunner
 import org.scalatest.matchers.should.Matchers
@@ -24,8 +26,10 @@ class NoInterFrameGapTest extends AnyFunSuite with Matchers {
    * Answers a READ of class 0 with binary inputs 0 and 1, or, if it was preceded in the same write by a frame to
    * another address and the DUT is confused by that, with only binary input 0
    */
-  private class Dut(confused: Boolean) extends RespondingDriver {
+  private class Dut(confused: Boolean, supplied: Option[ProcedureReporter] = None)
+      extends RespondingDriver(supplied) {
     val frames = mutable.ListBuffer.empty[LinkFrame]
+    val writes = mutable.ListBuffer.empty[List[Byte]]
 
     private def answer(read: Message, both: Boolean): Unit = {
       val seq = read.ctrl.seq.value.toInt
@@ -36,6 +40,7 @@ class NoInterFrameGapTest extends AnyFunSuite with Matchers {
     override def writeMessage(message: Message, options: LinkOverride): Unit = answer(message, both = true)
 
     override def write(bytes: List[Byte]): Unit = {
+      writes += bytes
       // the frames of the write, in order
       var rest = bytes.toIndexedSeq
       while (rest.nonEmpty) LinkFrameParser.decode(rest, reporter) match {
@@ -65,6 +70,28 @@ class NoInterFrameGapTest extends AnyFunSuite with Matchers {
     dut.frames.map(_.header.dest.value).toList should equal(List(1025, 1024))
     Message.parse(dut.frames.head.data.tail).function should equal(AppFunction.confirm)
     Message.parse(dut.frames(1).data.tail).function should equal(AppFunction.read)
+  }
+
+  test("the write carries the frames as built by hand, each logged at the application, transport and link layers") {
+    val log = new RecordingLogger
+    val dut = new Dut(confused = false, Some(new ProcedureReporter(log, new DefaultIntegrationPlugin())))
+    run(dut) should equal(true)
+
+    val confirm = Requests.confirm(Sequence.zero, Unsolicited.No)
+    val read = Requests.readClass0(Sequence.one)
+    def frame(destination: Int, message: Message, seq: Byte) = LinkFrame.withData(
+      Control(master = true, fcb = false, fcv = false, LinkFunction.UNCONFIRMED_USER_DATA),
+      UInt16LE(destination),
+      dut.local,
+      Transport.function(fir = true, fin = true, seq) :: message.toBytes
+    )
+    val frames = List(frame(1025, confirm, 0), frame(1024, read, 1))
+
+    dut.writes.toList should equal(List(frames.flatMap(_.toBytes)))
+    log.transmitted(Aliases.app) should equal(List(confirm.toString, read.toString))
+    log.transmitted(Aliases.transport) should equal(
+      List(Transport.Header(true, true, 0).toString, Transport.Header(true, true, 1).toString))
+    log.transmitted(Aliases.link) should equal(frames.map(_.toString))
   }
 
   test("a DUT that answers the READ differently after the confirm fails") {

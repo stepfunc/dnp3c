@@ -170,17 +170,24 @@ trait TestDriver {
   def setRts(asserted: Boolean): Unit =
     throw new UnsupportedOperationException("this driver has no serial line")
 
-  // the link frames that carry the message, each logged and given to write in turn
-  def toFrames(message: Message, options: LinkOverride)(write: List[Byte] => Unit): Unit =
-    SegmentWriter.write(message.toBytes, 0, reporter) { segment =>
+  // the link frames that carry the message, its transport segments numbered from transportSeq: the message is logged,
+  // then each segment and frame before it's given to write
+  def toFrames(message: Message, options: LinkOverride, transportSeq: Byte = 0)(write: LinkFrame => Unit): Unit = {
+    reporter.transmit(message)
+    SegmentWriter.write(message.toBytes, transportSeq, reporter) { segment =>
       LinkWriter.write(local, options.destination.getOrElse(remote), options.controlBlock, reporter)(segment)(write)
     }
+  }
 
-  // the bytes writeMessage sends for the message: its link frames
-  def frameBytes(message: Message, options: LinkOverride = LinkOverride.default): List[Byte] = {
-    val bytes = scala.collection.mutable.ListBuffer.empty[Byte]
-    toFrames(message, options)(frame => bytes ++= frame)
-    bytes.toList
+  // the frames writeMessage sends for the message, logged as it logs them, for a step that writes them itself: altered,
+  // or in one write with others
+  def frames(
+      message: Message,
+      options: LinkOverride = LinkOverride.default,
+      transportSeq: Byte = 0): List[LinkFrame] = {
+    val frames = scala.collection.mutable.ListBuffer.empty[LinkFrame]
+    toFrames(message, options, transportSeq)(frames += _)
+    frames.toList
   }
 
   // ---- application layer ----

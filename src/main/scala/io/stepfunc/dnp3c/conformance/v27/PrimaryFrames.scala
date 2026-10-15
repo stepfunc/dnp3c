@@ -7,8 +7,7 @@ import io.stepfunc.dnp3c.conformance.api._
 import io.stepfunc.dnp3c.conformance.common.LinkSteps._
 import io.stepfunc.dnp3c.conformance.common.GenericSteps._
 import io.stepfunc.dnp3c.dnp3.{ LinkOverride, Requests, TestDriver }
-import io.stepfunc.dnp3c.dnp3.link.{ Control, LinkFrame }
-import io.stepfunc.dnp3c.dnp3.transport.Transport
+import io.stepfunc.dnp3c.dnp3.link.LinkFrame
 import io.stepfunc.dnp3c.dnp3.app.Sequence
 
 // what 6.6.2's procedures share
@@ -17,12 +16,10 @@ object PrimaryFrames {
   // "Wait several seconds" before verifying that the DUT did not respond
   val severalSecondsMs = 3000
 
-  // a class 0 read (g60v1, qualifier 0x06) in one transport segment, in a confirmed user data frame (control 0xD3)
-  // unless another control is given
-  def class0Frame(driver: TestDriver, control: Control = Control(0xD3.toByte)): LinkFrame = {
-    val segment = Transport.function(fir = true, fin = true, seq = 0) :: Requests.readClass0(Sequence.zero).toBytes
-    LinkFrame.withData(control, driver.remote, driver.local, segment)
-  }
+  // a class 0 read (g60v1, qualifier 0x06) in one transport segment, in a confirmed user data frame (control 0xD3),
+  // logged as it's built, for the step to alter and send
+  def class0Frame(driver: TestDriver): LinkFrame =
+    driver.frames(Requests.readClass0(Sequence.zero), LinkOverride.control(0xD3.toByte)).head
 
   // These common steps are run before every other test in 6.6.2
   def prologue: Iterable[LabeledStep] = List(
