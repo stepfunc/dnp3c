@@ -50,10 +50,11 @@ class LevelOneAndDisableTest extends AnyFunSuite with Matchers {
   }
 
   test("8.22.1 disables the double-bit inputs, reads g4, and restores them") {
-    val (passed, _, calls) = run(DisableDoubleBit.events, Options.from(Map()), IIN.empty)
+    val (passed, _, calls) = run(DisableDoubleBit.events, Options.from(Map()), IIN.OBJECT_UNKNOWN)
     passed should equal(true)
     calls should equal(List("uninstall", "reinstall"))
-    run(DisableDoubleBit.events, Options.from(Map()), IIN.OBJECT_UNKNOWN)._1 should equal(true)
+    // as 8.21.1 does, it needs the error, which its step makes optional
+    run(DisableDoubleBit.events, Options.from(Map()), IIN.empty)._1 should equal(false)
   }
 
   test("8.21.1 needs an error response; and a device that can't disable its double-bit inputs fails") {

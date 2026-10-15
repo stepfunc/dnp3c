@@ -19,7 +19,8 @@ import io.stepfunc.dnp3c.dnp3.app.objects._
  * variations, which subset level 3 answers in the variation requested, or in the one of the same width with or without
  * flags, with every flag normal (ONLINE set, all others clear) where it reports them; then one flag of the first point is
  * set abnormal, and the point must come back in a variation with flags, reporting it. A level 1 or 2 device may answer
- * the first read with a Null Error Response, IIN2.1 or IIN2.2, and skip the rest.
+ * the first read with a Null Error Response, IIN2.1 or IIN2.2, and skip the rest; a device without the points must, and
+ * gets no more (see MissingPoints).
  *
  * A point the DUT keeps only as 16-bit or only as 32-bit values may come back in a variation of that width whatever the
  * request (counter.only16Bit and the like). The flags are set back to normal at the end, or where a step fails.
@@ -48,6 +49,8 @@ object StaticVariations {
   }
 
   /**
+   * @param points whether the DUT has the points; one without them gets the first read, and nothing more
+   * @param requirement what else the test needs of a DUT with the points
    * @param wide the 32-bit variations, or the only ones where the type has a single width
    * @param narrow the 16-bit variations
    * @param flagsMask the bits of the flags octet that report flags, without a binary point's state; reserved bits are
@@ -58,6 +61,7 @@ object StaticVariations {
   final case class StaticType(
       name: String,
       kind: PointKind,
+      points: BooleanOption,
       requirement: List[OptionCondition],
       wide: Width,
       narrow: Option[Width],
@@ -72,9 +76,28 @@ object StaticVariations {
     without(IIN.FUNC_NOT_SUPPORTED)
 
   def test(t: StaticType): ProcedureDefinition = new ProcedureDefinition {
-    override protected def requiredOptions: List[OptionCondition] = t.requirement
+    override protected def requirement: Requirement =
+      Requirement.anyOf(!t.points, Requirement.all((OptionCondition(t.points) :: t.requirement)*))
 
-    override protected def plan(options: OptionSource): Plan = {
+    override protected def plan(options: OptionSource): Plan =
+      if (options.get(t.points)) withPoints(options) else withoutPoints
+
+    // a DUT without the points answers the first read with a Null Error Response, IIN2.1 or IIN2.2, and the test ends
+    // there, whether or not 3.1r1's steps read a type the DUT doesn't have (see MissingPoints)
+    private def withoutPoints: Plan = {
+      val (before, rest) = t.specs.span(!_.isInstanceOf[Spec.Read])
+      val read = rest.collectFirst { case r: Spec.Read => r }.get
+      Plan(before.collect { case Spec.Normal(step) =>
+        step --> describe(s"The DUT has no ${t.name}: there are no flags to set normal")
+      } ++ List(
+        read.step --> send(Requests.readAllObjects(Sequence.zero, read.variation)),
+        read.checks -->
+          (MissingPoints.expect(Sequence.zero) +
+            describe(s"The DUT has no ${t.name}: the rest of the test doesn't apply"))
+      ))
+    }
+
+    private def withPoints(options: OptionSource): Plan = {
       val only16 = t.only16.map(o => options.get(o).map(_.value).toSet).getOrElse(Set.empty[Int])
       val only32 = t.only32.map(o => options.get(o).map(_.value).toSet).getOrElse(Set.empty[Int])
       val levelThree = options.get(OutstationOptions.subsetLevel).contains(3)
@@ -239,7 +262,8 @@ object StaticVariations {
   val binaryInputs: StaticType = StaticType(
     "Binary Inputs",
     PointKind.BinaryInput,
-    List(Inputs.binary.points, Inputs.binary.reads),
+    Inputs.binary.points,
+    List(Inputs.binary.reads),
     g1,
     None,
     None,
@@ -258,7 +282,8 @@ object StaticVariations {
   val doubleBitInputs: StaticType = StaticType(
     "Double-Bit Binary Inputs",
     PointKind.DoubleBitInput,
-    List(Inputs.doubleBit.points, Inputs.doubleBit.reads),
+    Inputs.doubleBit.points,
+    List(Inputs.doubleBit.reads),
     g3,
     None,
     None,
@@ -277,7 +302,8 @@ object StaticVariations {
   val binaryOutputStatus: StaticType = StaticType(
     "Binary Output Status",
     PointKind.BinaryOutputStatus,
-    List(Outputs.binary.statusPoints),
+    Outputs.binary.statusPoints,
+    Nil,
     Width(Group10Var2, None),
     None,
     None,
@@ -294,7 +320,8 @@ object StaticVariations {
   val counters: StaticType = StaticType(
     "Counters",
     PointKind.Counter,
-    List(Inputs.counter.points, Inputs.counter.reads),
+    Inputs.counter.points,
+    List(Inputs.counter.reads),
     Width(Group20Var1, Some(Group20Var5)),
     Some(Width(Group20Var2, Some(Group20Var6))),
     Some(CounterOptions.only16Bit),
@@ -316,7 +343,8 @@ object StaticVariations {
   val frozenCounters: StaticType = StaticType(
     "Frozen Counters",
     PointKind.FrozenCounter,
-    List(Inputs.frozenCounter.points, Inputs.frozenCounter.reads),
+    Inputs.frozenCounter.points,
+    List(Inputs.frozenCounter.reads),
     Width(Group21Var1, Some(Group21Var9)),
     Some(Width(Group21Var2, Some(Group21Var10))),
     Some(CounterOptions.frozenOnly16Bit),
@@ -339,7 +367,8 @@ object StaticVariations {
   val analogInputs: StaticType = StaticType(
     "Analog Inputs",
     PointKind.AnalogInput,
-    List(Inputs.analog.points, Inputs.analog.reads),
+    Inputs.analog.points,
+    List(Inputs.analog.reads),
     Width(Group30Var1, Some(Group30Var3)),
     Some(Width(Group30Var2, Some(Group30Var4))),
     Some(AnalogInputOptions.only16Bit),
@@ -364,7 +393,8 @@ object StaticVariations {
   val analogOutputStatus: StaticType = StaticType(
     "Analog Output Status",
     PointKind.AnalogOutputStatus,
-    List(Outputs.analog.statusPoints),
+    Outputs.analog.statusPoints,
+    Nil,
     Width(Group40Var1, None),
     Some(Width(Group40Var2, None)),
     None,

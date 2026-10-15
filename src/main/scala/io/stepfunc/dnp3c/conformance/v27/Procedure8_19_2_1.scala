@@ -9,7 +9,7 @@ import io.stepfunc.dnp3c.conformance.common.GenericSteps._
 import io.stepfunc.dnp3c.conformance.common.Validations._
 import io.stepfunc.dnp3c.dnp3.app.Sequence
 import io.stepfunc.dnp3c.dnp3.app.objects.Group32Var0
-import io.stepfunc.dnp3c.dnp3.{ AutoConfirm, Requests }
+import io.stepfunc.dnp3c.dnp3.{ AutoConfirm, MessageValidation, Requests }
 
 /**
  * 8.19.2's Analog Input Change
@@ -17,7 +17,7 @@ import io.stepfunc.dnp3c.dnp3.{ AutoConfirm, Requests }
  * @param confirmStep whether the confirmation of the response with the events is a step of its own, as in 3.1r1 (step
  *   10); 2.7 doesn't number it, though the master confirms the response
  */
-class AnalogInputChange(confirmStep: Boolean) extends ProcedureDefinition {
+class AnalogInputChange(confirmStep: Boolean, withoutPoints: MessageValidation = isNull) extends ProcedureDefinition {
 
   override protected def steps(options: OptionSource): Iterable[LabeledStep] = {
 
@@ -30,7 +30,9 @@ class AnalogInputChange(confirmStep: Boolean) extends ProcedureDefinition {
       2 --> reportByExceptionNotVerified(Some("analog inputs"))
     )
 
-    def notSupportedStep: LabeledStep = 3 --> expectSingleResponse(Sequence.zero, isNull)
+    // without the events: a Null Response, or for a DUT without analog inputs, withoutPoints
+    def notSupportedStep: LabeledStep =
+      3 --> expectSingleResponse(Sequence.zero, if (options.get(Inputs.analog.points)) isNull else withoutPoints)
 
     def supportedSteps: List[LabeledStep] = {
       val c = if (confirmStep) 1 else 0

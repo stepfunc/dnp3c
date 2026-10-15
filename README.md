@@ -32,6 +32,24 @@ dnp3c implements two revisions of the DNP Users Group's *DNP3 IED Certification 
 
 The section, procedure and step numbers in the tool, its logs and the report are those of the revision being run. Each revision is run as published, so a result under 2.7 can differ from one under 3.1 rev 1, which changes what some tests send or accept, often to apply technical bulletins published after 2.7.
 
+### Where 3.1 rev 1 contradicts itself
+
+3.1 rev 1 is inconsistent about how a device answers a read of a point type it has no points of. Its Table 11-1, and TB2016-001, which it follows, say the device answers with an error, IIN2.1 or IIN2.2. Table 11-1 also marks the update of the other affected sections as still to be done, and some of their steps still expect a Null Response, which has no error bits. So, as printed, the answer depends on the point type: a device without double-bit inputs must answer a read of g3 with an error, but one of g4 with a Null Response.
+
+dnp3c resolves this the same way for every point type. A device without the points, or with them uninstalled or disabled for the test, answers with a Null Error Response: no objects, IIN2.1 or IIN2.2 set, and IIN2.0 clear. A device with the points but no events still answers a read of the events with a Null Response. The subset parsing tables of TB2016-003b say the same. This only changes which IIN bits a 3.1 rev 1 run accepts, not interoperability: a device certified against 2.7, which accepts the plain Null Response, is just as valid. 2.7 keeps its own steps.
+
+| Test | As printed, for a device without the points | What dnp3c accepts |
+|---|---|---|
+| 8.3.2 | a Null Response, IIN2.1 or IIN2.2 optional (8.3.1 requires the error) | the error |
+| 8.13.2b, 8.21b | an error response with IIN2.1 or IIN2.2, which may carry data | the error, with no data and IIN2.0 clear |
+| 8.14.2b, 8.17.2b, 8.19.2b, 8.22b | a Null Response | the error; with the points but no events, a Null Response, as printed |
+| 8.22.1 | a Null Response, IIN2.1 or IIN2.2 optional (8.21.1 requires the error) | the error |
+| 8.23.2.x.1 | an error response with any error bit | the error, IIN2.0 clear; IIN2.0 still passes where a level 1 or 2 device without range reads leaves the test |
+| 8.24.2a–g | a, c–e and g read the type and accept the error; b and f skip a device without it | all seven read the type once and require the error |
+| 8.25.2c–e | the error, though 8.25.1 also allows a Null Response | the error; with the points but no events, a Null Response or IIN2.1, as 8.25.1 allows |
+
+A level 1 test of a device that can't read a type (8.13.2a and the like) runs only for a device that has the type; a device without it gets the test above instead.
+
 ## Requirements
 
 Java 17 or newer.

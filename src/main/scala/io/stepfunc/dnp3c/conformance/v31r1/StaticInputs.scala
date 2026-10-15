@@ -39,7 +39,9 @@ object StaticInputs {
       events: Boolean = false,
       lastStep: Option[String] = None)
       extends ProcedureDefinition {
-    override protected def requirement: Requirement = !(if (events) input.eventReads else input.reads)
+    // a device without the points has its own test, whatever it says of reads
+    override protected def requirement: Requirement =
+      Requirement.all(OptionCondition(input.points), !(if (events) input.eventReads else input.reads))
 
     private val what = if (events) s"${input.longName} events" else s"${input.longName} points"
     private val tests = if (events) s"${input.longName} event" else input.longName
@@ -76,26 +78,16 @@ object StaticInputs {
     }
   }
 
-  /** 8.13.2b: a device without the inputs answers a read of them with an error response, IIN2.1 or IIN2.2 */
-  final class WithoutInputs(input: InputOptions, variation: Variation) extends ProcedureDefinition {
-    override protected def requirement: Requirement =
-      Requirement.all(!input.points, OptionCondition(input.reads))
-    override protected def steps(options: OptionSource): Iterable[LabeledStep] = List(
-      1 --> send(Requests.readAllObjects(Sequence.one, variation)),
-      2 --> expectSingleResponse(Sequence.one, containingAnyOf(IIN.objectErrors))
-    )
-  }
-
   /**
-   * 8.16.1.2.2, 8.16.2.2.2 and 8.18.2b: a device without the points answers a read of them with a Null Error Response,
-   * IIN2.1 or IIN2.2 (8.13.2b allows an Error Response with data)
+   * 8.13.2b, 8.16.1.2.2, 8.16.2.2.2, 8.18.2b and 8.21b: a device without the points answers a read of them with a Null
+   * Error Response, IIN2.1 or IIN2.2, whatever it says of reads (8.13.2b and 8.21b print an error response, which may
+   * carry data; see MissingPoints)
    */
   final class WithoutPoints(input: InputOptions, variation: Variation) extends ProcedureDefinition {
-    override protected def requirement: Requirement =
-      Requirement.all(!input.points, OptionCondition(input.reads))
+    override protected def requirement: Requirement = !input.points
     override protected def steps(options: OptionSource): Iterable[LabeledStep] = List(
       1 --> send(Requests.readAllObjects(Sequence.one, variation)),
-      2 --> expectSingleResponse(Sequence.one, isNullErrorResponse(IIN.objectErrors))
+      2 --> MissingPoints.expect(Sequence.one)
     )
   }
 
@@ -116,13 +108,13 @@ object StaticInputs {
   }
 
   val binaryLevelOne = new LevelOneWithoutReads(Inputs.binary, List(Group1Var0))
-  val binaryWithout = new WithoutInputs(Inputs.binary, Group1Var0)
+  val binaryWithout = new WithoutPoints(Inputs.binary, Group1Var0)
   val binaryHas = v27.Procedure8_13_2_2.requiring(OptionCondition(Inputs.binary.reads))
   val binaryConfigurable =
     new Configurable(Inputs.binary, "binary inputs", PluginSteps.uninstallBinaryInputs, Group1Var0, Sequence.one)
 
   val doubleBitLevelOne = new LevelOneWithoutReads(Inputs.doubleBit, List(Group3Var0))
-  val doubleBitWithout = new WithoutInputs(Inputs.doubleBit, Group3Var0)
+  val doubleBitWithout = new WithoutPoints(Inputs.doubleBit, Group3Var0)
   val doubleBitHas = v27.Procedure8_21_2_1.requiring(OptionCondition(Inputs.doubleBit.reads))
   val doubleBitConfigurable = new Configurable(
     Inputs.doubleBit,

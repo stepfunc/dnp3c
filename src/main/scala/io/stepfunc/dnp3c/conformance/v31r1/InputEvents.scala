@@ -372,12 +372,20 @@ object InputEvents {
   )
 
   /**
-   * A device without the input's events (8.14.2b): as 2.7's, but only for a device whose events can be read, since a
-   * subset level 1 device that can't read them answers with an error, which 8.14.2a tests
+   * A device without the input's events (8.14.2b): as 2.7's, a Null Response for a device whose events can be read, since
+   * a subset level 1 device that can't read them answers with an error, which 8.14.2a tests; and for a device without
+   * the inputs, a Null Error Response with IIN2.1 or IIN2.2, which 3.1r1's step doesn't print (see MissingPoints)
    */
   final class WithoutEvents(input: InputType) extends NoEvents(input) {
-    override protected def requirement: Requirement =
-      Requirement.all(input.support.withoutEvents, OptionCondition(input.support.eventReads))
+    override protected def requirement: Requirement = MissingPoints.withoutEvents(input.support)
+    override protected def steps(options: OptionSource): Iterable[LabeledStep] =
+      if (options.get(input.support.points)) super.steps(options)
+      else
+        List(
+          1 --> send(Requests.readAllObjects(Sequence.one, input.anyVariation)),
+          2 --> describe(s"The DUT has no ${input.name}s: report by exception doesn't apply"),
+          3 --> MissingPoints.expect(Sequence.one)
+        )
   }
 
   import InputType.{ BinaryInput, DoubleBitBinaryInput }
