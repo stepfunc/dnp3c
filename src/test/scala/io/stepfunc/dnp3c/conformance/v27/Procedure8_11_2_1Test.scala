@@ -117,16 +117,19 @@ class Procedure8_11_2_1Test extends AnyFunSuite with Matchers {
     Run.passes(Procedure8_11_2_1, new Dut(new Plugin, 5000, defersReads = true), timeouts) should equal(true)
   }
 
-  test("step 24 notes a READ answered while the startup response is unconfirmed") {
+  test("step 24 warns of a READ answered while the startup response is unconfirmed, and notes nothing") {
     val dut = new Dut(new Plugin, 5000)
     Run.passing(Procedure8_11_2_1, dut, timeouts)
-    dut.reporter.notes should have size 1
-    dut.reporter.notes.head should include("answered the READ while its startup unsolicited response was unconfirmed")
+    dut.reporter.notes should equal(Nil)
+    dut.reporter.warnings should have size 1
+    dut.reporter.warnings.head should
+      include("answered the READ while its startup unsolicited response was unconfirmed")
   }
 
-  test("step 24 doesn't note a READ answered once the startup response's confirm timeout expires") {
+  test("step 24 neither warns of nor notes a READ answered once the startup response's confirm timeout expires") {
     val dut = new Dut(new Plugin, 5000, defersReads = true)
     Run.passing(Procedure8_11_2_1, dut, timeouts)
     dut.reporter.notes should equal(Nil)
+    dut.reporter.warnings should equal(Nil)
   }
 }
