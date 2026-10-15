@@ -10,7 +10,7 @@ import io.stepfunc.dnp3c.conformance.{ Revision, Skip }
 import io.stepfunc.dnp3c.conformance.application.pcap.PacketCapture
 import io.stepfunc.dnp3c.conformance.api._
 import io.stepfunc.dnp3c.conformance.api.options.{
-  ChannelOptions, LinkOptions, OutstationOptions, SerialOptions, TestOptions, UnsolicitedOptions
+  ChannelOptions, LinkOptions, NetworkOptions, OutstationOptions, SerialOptions, TestOptions, UnsolicitedOptions
 }
 import io.stepfunc.dnp3c.conformance.application.report.ReportLogger
 import io.stepfunc.dnp3c.dnp3.{ DefaultTestDriver, IntegrationPlugin, Policies, ProcedureReporter, TestDriver }
@@ -38,7 +38,7 @@ private[application] object ProcedureEnvironment {
     def openCapture(options: OptionSource, path: Path): Option[Closeable] = {
       val channel = ChannelOptions(options)
       if (options.get(SerialOptions.enabled)) None
-      else channel.captureNIC.map(nic => PacketCapture.create(nic, channel.host).open(path.toString))
+      else channel.captureNIC.map(nic => PacketCapture.create(nic, captureFilter(options)).open(path.toString))
     }
 
     def openDriver(reporter: ProcedureReporter, options: OptionSource, policies: Policies): TestDriver =
@@ -54,6 +54,11 @@ private[application] object ProcedureEnvironment {
         policies = policies
       )
   }
+
+  // the packets to and from the DUT's address, over every port, as 3.1r1's network tests use several, and to the
+  // multicast group, where 3.1r1's UDP Multicast test sends its broadcast rather than to the DUT
+  private[application] def captureFilter(options: OptionSource): String =
+    (options.get(ChannelOptions.host) :: NetworkOptions.group(options).toList).map(h => s"host $h").mkString(" or ")
 }
 
 object TestRunner {

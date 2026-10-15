@@ -131,7 +131,7 @@ List the network adapters and their addresses:
 dnp3c -adapters
 ```
 
-Set `tcp.capture.adapter` to the address of the adapter that reaches the DUT, exactly as `-adapters` prints it, including the leading `/`, e.g. `/192.168.1.10`. Only traffic to and from the DUT's address is captured. Leave the option empty to turn capture off.
+Set `tcp.capture.adapter` to the address of the adapter that reaches the DUT, exactly as `-adapters` prints it, including the leading `/`, e.g. `/192.168.1.10`. Only traffic to and from the DUT's address is captured, and traffic to `network.multicastGroup` where it's set, for 3.1r1's UDP Multicast test. Leave the option empty to turn capture off.
 
 ## Commands
 

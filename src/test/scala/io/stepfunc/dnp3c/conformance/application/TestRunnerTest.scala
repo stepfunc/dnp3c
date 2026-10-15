@@ -10,7 +10,9 @@ import java.nio.file.{ Files, Path }
 import io.stepfunc.dnp3c.conformance.{ Main, Revision, Revisions }
 import io.stepfunc.dnp3c.conformance.api._
 import io.stepfunc.dnp3c.conformance.api.ProcedureOutcome.{ Failed, Passed, Skipped }
-import io.stepfunc.dnp3c.conformance.api.options.{ OutstationOptions, SupportOptions, TestOptions }
+import io.stepfunc.dnp3c.conformance.api.options.{
+  ChannelOptions, NetworkOptions, OutstationOptions, SupportOptions, TestOptions
+}
 import io.stepfunc.dnp3c.dnp3._
 import io.stepfunc.dnp3c.dnp3.app.Message
 import io.stepfunc.dnp3c.protocol.channel.LocalBindException
@@ -449,5 +451,16 @@ class TestRunnerTest extends AnyFunSuite with Matchers {
     val run = new Run("step 2")
     run(deferring("a", run.fail, "1", "2")).results should equal(List(ProcedureResult("a", Failed("step 2 failed"))))
     run.events.list should not contain "check 1"
+  }
+
+  test("the capture has the DUT's traffic, and the broadcasts to the multicast group where one is set") {
+    def filter(host: String, group: String): String = ProcedureEnvironment.captureFilter(
+      Options.from(Map(ChannelOptions.host.id -> host, NetworkOptions.multicastGroup.id -> group)))
+    filter("192.168.1.20", "") should equal("host 192.168.1.20")
+    filter("192.168.1.20", "239.0.0.1") should equal("host 192.168.1.20 or host 239.0.0.1")
+    filter("fd00::20", "ff15::1") should equal("host fd00::20 or host ff15::1")
+    // a group 3.1r1's UDP Multicast test wouldn't run with
+    filter("192.168.1.20", "192.168.1.30") should equal("host 192.168.1.20")
+    filter("192.168.1.20", "group") should equal("host 192.168.1.20")
   }
 }
