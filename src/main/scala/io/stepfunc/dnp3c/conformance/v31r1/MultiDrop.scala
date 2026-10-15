@@ -87,11 +87,9 @@ object MultiDrop {
   }
 
   // checked at once, while the line's recording is of this exchange
-  private val noCarrier: TestStep = new TestStep {
-    def description: List[Comment] = List("Verify on the line that the DUT didn't raise carrier or assert RTS")
-    def run(driver: TestDriver): List[DeferredCheck] =
-      driver.reporter.plugin.verifyNoCarrier(driver.reporter.checkReporter(CheckTiming.Immediate)).toList
-  }
+  private val noCarrier: TestStep =
+    PluginCheck("Verify on the line that the DUT didn't raise carrier or assert RTS")((plugin, reporter) =>
+      plugin.verifyNoCarrier(reporter))
 
   // the other devices' late answers, read until the line is quiet for the link timeout, so none mixes with the
   // DUT's response; a frame from the DUT fails
@@ -106,15 +104,10 @@ object MultiDrop {
     }
   }
 
-  private def carrierTiming(delays: Option[RtsDelays]): TestStep = new TestStep {
-    def description: List[Comment] = List(
-      "Verify on the line that the DUT raised carrier (RTS) an appropriate time before its response, and dropped it " +
-        "an appropriate time after" + delays.fold("")(d => s", as set: ${d.beforeMs} ms and ${d.afterMs} ms"))
-    def run(driver: TestDriver): List[DeferredCheck] =
-      driver.reporter.plugin
-        .verifyCarrierTiming(driver.reporter.checkReporter(CheckTiming.Immediate), delays)
-        .toList
-  }
+  private def carrierTiming(delays: Option[RtsDelays]): TestStep = PluginCheck(
+    "Verify on the line that the DUT raised carrier (RTS) an appropriate time before its response, and dropped it " +
+      "an appropriate time after" + delays.fold("")(d => s", as set: ${d.beforeMs} ms and ${d.afterMs} ms"))(
+    (plugin, reporter) => plugin.verifyCarrierTiming(reporter, delays))
 
   private def setDelays(delays: Option[RtsDelays]): TestStep =
     PluginSteps.action(delays.fold("Restore the DUT's usual RTS delays")(d =>

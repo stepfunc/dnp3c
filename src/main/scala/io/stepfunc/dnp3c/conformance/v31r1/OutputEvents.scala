@@ -71,7 +71,6 @@ object OutputEvents {
 
   // status in class 0 (10.3.2, 10.4.2): a response to a class 0 read with every installed point in the variation
   private def inClassZero(
-      statusPoints: OptionCondition,
       events: List[OptionCondition],
       variation: Variation,
       installed: IndexListOption): ProcedureDefinition = new ProcedureDefinition {
@@ -92,14 +91,12 @@ object OutputEvents {
   }
 
   val binaryStatusInClassZero: ProcedureDefinition = inClassZero(
-    Outputs.binary.statusPoints,
     List(Outputs.binary.events, Outputs.binary.commandEvents),
     Group10Var2,
     BinaryOutputOptions.installedPoints)
 
   // 10.4.2's step 2 says object 10 variation 2, where its desired behavior has analog output status, 40 variation 2
   val analogStatusInClassZero: ProcedureDefinition = inClassZero(
-    Outputs.analog.statusPoints,
     List(Outputs.analog.events, Outputs.analog.commandEvents),
     Group40Var2,
     AnalogOutputOptions.installedPoints)

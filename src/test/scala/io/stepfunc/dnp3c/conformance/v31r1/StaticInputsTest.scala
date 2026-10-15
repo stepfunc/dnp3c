@@ -82,11 +82,10 @@ class StaticInputsTest extends AnyFunSuite with Matchers {
   }
 
   test("8.20.2a runs where the DUT can read none of its input types on their own, and 8.20.2b elsewhere") {
-    val inputs = List(Inputs.binary, Inputs.doubleBit, Inputs.counter, Inputs.frozenCounter, Inputs.analog)
-    // and no output statuses, which can always be read
+    // no input readable, and no output statuses, which can always be read
     val outputs = List(SupportOptions.Outputs.binary.statusPoints, SupportOptions.Outputs.analog.statusPoints)
     val noReads = Options.from(
-      (inputs.flatMap(i => List(i.reads.id -> "false", i.eventReads.id -> "false")) ++
+      (Inputs.all.flatMap(i => List(i.reads.id -> "false", i.eventReads.id -> "false")) ++
         outputs.map(_.id -> "false")).toMap)
     val someReads = Options.from(Map(Inputs.binary.reads.id -> "false"))
     MultipleReads.levelOne.disabledBy(noReads) should equal(None)
@@ -95,7 +94,7 @@ class StaticInputsTest extends AnyFunSuite with Matchers {
     MultipleReads.multipleObjectTypes.disabledBy(someReads) should equal(None)
     // a device whose only readable types are output statuses
     val outputsOnly = Options.from(
-      inputs.map(_.points.id -> "false").toMap + (SupportOptions.Outputs.binary.statusPoints.id -> "true"))
+      Inputs.all.map(_.points.id -> "false").toMap + (SupportOptions.Outputs.binary.statusPoints.id -> "true"))
     MultipleReads.levelOne.disabledBy(outputsOnly) should not equal None
     MultipleReads.multipleObjectTypes.disabledBy(outputsOnly) should equal(None)
     passes(MultipleReads.levelOne, noReads, IIN.OBJECT_UNKNOWN) should equal(true)

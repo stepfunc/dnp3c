@@ -18,12 +18,10 @@ import io.stepfunc.dnp3c.dnp3.app.{ IIN, Sequence }
  */
 object MultipleReads {
 
-  private val inputs = List(Inputs.binary, Inputs.doubleBit, Inputs.counter, Inputs.frozenCounter, Inputs.analog)
-
   // the DUT can read one of its object types on its own: an input's static points or events, or an output's status,
   // which no level lets it decline
   private val readsSome: Requirement = Requirement.anyOf(
-    (inputs.flatMap(i =>
+    (Inputs.all.flatMap(i =>
       List(
         Requirement.all(OptionCondition(i.points), OptionCondition(i.reads)),
         Requirement.all(OptionCondition(i.points), OptionCondition(i.events), OptionCondition(i.eventReads))

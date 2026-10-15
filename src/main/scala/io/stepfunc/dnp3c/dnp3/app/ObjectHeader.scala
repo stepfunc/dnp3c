@@ -181,16 +181,8 @@ final case class TwoByteCountHeader(variation: Variation, count: UInt16LE, paylo
   override def iterate: Seq[IndexedPayloadItem] = payload.iterate.map(x => IndexedPayloadItem(x))
 }
 
-sealed trait CountAndIndexPrefixHeader extends ObjectHeaderWithPayload {
-
-  def variation: Variation
-
-  def payload: PrefixedPayload
-
-}
-
 final case class OneByteCountAndIndexHeader(variation: Variation, count: UInt8, payload: PrefixedPayload)
-    extends CountAndIndexPrefixHeader {
+    extends ObjectHeaderWithPayload {
 
   override def qualifier: Qualifier = Qualifier.ONE_BYTE_COUNT_AND_INDEX
 
@@ -204,7 +196,7 @@ final case class OneByteCountAndIndexHeader(variation: Variation, count: UInt8, 
 }
 
 final case class TwoByteCountAndIndexHeader(variation: Variation, count: UInt16LE, payload: PrefixedPayload)
-    extends CountAndIndexPrefixHeader {
+    extends ObjectHeaderWithPayload {
 
   override def qualifier: Qualifier = Qualifier.TWO_BYTE_COUNT_AND_INDEX
 

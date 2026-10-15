@@ -227,11 +227,9 @@ object Network {
     driver.close()
   }
 
-  private val disconnectNoticed: TestStep = new TestStep {
-    def description: List[Comment] = List("Verify that the DUT noticed the connection close")
-    def run(driver: TestDriver): List[DeferredCheck] =
-      driver.reporter.plugin.verifyDisconnectNoticed(driver.reporter.checkReporter(CheckTiming.Deferrable)).toList
-  }
+  private val disconnectNoticed: TestStep =
+    PluginCheck("Verify that the DUT noticed the connection close")((plugin, reporter) =>
+      plugin.verifyDisconnectNoticed(reporter)).deferrable
 
   /** 9.5.1's Port 20000: connections from source port 20000, and from another */
   val tcpPort20000: ProcedureDefinition = new Test {

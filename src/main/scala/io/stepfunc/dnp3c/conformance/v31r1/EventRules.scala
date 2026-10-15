@@ -51,8 +51,7 @@ object EventRules {
   def configurationProblems(options: OptionSource): List[ConfigProblem] = {
     val inputs = List(InputType.BinaryInput, InputType.DoubleBitBinaryInput)
     val level = options.get(OutstationOptions.subsetLevel)
-    val allInputs = List(Inputs.binary, Inputs.doubleBit, Inputs.counter, Inputs.frozenCounter, Inputs.analog)
-    val unreadable = allInputs.flatMap { input =>
+    val unreadable = Inputs.all.flatMap { input =>
       Option.when(level.exists(_ != 1) && !options.get(input.eventReads))(
         ConfigProblem(
           input.eventReads.id,
@@ -61,7 +60,7 @@ object EventRules {
             s"level ${level.getOrElse("")}"
         ))
     }
-    val unreadableStatic = allInputs.flatMap { input =>
+    val unreadableStatic = Inputs.all.flatMap { input =>
       Option.when(level.exists(_ != 1) && !options.get(input.reads))(
         ConfigProblem(
           input.reads.id,
