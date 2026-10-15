@@ -142,11 +142,8 @@ object TestRunner {
     val resultsFile = path.resolve(ResultFiles.result)
     val title = s"${procedure.id} ${procedure.description} (revision ${revision.id}, subset level $level)"
 
-    // a pass keeps the notes the procedure made about it
-    def save(result: ProcedureOutcome, notes: List[String] = Nil): Unit = {
-      val kept = if (result == ProcedureOutcome.Passed) notes else Nil
-      SavedResult.write(SavedResult(result, Some(revision.id), Some(level), kept), resultsFile)
-    }
+    def save(result: ProcedureOutcome, notes: List[String] = Nil, warnings: List[String] = Nil): Unit =
+      SavedResult.write(SavedResult(result, Some(revision.id), Some(level), notes, warnings), resultsFile)
 
     // decided before anything is opened, so a procedure that's skipped or excluded never touches the device or the
     // plugin
@@ -211,10 +208,12 @@ object TestRunner {
 
     // the procedure, and everything around it, completed, so the outcome is known
     val result = outcome.get
-    val notes = if (result == ProcedureOutcome.Passed) reporter.toList.flatMap(_.notes) else Nil
-    try save(result, notes)
+    // a pass keeps the notes and warnings the procedure made about it
+    val passed = if (result == ProcedureOutcome.Passed) reporter.toList else Nil
+    val (notes, warnings) = (passed.flatMap(_.notes), passed.flatMap(_.warnings))
+    try save(result, notes, warnings)
     catch { case NonFatal(ex) => throw new ProcedureAborted(outcome, ex) }
-    ProcedureResult(procedure.id, result, notes)
+    ProcedureResult(procedure.id, result, notes, warnings)
   }
 
   // records a procedure that's skipped or excluded: its log says why, and nothing is opened

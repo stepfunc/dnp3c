@@ -190,21 +190,7 @@ object Main {
         var ran = false
         var reported = false
         try {
-          ran =
-            try {
-              val summary = harness.run(id)
-              if (!summary.succeeded) Colors.error.printLine("Abort due to test failure")
-              exclusionWarning(summary).foreach(Colors.warn.printLine)
-              summary.succeeded
-            } catch {
-              case ex: HarnessExecutionException =>
-                Colors.error.printLine(ErrorText.of(ex))
-                exclusionWarning(ex.partial).foreach(Colors.warn.printLine)
-                false
-              case NonFatal(ex) =>
-                Colors.error.printLine(ErrorText.of(ex))
-                false
-            }
+          ran = concludeRun(harness.run(id))
         } finally {
           // the report covers every result so far, however the run ended
           reported = writeReport(harness.writeReport())
@@ -213,6 +199,37 @@ object Main {
         if (ran && reported) 0 else -1
       case None => 0
     }
+  }
+
+  // runs, then tells how the run ended, however it ended: whether it failed, the procedures that passed with warnings,
+  // and how many it excluded; whether it succeeded
+  private[conformance] def concludeRun(run: => RunSummary): Boolean = {
+    def tell(summary: RunSummary): Unit = {
+      warningLines(summary).foreach(Colors.warn.printLine)
+      exclusionWarning(summary).foreach(Colors.warn.printLine)
+    }
+    try {
+      val summary = run
+      if (!summary.succeeded) Colors.error.printLine("Abort due to test failure")
+      tell(summary)
+      summary.succeeded
+    } catch {
+      case ex: HarnessExecutionException =>
+        Colors.error.printLine(ErrorText.of(ex))
+        tell(ex.partial)
+        false
+      case NonFatal(ex) =>
+        Colors.error.printLine(ErrorText.of(ex))
+        false
+    }
+  }
+
+  // how a run's end lists the procedures that passed with warnings, each warning on a line of its own
+  private[conformance] def warningLines(summary: RunSummary): List[String] = summary.passedWithWarnings match {
+    case Nil => Nil
+    case warned =>
+      val count = if (warned.size == 1) "1 procedure" else s"${warned.size} procedures"
+      s"$count passed with warnings:" :: warned.flatMap(r => r.warnings.map(w => s"    ${r.id}: $w"))
   }
 
   // how a run's end tells of the procedures it excluded, which it didn't run

@@ -31,11 +31,12 @@ class WithTimeTest extends AnyFunSuite with Matchers {
     TimeSyncOptions.binaryInput.withTime.id -> "false",
     TimeSyncOptions.binaryInput.withTimeRejected.id -> "true"))
 
-  test("8.14.2j passes a device declared to reject reads with time, noting it complies with 1815-2012 only") {
+  test("8.14.2j passes a device declared to reject reads with time, warning it complies with 1815-2012 only") {
     val reporter = StubDriver.reporter(new Plugin)
     val dut = new ScriptedDut(reporter, answer)
     Run.passes(InputEvents.binaryAllWithTime, dut, rejecting) should equal(true)
-    reporter.notes.head should include("IEEE 1815-2012, but not with IEEE 1815-202x")
+    reporter.warnings.head should include("IEEE 1815-2012, but not with IEEE 1815-202x")
+    reporter.notes should equal(Nil)
   }
 
   test("8.14.2k and l are skipped for that device") {
@@ -54,11 +55,12 @@ class WithTimeTest extends AnyFunSuite with Matchers {
     TimeSyncOptions.binaryInput.withRelativeTime.id -> "false",
     TimeSyncOptions.binaryInput.withRelativeTimeRejected.id -> "true"))
 
-  test("8.14.2m passes a device declared to reject reads with relative time, noting it complies with 1815-2012") {
+  test("8.14.2m passes a device declared to reject reads with relative time, warning it complies with 1815-2012") {
     val reporter = StubDriver.reporter(new Plugin)
     val dut = new ScriptedDut(reporter, answer)
     Run.passes(InputEvents.binaryAllWithRelativeTime, dut, rejectingRelative) should equal(true)
-    reporter.notes.head should include("relative time with IIN2.1")
+    reporter.warnings.head should include("relative time with IIN2.1")
+    reporter.notes should equal(Nil)
   }
 
   test("8.14.2n to p are skipped for that device, and p for any device without relative time") {

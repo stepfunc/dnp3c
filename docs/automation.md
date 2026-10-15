@@ -72,6 +72,14 @@ if (!summary.succeeded || summary.exclusions.nonEmpty || !reported) sys.exit(1)
 
 An exclusion replaces a procedure's earlier result only when a run reaches it, as running it does: run the procedure, its section or `all`. `writeReport` never changes results.
 
+### Warnings and notes
+
+A procedure that passes can say more about the pass. A warning means the device passes the procedure but departs from the standard, or should probably change something: e.g. it complies with IEEE 1815-2012 but not 1815-202x. A note is information, such as an answer the procedure allows as an alternative. A passing result has them in `ProcedureResult.warnings` and `ProcedureResult.notes`, and neither changes its outcome. `summary.passedWithWarnings` lists the procedures that passed with warnings, in order. For a CI job that must fail on them too:
+
+```scala
+if (!summary.succeeded || summary.passedWithWarnings.nonEmpty || !reported) sys.exit(1)
+```
+
 The plugin runs in the same JVM as dnp3c. It can control a device elsewhere, e.g. through a test fixture, an API or a simulator, or it can host the device itself. A software outstation can be started in `startProcedure` and stopped in `endProcedure`, so each procedure starts from a known state.
 
 ### When things fail

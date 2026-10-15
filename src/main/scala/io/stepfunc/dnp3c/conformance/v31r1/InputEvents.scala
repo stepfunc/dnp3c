@@ -119,17 +119,18 @@ object InputEvents {
   }
 
   // a read of events with time, absolute or relative, answered with IIN2.1, as a device configured to reject it may:
-  // that passes, noted as compliant with 1815-2012 but not 1815-202x; the steps ask for IIN2.1, and other error bits
-  // aren't ruled out
+  // that passes, with a warning that it's compliant with 1815-2012 but not 1815-202x; the steps ask for IIN2.1, and
+  // other error bits aren't ruled out
   private[v31r1] def rejectedWithIIN21(seq: Sequence, time: String): TestStep =
     expectSingleResponse(seq, Validations.isEmpty && Validations.containing(IIN.OBJECT_UNKNOWN)) +
-      noting(s"the DUT answers a read of events with $time with IIN2.1: it complies with IEEE 1815-2012, but not " +
+      warning(s"the DUT answers a read of events with $time with IIN2.1: it complies with IEEE 1815-2012, but not " +
         "with IEEE 1815-202x")
 
   /**
    * With time, qualifier 0x06 (8.14.2j). A device without events with time may answer with a Null Error Response
-   * with IIN2.1, if it's configured to: that passes, noted as compliant with 1815-2012 but not 1815-202x, and its other
-   * with-time tests are skipped. Otherwise the events, with time or not, are reported as the rules require.
+   * with IIN2.1, if it's configured to: that passes, with a warning that it's compliant with 1815-2012 but not
+   * 1815-202x, and its other with-time tests are skipped. Otherwise the events, with time or not, are reported as the
+   * rules require.
    */
   final class AllQualifierWithTime(input: InputType) extends EventTest(input) {
     import input._
@@ -220,8 +221,8 @@ object InputEvents {
   /**
    * With relative time, qualifier 0x06 (8.14.2m), in three phases: after a restart, while the clock is
    * unsynchronized; after a time write, synchronized; and after the synchronization expires. A device without events
-   * with relative time may answer with IIN2.1, if it's configured to: that passes, noted as compliant with 1815-2012
-   * but not 1815-202x, and the rest of 8.14 and 8.15 are skipped.
+   * with relative time may answer with IIN2.1, if it's configured to: that passes, with a warning that it's compliant
+   * with 1815-2012 but not 1815-202x, and the rest of 8.14 and 8.15 are skipped.
    */
   final class AllQualifierWithRelativeTime(input: InputType) extends EventTest(input) {
     import input._

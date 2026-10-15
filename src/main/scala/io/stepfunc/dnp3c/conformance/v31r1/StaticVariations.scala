@@ -105,7 +105,7 @@ object StaticVariations {
       var first: Option[Int] = None
       var expectedFlags: Option[Int] = None
       var abnormal = false
-      // an analog output status point that comes back in 32 bits for a 16-bit request, which step 5 has noted
+      // an analog output status point that comes back in 32 bits for a 16-bit request, which step 5 has warned of
       var only32Reported: Set[Int] = Set.empty
       // the flags the first point came back with once one was set abnormal, which the result notes
       var reported: Option[Int] = None
@@ -236,7 +236,7 @@ object StaticVariations {
                 val notedOnly32 = only32Reported
                 val checks = expect.run(driver)
                 (only32Reported -- notedOnly32).toList.sorted.foreach(i =>
-                  driver.reporter.note(
+                  driver.reporter.warning(
                     s"analog output status point $i comes back only in 32 bits: the DUT isn't conformant at subset " +
                       "level 1 or 2"))
                 if (!noted)
