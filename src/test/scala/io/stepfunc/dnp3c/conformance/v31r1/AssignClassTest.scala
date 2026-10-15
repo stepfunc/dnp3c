@@ -12,6 +12,7 @@ import io.stepfunc.dnp3c.dnp3._
 import io.stepfunc.dnp3c.dnp3.app._
 import io.stepfunc.dnp3c.dnp3.app.objects._
 import io.stepfunc.dnp3c.dnp3.link.LinkFrame
+import io.stepfunc.dnp3c.protocol.logging.{ Details, Level, Logger }
 import org.junit.runner.RunWith
 import org.scalatestplus.junit.JUnitRunner
 import org.scalatest.matchers.should.Matchers
@@ -24,14 +25,31 @@ class AssignClassTest extends AnyFunSuite with Matchers {
   private val startup = Map(0 -> 1, 1 -> 2, 2 -> 2)
 
   /**
-   * Keeps each binary input's class, which Assign Class changes unless the DUT ignores it or doesn't implement it, and
-   * its events, which a read of their class reports and a confirmation clears
+   * Keeps each binary input's class, which Assign Class changes unless the DUT ignores it, doesn't implement it, or
+   * rejects it, as it does each one after the first `accepts`, and its events, which a read of their class reports and a
+   * confirmation clears
    */
-  private class Dut(ignoresAssign: Boolean = false, notImplemented: Boolean = false)
+  private class Dut(ignoresAssign: Boolean = false, notImplemented: Boolean = false, accepts: Int = Int.MaxValue)
       extends RespondingDriver {
     val classes: mutable.Map[Int, Int] = mutable.Map.from(startup)
     private var events = List.empty[(Int, Int)] // point, class
     private var awaiting: Option[(Int, List[(Int, Int)])] = None
+    private var assigned = 0
+
+    // the errors the run reports
+    val errors: mutable.ListBuffer[String] = mutable.ListBuffer.empty
+    override lazy val reporter: ProcedureReporter = new ProcedureReporter(
+      new Logger {
+        def info(lines: String): Unit = ()
+        def warn(lines: String): Unit = ()
+        def error(lines: String): Unit = errors += lines
+        def note(message: String, details: Iterable[Details]): Unit = ()
+        def plugin(message: String): Unit = ()
+        def transmit(level: Level, message: String, details: Iterable[Details]): Unit = ()
+        def receive(level: Level, message: String, details: Iterable[Details]): Unit = ()
+      },
+      testPlugin
+    )
 
     override protected val testPlugin: DefaultIntegrationPlugin = new DefaultIntegrationPlugin {
       override def generateEventOn(reporter: PluginReporter, kind: PointKind, index: Int): Unit =
@@ -52,7 +70,9 @@ class AssignClassTest extends AnyFunSuite with Matchers {
           awaiting.filter(_._1 == seq).foreach((_, sent) => events = events.filterNot(sent.contains))
           awaiting = None
         case AppFunction.assignClass =>
+          assigned += 1
           if (notImplemented) enqueue("%02X 81 00 01".format(0xC0 | seq))
+          else if (assigned > accepts) enqueue("%02X 81 00 04".format(0xC0 | seq)) // IIN2.2
           else {
             if (!ignoresAssign) {
               var current = 0
@@ -104,6 +124,13 @@ class AssignClassTest extends AnyFunSuite with Matchers {
     val dut = new Dut(ignoresAssign = true)
     run(dut)._1 should equal(false)
     dut.classes.toMap should equal(startup)
+  }
+
+  test("the cleanup reports a DUT that rejects having its classes put back") {
+    val dut = new Dut(accepts = 1)
+    run(dut)._1 should equal(false)
+    dut.classes.toMap should not equal startup
+    dut.errors.exists(_.startsWith("Cleanup failed")) should equal(true)
   }
 
   test("a level 1 or 2 DUT may answer Assign Class with IIN2.0, which is noted; a level 3 one may not") {
