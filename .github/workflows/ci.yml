@@ -45,14 +45,15 @@ jobs:
             exit 1
           fi
 
-  # runs the CLI zip's launcher with Java 21, and checks it rejects Java 11 and a missing Java
+  # runs the CLI zip's launcher with Java 21, and checks it rejects Java 11 and a missing Java. The Windows launcher is
+  # checked before each release (release.yml), as it rarely changes
   cli:
     name: cli (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest]
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-java@v6
@@ -69,7 +70,6 @@ jobs:
           distribution: temurin
           java-version: 11
       - name: Run the launcher
-        if: runner.os != 'Windows'
         shell: bash
         env:
           JAVA21: ${{ steps.java21.outputs.path }}
@@ -81,36 +81,3 @@ jobs:
           grep -qE 'usage: +dnp3c' help.txt
           if JAVA_HOME="$JAVA11" ./bin/dnp3c -help; then echo "accepted Java 11"; exit 1; fi
           if JAVA_HOME="$PWD/none" ./bin/dnp3c -help; then echo "accepted a missing Java"; exit 1; fi
-      - name: Run the launcher
-        if: runner.os == 'Windows'
-        shell: pwsh
-        env:
-          JAVA21: ${{ steps.java21.outputs.path }}
-          JAVA11: ${{ steps.java11.outputs.path }}
-        run: |
-          Expand-Archive -Path (Get-Item target/dnp3c-*.zip) -DestinationPath dist
-          $cli = (Get-ChildItem dist)[0].FullName + "\bin\dnp3c.cmd"
-
-          function Invoke-Cli($javaHome) {
-            $env:JAVA_HOME = $javaHome
-            $output = cmd /c "`"$cli`" -help 2>&1"
-            $output | ForEach-Object { Write-Host $_ }
-            return @{ Code = $LASTEXITCODE; Output = ($output -join "`n") }
-          }
-
-          $result = Invoke-Cli $env:JAVA21
-          if ($result.Code -ne 0 -or $result.Output -notmatch 'usage:\s+dnp3c') { throw "the launcher failed" }
-
-          # a JAVA_HOME with spaces, like C:\Program Files
-          New-Item -ItemType Junction -Path "C:\Program Files\Java Under Test" -Target $env:JAVA21 | Out-Null
-          $result = Invoke-Cli "C:\Program Files\Java Under Test"
-          if ($result.Code -ne 0 -or $result.Output -notmatch 'usage:\s+dnp3c') { throw "the launcher failed with spaces in JAVA_HOME" }
-
-          $result = Invoke-Cli $env:JAVA11
-          if ($result.Code -eq 0) { throw "the launcher accepted Java 11" }
-
-          $result = Invoke-Cli "C:\no java"
-          if ($result.Code -eq 0) { throw "the launcher accepted a missing Java" }
-
-          # the last case exits with 1 on purpose, which would otherwise fail this step
-          exit 0

@@ -11,7 +11,60 @@ permissions:
   contents: write
 
 jobs:
+  # checks the Windows launcher in the CLI zip before anything is published: it runs with Java 21, also from a
+  # JAVA_HOME with spaces, and rejects Java 11 and a missing Java
+  windows-launcher:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        id: java21
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+      - name: Build the CLI zip
+        run: mvn -B package -DskipTests
+      - uses: actions/setup-java@v6
+        id: java11
+        with:
+          distribution: temurin
+          java-version: 11
+      - name: Run the launcher
+        shell: pwsh
+        env:
+          JAVA21: ${{ steps.java21.outputs.path }}
+          JAVA11: ${{ steps.java11.outputs.path }}
+        run: |
+          Expand-Archive -Path (Get-Item target/dnp3c-*.zip) -DestinationPath dist
+          $cli = (Get-ChildItem dist)[0].FullName + "\bin\dnp3c.cmd"
+
+          function Invoke-Cli($javaHome) {
+            $env:JAVA_HOME = $javaHome
+            $output = cmd /c "`"$cli`" -help 2>&1"
+            $output | ForEach-Object { Write-Host $_ }
+            return @{ Code = $LASTEXITCODE; Output = ($output -join "`n") }
+          }
+
+          $result = Invoke-Cli $env:JAVA21
+          if ($result.Code -ne 0 -or $result.Output -notmatch 'usage:\s+dnp3c') { throw "the launcher failed" }
+
+          # a JAVA_HOME with spaces, like C:\Program Files
+          New-Item -ItemType Junction -Path "C:\Program Files\Java Under Test" -Target $env:JAVA21 | Out-Null
+          $result = Invoke-Cli "C:\Program Files\Java Under Test"
+          if ($result.Code -ne 0 -or $result.Output -notmatch 'usage:\s+dnp3c') { throw "the launcher failed with spaces in JAVA_HOME" }
+
+          $result = Invoke-Cli $env:JAVA11
+          if ($result.Code -eq 0) { throw "the launcher accepted Java 11" }
+
+          $result = Invoke-Cli "C:\no java"
+          if ($result.Code -eq 0) { throw "the launcher accepted a missing Java" }
+
+          # the last case exits with 1 on purpose, which would otherwise fail this step
+          exit 0
+
   release:
+    needs: windows-launcher
     runs-on: ubuntu-latest
     env:
       VERSION: ${{ github.ref_name }}

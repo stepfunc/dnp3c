@@ -46,7 +46,7 @@ dnp3c is licensed GPL-3.0-only, copyright Step Function I/O LLC.
 
 ## Releasing
 
-Pushing a tag releases that version (`.github/workflows/release.yml`): the tag is the version, e.g. `0.1.0`, or `0.1.0-RC1` for a release candidate. The job builds and tests it, publishes `io.stepfunc:dnp3c` to Maven Central, and creates a GitHub release with the CLI zip and the runnable jar. The release's notes are the version's section of `CHANGELOG.md` (a release candidate uses its version's), so add that section before tagging: without it the job stops before publishing. Keep the changelog high level, with an upgrading list for what breaks. Publishing to Central can't be undone, so tag only what's ready.
+Pushing a tag releases that version (`.github/workflows/release.yml`): the tag is the version, e.g. `0.1.0`, or `0.1.0-RC1` for a release candidate. A job on Windows first checks the CLI zip's launcher (CI checks only the Linux one). The release job then builds and tests it, publishes `io.stepfunc:dnp3c` to Maven Central, and creates a GitHub release with the CLI zip and the runnable jar. The release's notes are the version's section of `CHANGELOG.md` (a release candidate uses its version's), so add that section before tagging: without it the job stops before publishing. Keep the changelog high level, with an upgrading list for what breaks. Publishing to Central can't be undone, so tag only what's ready.
 
 ## Downstream users
 
