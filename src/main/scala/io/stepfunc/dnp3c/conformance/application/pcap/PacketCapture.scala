@@ -40,7 +40,8 @@ object PacketCapture {
 
     val interface: PcapNetworkInterface = {
       interfaces.find(d => matches(nic, d.getAddresses.asScala.toList)).getOrElse {
-        throw new Exception("Unable to find network adapter: " + nic)
+        throw new Exception(
+          s"Unable to find network adapter: $nic (give its address as -adapters prints it, e.g. /192.168.1.10)")
       }
     }
 

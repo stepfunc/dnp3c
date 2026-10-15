@@ -50,8 +50,12 @@ object Validations {
     IIN((IIN.errors.lsb & ~allowed.lsb).toByte, (IIN.errors.msb & ~allowed.msb).toByte)
 
   // 3.1r1's Null Error Response: no objects, and at least one of the error bits allowed, but no other error bit
-  def isNullErrorResponse(allowed: IIN): MessageValidation =
-    isEmpty && containingAnyOf(allowed) && without(errorsExcept(allowed))
+  def isNullErrorResponse(allowed: IIN): MessageValidation = {
+    val others = errorsExcept(allowed)
+    // with every error bit allowed there's nothing to rule out, and an empty check would print as "IIN()"
+    if (others.lsb == 0 && others.msb == 0) isEmpty && containingAnyOf(allowed)
+    else isEmpty && containingAnyOf(allowed) && without(others)
+  }
 
   // Null Response, or an Error Response whose error bits are all in `allowed` (an Error Response may contain data)
   def isNullOrErrorResponse(allowed: IIN): MessageValidation = new MessageValidation {

@@ -136,7 +136,7 @@ object PointRanges {
       Option.when(t.escapeStep)(OptionCondition(SupportOptions.rangeReads)).toList)*)
 
   // a level 1 or 2 device without range reads answers with IIN2.0, 2.1 or 2.2
-  private val unsupported = isEmpty && containingAnyOf(IIN.errors)
+  private val unsupported = isNullErrorResponse(IIN.errors)
 
   /** x.2: a range of points the DUT has gets those points, and only those */
   def validRequest(t: RangedPoints): ProcedureDefinition = new ProcedureDefinition {
