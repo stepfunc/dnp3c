@@ -522,6 +522,15 @@ class TestRunnerTest extends AnyFunSuite with Matchers {
       """<tr class="warn">\s*<td>[^<]*</td>\s*<td>[^<]*</td>\s*<td>\s*Warning on the result: compliant with &lt;2012&gt; only"""
   }
 
+  test("a pass whose plugin then fails to end it keeps its notes and warnings in the partial summary") {
+    val run = new Run("end")
+    val ex = intercept[HarnessExecutionException](run(remarking("a", run.fail)))
+    ex.getCause.getMessage should equal("end failed")
+    ex.partial.results.map(r => (r.outcome, r.notes, r.warnings)) should equal(
+      List((Passed, List("an allowed alternative"), List("compliant with <2012> only"))))
+    ex.partial.passedWithWarnings.map(_.id) should equal(List("a"))
+  }
+
   test("a failure keeps no notes or warnings, and isn't a pass with warnings") {
     val run = new Run("step a")
     val summary = run(remarking("a", run.fail))
