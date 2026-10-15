@@ -202,13 +202,19 @@ trait TestDriver {
       linkOverride: LinkOverride = LinkOverride.default,
       timeoutMs: Option[Int] = None): Option[Message]
 
+  // reads the fragments of a response; the first may be given longer than the default timeout, e.g. where the DUT may
+  // defer its response
   def readAllResponses(
       seq: Sequence,
       autoConfirm: AutoConfirm,
-      validator: FrameValidator = FrameValidator.none): List[Message] = {
+      validator: FrameValidator = FrameValidator.none,
+      firstTimeoutMs: Option[Int] = None): List[Message] = {
 
     @tailrec
-    def recurse(list: List[Message], seq: Sequence): List[Message] = readMessage(Unsolicited.No, validator) match {
+    def recurse(list: List[Message], seq: Sequence): List[Message] = readMessage(
+      Unsolicited.No,
+      validator,
+      timeoutMs = if (list.isEmpty) firstTimeoutMs else None) match {
       case None => throw new Exception("Unable to read complete message within timeout")
       case Some(message) =>
         if (message.ctrl.con.value) autoConfirm.execute(message, this)
@@ -224,6 +230,9 @@ trait TestDriver {
 }
 
 object TestDriver {
+
+  // added to the configured response timeouts, for the time a response takes to arrive
+  val readToleranceMs = 200
 
   // what every fragment of a solicited response must carry
   def checkSolicited(message: Message, seq: Sequence): Unit = {

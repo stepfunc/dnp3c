@@ -83,7 +83,8 @@ class UnconfirmedResponse(confirmTimeoutMs: Int) {
     }
   }
 
-  private def msUntilTimeout(driver: TestDriver): Int = (receivedAtMs + confirmTimeoutMs - driver.clock.nowMs()).toInt
+  // the time left until the response's confirm timeout expires, negative once it has
+  def msUntilTimeout(driver: TestDriver): Int = (receivedAtMs + confirmTimeoutMs - driver.clock.nowMs()).toInt
 
   // the margin before the confirm timeout that expectNoResponseBeforeTimeout checks no message arrives in
   private def margin: Int = math.min(timingToleranceMs, confirmTimeoutMs / 4)

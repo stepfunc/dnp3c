@@ -48,9 +48,6 @@ class DefaultTestDriver(
     }
   }
 
-  // added to the configured response timeouts, for the time a response takes to arrive
-  private val readToleranceMs = 200
-
   private var connection: Option[Connection] = None
 
   private def getConnection[A](fun: Connection => A): A = connection match {
@@ -201,7 +198,8 @@ class DefaultTestDriver(
       validator: FrameValidator,
       linkOverride: LinkOverride,
       timeoutMs: Option[Int]): Option[Message] = getConnection { c =>
-    val timeout = timeoutMs.getOrElse((if (unsolicited.value) unsolTimeoutMs else appTimeoutMs) + readToleranceMs)
+    val timeout =
+      timeoutMs.getOrElse((if (unsolicited.value) unsolTimeoutMs else appTimeoutMs) + TestDriver.readToleranceMs)
     val message = c.messageReader.read(timeout, validator, linkOverride).map(Message.parse)
     message.foreach(reporter.receive)
     message.foreach(policies.check)
