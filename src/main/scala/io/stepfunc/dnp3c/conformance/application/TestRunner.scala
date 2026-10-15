@@ -6,7 +6,7 @@ package io.stepfunc.dnp3c.conformance.application
 import java.io.Closeable
 import java.nio.file.{ Files, Path }
 
-import io.stepfunc.dnp3c.conformance.Revision
+import io.stepfunc.dnp3c.conformance.{ Revision, Skip }
 import io.stepfunc.dnp3c.conformance.application.pcap.PacketCapture
 import io.stepfunc.dnp3c.conformance.api._
 import io.stepfunc.dnp3c.conformance.api.options.{
@@ -125,15 +125,12 @@ object TestRunner {
       level: Int,
       procedure: TestProcedure,
       options: OptionSource): Option[String] =
-    if (procedure.incomplete) Some("not implemented")
-    else {
-      val levels = revision.levelsOf(procedure)
-      if (!levels.contains(level))
-        Some(
-          s"not applicable: it applies to subset level(s) ${levels.toList.sorted.mkString(", ")}, and the device is " +
-            s"configured for level $level")
-      else
-        procedure.disabledBy(options).map(unmet => s"disabled because ${unmet.message}")
+    revision.skip(procedure, options, level).map {
+      case Skip.NotImplemented => "not implemented"
+      case Skip.NotApplicable(levels) =>
+        s"not applicable: it applies to subset level(s) ${levels.mkString(", ")}, and the device is configured for " +
+          s"level $level"
+      case Skip.Disabled(unmet) => s"disabled because ${unmet.message}"
     }
 
   private def runProcedure(

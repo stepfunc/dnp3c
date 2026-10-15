@@ -7,7 +7,7 @@ import java.io.Closeable
 import java.net.InetSocketAddress
 import java.nio.file.{ Files, Path }
 
-import io.stepfunc.dnp3c.conformance.{ Revision, Revisions }
+import io.stepfunc.dnp3c.conformance.{ Main, Revision, Revisions }
 import io.stepfunc.dnp3c.conformance.api._
 import io.stepfunc.dnp3c.conformance.api.ProcedureOutcome.{ Failed, Passed, Skipped }
 import io.stepfunc.dnp3c.conformance.api.options.{ OutstationOptions, SupportOptions, TestOptions }
@@ -289,6 +289,50 @@ class TestRunnerTest extends AnyFunSuite with Matchers {
       case List(Skipped(reason)) if reason.contains("level(s) 1") =>
     }
     run.events.list should equal(Nil)
+  }
+
+  test("the runner, the configuration check and -disabled agree on which procedures run") {
+    val run = new Run()
+    // at level 2, only "runs" runs: "level" applies at level 1 only, "option" needs an option that's off, and "both"
+    // does both; each has a configuration problem when asked to
+    def revision(problems: Boolean): Revision = {
+      def procedure(name: String, levels: Option[Set[Int]] = None, required: List[OptionCondition] = Nil) =
+        TestProcedure(
+          name,
+          name,
+          new ProcedureDefinition {
+            override protected def requiredOptions: List[OptionCondition] = required
+            override protected def steps(options: OptionSource): Iterable[LabeledStep] = Nil
+            override def configurationProblems(options: OptionSource): List[ConfigProblem] =
+              if (problems) List(ConfigProblem(name, "", "needed")) else Nil
+          },
+          levels
+        )
+      val selfAddress = List[OptionCondition](SupportOptions.selfAddress)
+      new Revision(
+        "t",
+        "test",
+        "2026-01-01",
+        List(1, 2),
+        List(section(
+          procedure("runs"),
+          procedure("level", Some(Set(1))),
+          procedure("option", required = selfAddress),
+          procedure("both", Some(Set(1)), selfAddress)))
+      )
+    }
+    val options = run.optionsAt(2)
+
+    val runner = revision(problems = false)
+    val results = TestRunner.run(runner, runner.all, options, new Plugin(run.fail), new Environment(run.fail)).results
+    val skipped = results.filter(_.outcome.isInstanceOf[Skipped]).map(_.id)
+    skipped should equal(List("level", "option", "both"))
+
+    Main.disabledLines(options, runner, 2).filter(_.startsWith("Procedure: ")).map(_.stripPrefix("Procedure: ")) should
+      contain theSameElementsAs skipped
+
+    val ex = the[ConfigurationException] thrownBy revision(problems = true).validate(options)
+    ex.problems.map(_.key) should equal(results.map(_.id).diff(skipped))
   }
 
   test("the driver gets the revision's message rules") {

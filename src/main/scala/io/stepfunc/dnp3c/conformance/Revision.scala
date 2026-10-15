@@ -11,7 +11,8 @@ import io.stepfunc.dnp3c.conformance.api.{
   OptionSource,
   TestElement,
   TestProcedure,
-  TestSection
+  TestSection,
+  Unmet
 }
 import io.stepfunc.dnp3c.conformance.api.options.{ OutstationOptions, TestOptions }
 import io.stepfunc.dnp3c.dnp3.MessagePolicy
@@ -80,9 +81,21 @@ final class Revision private[conformance] (
   }
 
   /**
+   * Why a procedure won't run on a device configured for a subset level, if it won't. The runner, the configuration
+   * check and `-disabled` all decide with it.
+   */
+  def skip(procedure: TestProcedure, options: OptionSource, level: Int): Option[Skip] =
+    if (procedure.incomplete) Some(Skip.NotImplemented)
+    else {
+      val levels = levelsOf(procedure)
+      if (!levels.contains(level)) Some(Skip.NotApplicable(levels.toList.sorted))
+      else procedure.disabledBy(options).map(Skip.Disabled(_))
+    }
+
+  /**
    * Check that the configuration is one this revision can test: it gives a subset level the revision tests, and it has
-   * what the revision needs configured, whatever procedures run, and what each procedure selected needs, if it will run:
-   * it's implemented, applies at that level and is enabled.
+   * what the revision needs configured, whatever procedures run, and what each procedure selected needs, if it will run
+   * (see [[skip]]).
    *
    * @param selected the procedures a run will run; all of them unless given
    * @return the subset level
@@ -91,8 +104,7 @@ final class Revision private[conformance] (
   def validate(options: OptionSource, selected: Iterable[TestProcedure] = flatMapProcedures(Some(_))): Int = {
     val level = subsetLevel(options)
     // what the procedures that will run need, each problem once
-    val procedures =
-      selected.filter(p => !p.incomplete && levelsOf(p).contains(level) && p.disabledBy(options).isEmpty)
+    val procedures = selected.filter(skip(_, options, level).isEmpty)
     val problems =
       (configurationProblems(options) ++ procedures.flatMap(_.definition.configurationProblems(options))).distinct
     if (problems.nonEmpty) throw new ConfigurationException("configuration", problems)
@@ -130,6 +142,19 @@ final class Revision private[conformance] (
       }
     recurse(Map("all" -> all), sections)
   }
+}
+
+/** why a procedure won't run, see [[Revision.skip]] */
+enum Skip {
+
+  /** it has no steps yet */
+  case NotImplemented
+
+  /** it doesn't apply at the device's subset level, only at these, in order */
+  case NotApplicable(levels: List[Int])
+
+  /** the device lacks an optional feature it tests */
+  case Disabled(unmet: Unmet)
 }
 
 object Revisions {
