@@ -34,13 +34,14 @@ final class Harness(options: Options, plugin: IntegrationPlugin, revision: Revis
    * Run the procedures of a procedure or section, or "all" of them, in order, stopping at the first that fails.
    *
    * A procedure fails when one of its steps or validations does, including a plugin action or verification that
-   * throws.
+   * throws. One the configuration excludes (`test.exclude.<id>`) isn't run: it's recorded as excluded, without
+   * touching the device or the plugin, and the run carries on.
    *
    * @param id a procedure or section of the revision, e.g. "8.6.5.4" or "8.6", or "all"
    * @throws IllegalArgumentException if the revision has no procedure or section with the id, before anything runs
    * @throws api.ConfigurationException if the configuration has no subset level, or one the revision doesn't test, or
-   *                                    lacks what the revision, or a procedure that will run, needs configured,
-   *                                    before anything runs
+   *                                    excludes something that isn't a procedure of the revision, or lacks what the
+   *                                    revision, or a procedure that will run, needs configured, before anything runs
    * @throws HarnessExecutionException if the harness or the plugin fails around a procedure, e.g. when
    *                                   `startProcedure` throws or the capture can't be opened; it holds the
    *                                   results so far. An interruption propagates as it is.

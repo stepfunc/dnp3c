@@ -50,6 +50,16 @@ trait IndexListOption extends TypedTestOption[List[Index]]
 trait RequiredIntegerOption extends TypedTestOption[Option[Int]] {
   final override def required: Boolean = true
 }
+// procedures to leave out of a run, by id, each with the reason: a family of properties, one per procedure, under the
+// option's id, e.g. "test.exclude.8.26.2 = <reason>"
+trait ExclusionsOption extends TypedTestOption[Map[String, String]] {
+
+  // a property of the family, for the configurations written and listed, commented out
+  def example: String
+
+  // the procedure id and reason of a property of the family, given the rest of its key after the option's id and "."
+  def entry(procedure: String, value: String): (String, String)
+}
 
 object OptionTypes {
 
@@ -92,6 +102,8 @@ object OptionTypes {
     RequiredMinimumOptionImpl(group, name, desc, min)
   def hexByteInSet(group: OptionGroup, name: String, default: Byte, desc: String, allowed: Set[Byte]): HexByteOption =
     HexByteInSetImpl(group, name, default, desc, allowed)
+  def exclusions(group: OptionGroup, name: String, description: String, example: String): ExclusionsOption =
+    ExclusionsOptionImpl(group, name, description, example)
   // one of the allowed words, in any case
   def choice(group: OptionGroup, name: String, default: String, desc: String, allowed: List[String]): StringOption =
     ChoiceOptionImpl(group, name, default, desc, allowed)
@@ -99,6 +111,25 @@ object OptionTypes {
   private case class StringOptionImpl(group: OptionGroup, name: String, default: String, description: String)
       extends StringOption {
     override def parse(s: String): String = s.trim
+  }
+
+  private case class ExclusionsOptionImpl(group: OptionGroup, name: String, description: String, example: String)
+      extends ExclusionsOption {
+
+    override def default: Map[String, String] = Map.empty
+
+    override def defaultAsString: String = ""
+
+    // the family has no value of its own
+    override def parse(s: String): Map[String, String] =
+      throw new Exception(s"exclude one procedure per property, with the reason: $id.<procedure id> = <reason>")
+
+    override def entry(procedure: String, value: String): (String, String) = {
+      if (procedure.isEmpty) throw new Exception(s"name the procedure: $id.<procedure id> = <reason>")
+      val reason = value.trim
+      if (reason.isEmpty) throw new Exception(s"give the reason $procedure is excluded")
+      procedure -> reason
+    }
   }
 
   private case class ChoiceOptionImpl(

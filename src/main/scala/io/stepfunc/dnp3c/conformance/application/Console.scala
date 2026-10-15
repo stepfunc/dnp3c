@@ -65,7 +65,7 @@ object Console {
   private val describe =
     OptionDefinition("describe", true, "Describe the steps to be executed in the specified procedure")
   private val disabled =
-    OptionDefinition("disabled", false, "List all optional test procedures that are disabled by configuration")
+    OptionDefinition("disabled", false, "List the test procedures the configuration skips or excludes")
   private val report = OptionDefinition("report", false, "Generate an HTML report containing all the results")
   private val options = OptionDefinition("options", false, "List all of the available configuration file options")
   private val adapters =

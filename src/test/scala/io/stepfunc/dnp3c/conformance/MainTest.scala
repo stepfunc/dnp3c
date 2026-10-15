@@ -6,8 +6,11 @@ package io.stepfunc.dnp3c.conformance
 import java.io.File
 import java.nio.file.Files
 
-import io.stepfunc.dnp3c.conformance.api.{ BooleanOption, OptionGroups, Options }
-import io.stepfunc.dnp3c.conformance.api.options.{ OutstationOptions, SupportOptions }
+import io.stepfunc.dnp3c.conformance.api.{
+  BooleanOption, OptionGroups, Options, ProcedureOutcome, ProcedureResult, RunSummary
+}
+import io.stepfunc.dnp3c.conformance.api.options.{ OutstationOptions, SupportOptions, TestOptions }
+import io.stepfunc.dnp3c.conformance.application.SavedResult
 import io.stepfunc.dnp3c.conformance.application.Console
 import io.stepfunc.dnp3c.dnp3.DefaultIntegrationPlugin
 import org.junit.runner.RunWith
@@ -23,14 +26,16 @@ class MainTest extends AnyFunSuite with Matchers {
       writeConfigFile: Option[File],
       config: Option[File],
       report: Boolean = false,
-      revision: Option[String] = Some("2.7")) =
+      revision: Option[String] = Some("2.7"),
+      run: Option[String] = None,
+      listDisabled: Boolean = false) =
     Console.Configuration(
       revision = revision,
       listRevisions = false,
-      run = None,
+      run = run,
       help = false,
       describe = describe,
-      listDisabled = false,
+      listDisabled = listDisabled,
       report = report,
       options = false,
       adapters = false,
@@ -136,5 +141,62 @@ class MainTest extends AnyFunSuite with Matchers {
       val ids = Main.disabledLines(options, revision, level).filter(_.startsWith("Procedure: "))
       withClue(s"${revision.id} L$level $value: ")(ids.diff(ids.distinct) should equal(Nil))
     }
+  }
+
+  test("-disabled lists an exclusion with its reason, and a procedure that's skipped anyway as skipped") {
+    val options = Options.from(Map(
+      OutstationOptions.subsetLevel.id -> "2",
+      s"${TestOptions.exclude.id}.8.26.2" -> "Assign Class isn't supported yet",
+      s"${TestOptions.exclude.id}.8.26.3" -> "nor no-class assignment"
+    ))
+    val lines = Main.disabledLines(options, Revisions.v3_1r1, 2)
+    lines.sliding(2).toList should
+      contain(List("Procedure: 8.26.2", "    NOT RUN — EXCLUDED: Assign Class isn't supported yet"))
+    lines(lines.indexOf("Procedure: 8.26.3") + 1) should equal("    Not applicable at subset level 2")
+    lines.mkString should not include "nor no-class assignment"
+  }
+
+  private def withExclusion(id: String, reason: String = "Assign Class isn't supported yet") =
+    level2 + s"${TestOptions.exclude.id}.$id = $reason\n"
+
+  private def command31r1(contents: String, describe: Option[String] = None, disabled: Boolean = false): Int =
+    withConfig(contents)(config =>
+      Main.execute(
+        command(describe, None, Some(config), revision = Some("3.1r1"), listDisabled = disabled),
+        new DefaultIntegrationPlugin()))
+
+  test("-describe and -disabled show an exclusion, which must name a procedure of the revision") {
+    command31r1(withExclusion("8.26.2"), describe = Some("8.26.2")) should equal(0)
+    command31r1(withExclusion("8.26.2"), describe = Some("8.26")) should equal(0)
+    command31r1(withExclusion("8.26.2"), disabled = true) should equal(0)
+    for (id <- List("9.9", "8.26", "all")) {
+      command31r1(withExclusion(id), describe = Some("8.1.2")) should not equal 0
+      command31r1(withExclusion(id), disabled = true) should not equal 0
+    }
+    // and give a reason
+    command31r1(withExclusion("8.26.2", reason = ""), disabled = true) should not equal 0
+    command31r1(level2 + s"${TestOptions.exclude.id} = 8.26.2\n", disabled = true) should not equal 0
+  }
+
+  test("a run that excludes a procedure records it, and succeeds") {
+    val output = Files.createTempDirectory("dnp3c")
+    val contents = withExclusion("8.26.2") +
+      s"${TestOptions.outputDirectory.id} = ${output.toString.replace("\\", "/")}\n"
+    withConfig(contents)(config =>
+      Main.execute(
+        command(None, None, Some(config), revision = Some("3.1r1"), run = Some("8.26")),
+        new DefaultIntegrationPlugin())) should equal(0)
+    val folder = output.resolve("3.1r1").resolve("L2")
+    SavedResult.read(folder.resolve("8.26.2").resolve("results.properties").toFile).outcome should equal(
+      ProcedureOutcome.Excluded("Assign Class isn't supported yet"))
+    Files.readString(folder.resolve("report.html")) should include("Excluded: Assign Class isn't supported yet")
+  }
+
+  test("a run's end warns of its exclusions, even when a later procedure failed") {
+    val excluded = ProcedureResult("8.26.2", ProcedureOutcome.Excluded("gap"))
+    Main.exclusionWarning(RunSummary(List(ProcedureResult("8.1.2", ProcedureOutcome.Passed)), Nil)) should equal(None)
+    Main.exclusionWarning(
+      RunSummary(List(excluded, ProcedureResult("8.26.3", ProcedureOutcome.Failed("x"))), List("9.1"))) should equal(
+      Some("1 procedure(s) excluded and not run. Conformance has not been demonstrated for them."))
   }
 }

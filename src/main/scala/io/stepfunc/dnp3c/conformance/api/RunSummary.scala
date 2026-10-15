@@ -12,6 +12,12 @@ object ProcedureOutcome {
   case object Passed extends ProcedureOutcome
   case class Failed(message: String) extends ProcedureOutcome
   case class Skipped(reason: String) extends ProcedureOutcome
+
+  /**
+   * The configuration left it out (`test.exclude.<id>`), for this reason. Unlike a skipped procedure, it applies to
+   * the device, so the device hasn't been shown to conform to it.
+   */
+  case class Excluded(reason: String) extends ProcedureOutcome
 }
 
 /**
@@ -27,7 +33,14 @@ case class ProcedureResult(id: String, outcome: ProcedureOutcome, notes: List[St
  */
 case class RunSummary(results: List[ProcedureResult], unreached: List[String]) {
 
+  /**
+   * Whether the run completed without a failure: it reached every procedure, and each passed, was skipped or was
+   * excluded. It says the run succeeded, not that the device conforms: see [[exclusions]].
+   */
   def succeeded: Boolean = unreached.isEmpty && !results.exists(_.outcome.isInstanceOf[ProcedureOutcome.Failed])
+
+  /** the procedures the configuration excluded, in order, which the device hasn't been shown to conform to */
+  def exclusions: List[ProcedureResult] = results.filter(_.outcome.isInstanceOf[ProcedureOutcome.Excluded])
 }
 
 /**

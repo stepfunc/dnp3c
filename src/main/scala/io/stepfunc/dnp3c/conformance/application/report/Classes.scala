@@ -14,6 +14,7 @@ object Classes {
   val pass = Clazz("pass")
   val fail = Clazz("fail")
   val skip = Clazz("skip")
+  val excluded = Clazz("excluded")
   val noResult = Clazz("no-result")
   val section = Clazz("section")
   val procedure = Clazz("procedure")

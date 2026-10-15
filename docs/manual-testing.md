@@ -62,10 +62,27 @@ The procedures are organized in sections: 6 (link layer), 7 (transport layer) an
 ```
 dnp3c -rev 2.7 -config device.ini -describe 8.6       # the procedures in a section
 dnp3c -rev 2.7 -config device.ini -describe 8.6.5.4   # the steps of one procedure
-dnp3c -rev 2.7 -config device.ini -disabled           # optional procedures your configuration turns off
+dnp3c -rev 2.7 -config device.ini -disabled           # procedures your configuration skips or excludes
 ```
 
 Procedures for features the DUT doesn't support are optional. If a `supports.*` option turns one off, it's recorded as skipped instead of run.
+
+## Exclude procedures
+
+A procedure that applies to the DUT, but that you can't run yet, e.g. for a known gap in the DUT that's being fixed, can be left out of runs by excluding it in the configuration, with the reason:
+
+```
+test.exclude.8.26.2 = Assign Class isn't supported yet (stepfunc/dnp3#480)
+```
+
+- **One property per procedure,** `test.exclude.<procedure id>`, and each needs a reason. Only procedures can be excluded, not sections or `all`. Every exclusion must name a procedure of the revision given with `-rev`, even one outside what you run: `-run`, `-describe` and `-disabled` check them all, and fail on any that doesn't.
+- **An excluded procedure isn't run.** dnp3c doesn't connect to the DUT, capture or prompt for it, and the run carries on to the next procedure. It's recorded as excluded, with a log saying so, replacing the procedure's earlier result, log and capture.
+- **Excluded isn't skipped.** A skipped procedure doesn't apply to the DUT or its configuration, and the DUT can still be conformant. An excluded one does apply, so the DUT hasn't been shown to conform to it. The report shows it as not run, with the reason, and counts it apart from passed, failed and skipped procedures. A run that excludes procedures still succeeds, but it ends by saying how many it excluded.
+- **A procedure that's skipped stays skipped,** e.g. one that doesn't apply at the DUT's subset level, even if it's excluded too.
+- **Options describe the DUT; exclusions record gaps in the testing.** Don't turn a `supports.*` option off to leave out a procedure for a feature the DUT has: that changes what other procedures expect of it.
+- **Only a run replaces results.** Removing an exclusion doesn't change the report until the procedure runs again, and adding one doesn't replace an earlier result until a run reaches the procedure: run it, its section or `all`. `-report` never changes results.
+
+`-describe` shows an excluded procedure's reason instead of its steps, and marks the excluded procedures in a section. `-disabled` lists them with their reasons.
 
 ## Run
 
@@ -86,7 +103,7 @@ Some questions come after a procedure's steps, where stopping for your answer wo
 
 If you miss a time limit, the procedure fails with a message saying so; rerun it. A limit that's too short to work to by hand is usually a timeout on the DUT that you can lengthen, along with its option here.
 
-A run stops at the first procedure that fails, and the procedures after it don't run. The exit code is 0 if every procedure passed or was skipped, and nonzero otherwise.
+A run stops at the first procedure that fails, and the procedures after it don't run. The exit code is 0 if every procedure passed, was skipped or was excluded, and nonzero otherwise.
 
 ## Results
 
@@ -100,13 +117,13 @@ results/
       report.css
       8.6.5.4/
         log.html           every step, frame and check, with the outcome
-        results.properties the result (pass, fail or skip), the revision and subset level, and why it failed or was skipped
+        results.properties the result (pass, fail, skip or excluded), the revision and subset level, and why it failed, was skipped or was excluded
         dump.pcap          the packet capture, if capture is on
 ```
 
 A procedure that won't run, because the DUT lacks a feature it needs, it doesn't apply at the subset level, or it isn't implemented, is recorded as skipped without connecting to the DUT.
 
-The report is rebuilt after every run, including runs that fail. It names the revision and the subset level, and shows every procedure: the ones you've run with their result (and, for one that was skipped, why, or for one that passed, anything it noted, such as a device that complies with IEEE 1815-2012 but not 1815-202x), and the rest as not run. To rebuild it without running anything, use `dnp3c -rev 2.7 -config device.ini -report`.
+The report is rebuilt after every run, including runs that fail. It names the revision and the subset level, and shows every procedure: the ones you've run with their result (and, for one that was skipped or excluded, why, or for one that passed, anything it noted, such as a device that complies with IEEE 1815-2012 but not 1815-202x), and the rest as not run, with no saved result. Excluded procedures are shown as "NOT RUN — EXCLUDED", and if there are any, the report says at the top that conformance hasn't been demonstrated for them. To rebuild it without running anything, use `dnp3c -rev 2.7 -config device.ini -report`.
 
 The report counts only results saved under its revision and level. It lists anything else it finds at the top and leaves it out: a result saved under another revision or level, or a procedure whose last run didn't finish (it has a log but no result).
 
@@ -161,8 +178,8 @@ https://stepfunc.io
  -config <arg>       Path to configuration file
  -describe <arg>     Describe the steps to be executed in the specified
                       procedure
- -disabled           List all optional test procedures that are disabled by
-                      configuration
+ -disabled           List the test procedures the configuration skips or
+                      excludes
  -help               Print this help information
  -options            List all of the available configuration file options
  -report             Generate an HTML report containing all the results

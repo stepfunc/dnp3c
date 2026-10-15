@@ -40,7 +40,7 @@ object Main {
 - `Options.load` parses and checks the whole file, and throws a `ConfigurationException` listing every problem.
 - The revision decides which procedures exist and what their ids mean. `Revisions.list` holds every revision dnp3c has, and `Revisions.find("2.7")` looks one up by id. There's no default.
 - The configuration must set `outstation.subset.level`, the subset level the device is configured for, to a level the revision tests: level 2 for 2.7. `run` and `writeReport` throw a `ConfigurationException` before doing anything if it doesn't. `run` also does if the configuration lacks a value the revision, or a procedure that will run, needs: e.g. a Device Profile value that a test checks the device's responses against.
-- `run` takes a procedure or section id of the revision, e.g. `"8.6.5.4"` or `"8.6"`, or `"all"`, and throws an `IllegalArgumentException` for an unknown one before anything runs. It runs the procedures in order and stops at the first that fails. It returns a `RunSummary` with each procedure's outcome (`Passed`, `Failed(message)` or `Skipped(reason)`) and the procedures it didn't reach.
+- `run` takes a procedure or section id of the revision, e.g. `"8.6.5.4"` or `"8.6"`, or `"all"`, and throws an `IllegalArgumentException` for an unknown one before anything runs. It runs the procedures in order and stops at the first that fails. It returns a `RunSummary` with each procedure's outcome (`Passed`, `Failed(message)`, `Skipped(reason)` or `Excluded(reason)`) and the procedures it didn't reach.
 - Results go in the folder for the revision and subset level in the output directory, e.g. `results/2.7/L2/`, so runs of different revisions or levels never mix.
 - `writeReport` writes `report.html` in that folder from every result there, from this run and earlier ones, and returns its path. `Harness.writeReport(options, revision)` does the same without a plugin.
 
@@ -50,7 +50,27 @@ For each procedure, the harness:
 2. connects to the DUT over TCP and runs the steps, calling the plugin for each step it can't perform itself;
 3. calls `endProcedure`, closes the connection, and writes the procedure's results.
 
-A procedure that won't run is skipped before any of that: one that isn't implemented, doesn't apply at the subset level, or needs a feature the device lacks. It gets a log and a result saying why, but the harness doesn't connect to the DUT or call the plugin, not even `startProcedure` or `endProcedure`.
+A procedure that won't run is skipped before any of that: one that isn't implemented, doesn't apply at the subset level, or needs a feature the device lacks. So is one the configuration excludes. It gets a log and a result saying why, but the harness doesn't connect to the DUT, capture or call the plugin, not even `startProcedure` or `endProcedure`.
+
+### Known gaps
+
+A device with a known gap would stop every run at the procedure that tests it. Exclude the procedure in the configuration, with the reason, and the run carries on past it:
+
+```
+test.exclude.8.26.2 = Assign Class isn't supported yet (stepfunc/dnp3#480)
+```
+
+[Testing a device by hand](manual-testing.md#exclude-procedures) has the rules: one property per procedure of the revision, each with a reason, checked before anything runs, and a procedure that's skipped stays skipped. Exclude a procedure for a feature the device has; turn off a `supports.*` option only for one it lacks.
+
+An excluded procedure's outcome is `Excluded(reason)`, which is new: a match over `ProcedureOutcome` must handle it. Unlike `Skipped`, it means the procedure applies to the device but didn't run, so the device hasn't been shown to conform to it. The report shows it as not run, with the reason, and says that conformance hasn't been demonstrated.
+
+`RunSummary.succeeded` says whether the run completed without a failure, not whether the device conforms: a run with exclusions succeeds. `summary.exclusions` lists the procedures it excluded, in order. For a CI job that must fail until every gap is closed:
+
+```scala
+if (!summary.succeeded || summary.exclusions.nonEmpty || !reported) sys.exit(1)
+```
+
+An exclusion replaces a procedure's earlier result only when a run reaches it, as running it does: run the procedure, its section or `all`. `writeReport` never changes results.
 
 The plugin runs in the same JVM as dnp3c. It can control a device elsewhere, e.g. through a test fixture, an API or a simulator, or it can host the device itself. A software outstation can be started in `startProcedure` and stopped in `endProcedure`, so each procedure starts from a known state.
 
@@ -75,7 +95,7 @@ To get the whole command-line tool, with its commands and options, but with your
 io.stepfunc.dnp3c.conformance.Main.run(args, new MyDevicePlugin())
 ```
 
-`Main.run` exits the JVM with 0 if every procedure passed or was skipped, and nonzero otherwise.
+`Main.run` exits the JVM with 0 if every procedure passed, was skipped or was excluded, and nonzero otherwise.
 
 ## Dependency
 

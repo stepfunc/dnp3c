@@ -31,6 +31,7 @@ object SavedResult {
   private val pass = "pass"
   private val skip = "skip"
   private val fail = "fail"
+  private val excluded = "excluded"
 
   private val resultKey = "result"
   private val revisionKey = "revision"
@@ -48,6 +49,9 @@ object SavedResult {
         case `pass` => ProcedureOutcome.Passed
         case `fail` => ProcedureOutcome.Failed(reason)
         case `skip` => ProcedureOutcome.Skipped(reason)
+        case `excluded` =>
+          if (reason.isBlank) throw new Exception(s"An excluded result has no reason: $file")
+          ProcedureOutcome.Excluded(reason)
         case value => throw new Exception(s"Unknown result: $value")
       }
       SavedResult(
@@ -76,6 +80,9 @@ object SavedResult {
             props.setProperty(reasonKey, message)
           case ProcedureOutcome.Skipped(reason) =>
             props.setProperty(resultKey, skip)
+            props.setProperty(reasonKey, reason)
+          case ProcedureOutcome.Excluded(reason) =>
+            props.setProperty(resultKey, excluded)
             props.setProperty(reasonKey, reason)
         }
         saved.revision.foreach(props.setProperty(revisionKey, _))
