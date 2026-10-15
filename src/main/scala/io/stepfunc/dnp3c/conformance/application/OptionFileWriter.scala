@@ -5,7 +5,7 @@ package io.stepfunc.dnp3c.conformance.application
 
 import java.io.File
 
-import io.stepfunc.dnp3c.conformance.api.{ OptionGroup, TestOption }
+import io.stepfunc.dnp3c.conformance.api.{ ExclusionsOption, OptionGroup, TestOption }
 
 object OptionFileWriter {
 
@@ -22,9 +22,13 @@ object OptionFileWriter {
 
     def writeOption(option: TestOption): Unit = {
       writer.println("# " + option.description)
-      // a required option has no default to write: it's left for you to set
-      if (option.required) writer.println("# " + option.id + " = ")
-      else writer.println(option.id + " = " + option.defaultAsString)
+      option match {
+        // exclusions have no default, just a property per procedure: an example shows how to write one
+        case o: ExclusionsOption => writer.println("# " + o.example)
+        // a required option has no default to write: it's left for you to set
+        case _ if option.required => writer.println("# " + option.id + " = ")
+        case _ => writer.println(option.id + " = " + option.defaultAsString)
+      }
       writer.println()
     }
 

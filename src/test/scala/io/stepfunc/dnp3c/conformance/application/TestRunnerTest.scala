@@ -7,9 +7,9 @@ import java.io.Closeable
 import java.net.InetSocketAddress
 import java.nio.file.{ Files, Path }
 
-import io.stepfunc.dnp3c.conformance.{ Main, Revision, Revisions }
+import io.stepfunc.dnp3c.conformance.{ Decision, Main, Revision, Revisions, Skip }
 import io.stepfunc.dnp3c.conformance.api._
-import io.stepfunc.dnp3c.conformance.api.ProcedureOutcome.{ Failed, Passed, Skipped }
+import io.stepfunc.dnp3c.conformance.api.ProcedureOutcome.{ Excluded, Failed, Passed, Skipped }
 import io.stepfunc.dnp3c.conformance.api.options.{
   ChannelOptions, NetworkOptions, OutstationOptions, SupportOptions, TestOptions
 }
@@ -173,7 +173,35 @@ class TestRunnerTest extends AnyFunSuite with Matchers {
     def result(id: String): Option[ProcedureOutcome] = saved(id).map(_.outcome)
 
     def logged(id: String): Boolean = Files.exists(folder.resolve(id).resolve("log.html"))
+
+    // at level 2, excluding procedures by id, each with its reason
+    def excluding(exclusions: (String, String)*): Options = Options.from(
+      Map(TestOptions.outputDirectory.id -> directory.toString, OutstationOptions.subsetLevel.id -> "2") ++
+        exclusions.map((id, reason) => s"${TestOptions.exclude.id}.$id" -> reason))
+
+    // runs an element of a revision of its own, "t", whose results go in tFolder
+    def in(revision: Revision, element: TestElement, options: Options): RunSummary =
+      TestRunner.run(revision, element, options, new Plugin(fail), new Environment(fail))
+
+    val tFolder: Path = directory.resolve("t").resolve("L2")
   }
+
+  // a revision "t" of one section, "section", which tests levels 1 and 2
+  private def revisionOf(procedures: TestProcedure*): Revision =
+    new Revision("t", "test", "2026-01-01", List(1, 2), List(section(procedures*)))
+
+  // like procedure, but it records when its steps are built
+  private def configured(name: String, fail: Failures): TestProcedure =
+    TestProcedure(
+      name,
+      name,
+      new ProcedureDefinition {
+        override protected def steps(options: OptionSource): Iterable[LabeledStep] = {
+          fail(s"configure $name")
+          procedure(name, fail).definition.configure(options).steps
+        }
+      }
+    )
 
   test("runs a procedure between the plugin's callbacks, and cleans up in reverse") {
     val run = new Run()
@@ -270,10 +298,119 @@ class TestRunnerTest extends AnyFunSuite with Matchers {
     SavedResult.write(
       SavedResult(ProcedureOutcome.Passed, Some("2.7"), Some(2)),
       folder.resolve("results.properties"))
-    // the log can't be written: log.html is a folder
-    Files.createDirectories(folder.resolve("log.html"))
+    // the log can't be written: log.html is a folder, which can't be deleted as it isn't empty
+    Files.createDirectories(folder.resolve("log.html").resolve("x"))
     an[HarnessExecutionException] should be thrownBy run(procedure("a", run.fail, List(SupportOptions.selfAddress)))
     run.result("a") should equal(None)
+  }
+
+  test("an excluded procedure isn't configured or run, opens nothing and calls no plugin method, and the run goes on") {
+    val run = new Run()
+    val revision = revisionOf(configured("a", run.fail), configured("b", run.fail), configured("c", run.fail))
+    val summary = run.in(revision, revision.all, run.excluding("b" -> "Assign Class isn't supported yet"))
+    summary should equal(RunSummary(
+      List(
+        ProcedureResult("a", Passed),
+        ProcedureResult("b", Excluded("Assign Class isn't supported yet")),
+        ProcedureResult("c", Passed)),
+      Nil))
+    // the run succeeded, but the device isn't shown to conform to b
+    summary.succeeded should equal(true)
+    summary.exclusions.map(_.id) should equal(List("b"))
+    // nothing at all for b
+    def ran(name: String) = List(
+      "capture open",
+      "driver open",
+      "start",
+      s"configure $name",
+      s"step $name",
+      "end",
+      "driver close",
+      "capture close")
+    run.events.list should equal(ran("a") ++ ran("c"))
+
+    val saved = SavedResult.read(run.tFolder.resolve("b").resolve("results.properties").toFile)
+    saved should equal(SavedResult(Excluded("Assign Class isn't supported yet"), Some("t"), Some(2)))
+    Files.readString(run.tFolder.resolve("b").resolve("log.html")) should include(
+      "NOT RUN — EXCLUDED b: Assign Class isn't supported yet")
+  }
+
+  test("a failure after an exclusion still stops the run") {
+    val run = new Run("step b")
+    val revision = revisionOf(procedure("a", run.fail), procedure("b", run.fail), procedure("c", run.fail))
+    val summary = run.in(revision, revision.all, run.excluding("a" -> "gap"))
+    summary should equal(
+      RunSummary(List(ProcedureResult("a", Excluded("gap")), ProcedureResult("b", Failed("step b failed"))), List("c")))
+    summary.succeeded should equal(false)
+    summary.exclusions.map(_.id) should equal(List("a"))
+  }
+
+  test("an exclusion replaces the procedure's earlier result, log and capture") {
+    for (earlier <- List(Passed, Failed("step a failed"))) {
+      val run = new Run()
+      val revision = revisionOf(procedure("a", run.fail))
+      val folder = run.tFolder.resolve("a")
+      Files.createDirectories(folder)
+      SavedResult.write(SavedResult(earlier, Some("t"), Some(2), List("a note")), folder.resolve("results.properties"))
+      Files.writeString(folder.resolve("log.html"), "the earlier log")
+      Files.writeString(folder.resolve("dump.pcap"), "the earlier capture")
+      run.in(revision, revision.all, run.excluding("a" -> "gap"))
+      SavedResult.read(folder.resolve("results.properties").toFile) should equal(
+        SavedResult(Excluded("gap"), Some("t"), Some(2)))
+      Files.readString(folder.resolve("log.html")) should not include "the earlier log"
+      Files.exists(folder.resolve("dump.pcap")) should equal(false)
+    }
+  }
+
+  test("an exclusion that fails to be recorded aborts the run, and leaves no earlier pass") {
+    val run = new Run()
+    val revision = revisionOf(procedure("a", run.fail), procedure("b", run.fail))
+    val folder = run.tFolder.resolve("b")
+    Files.createDirectories(folder)
+    SavedResult.write(SavedResult(Passed, Some("t"), Some(2)), folder.resolve("results.properties"))
+    // the log can't be written: log.html is a folder, which can't be deleted as it isn't empty
+    Files.createDirectories(folder.resolve("log.html").resolve("x"))
+    val ex = the[HarnessExecutionException] thrownBy run.in(revision, revision.all, run.excluding("b" -> "gap"))
+    ex.procedureId should equal("b")
+    ex.partial should equal(RunSummary(List(ProcedureResult("a", Passed), ProcedureResult("b", Excluded("gap"))), Nil))
+    Files.exists(folder.resolve("results.properties")) should equal(false)
+  }
+
+  test("an exclusion must name a procedure of the revision, whatever the run selects") {
+    val run = new Run()
+    val revision = revisionOf(procedure("a", run.fail), procedure("b", run.fail))
+    for (id <- List("9.9", "section", "all")) {
+      val ex = the[ConfigurationException] thrownBy run.in(revision, revision.elements("a"), run.excluding(id -> "gap"))
+      ex.problems.map(_.key) should equal(List(s"${TestOptions.exclude.id}.$id"))
+      (the[ConfigurationException] thrownBy revision.checkExclusions(run.excluding(id -> "gap"))).problems should
+        equal(ex.problems)
+    }
+    run.events.list should equal(Nil)
+    // one outside the selection is fine
+    run.in(revision, revision.elements("a"), run.excluding("b" -> "gap")).results should equal(
+      List(ProcedureResult("a", Passed)))
+  }
+
+  test("a procedure that's skipped stays skipped when it's excluded too, and only those that run need configuring") {
+    val run = new Run()
+    def procedure(name: String, levels: Option[Set[Int]] = None) =
+      TestProcedure(
+        name,
+        name,
+        new ProcedureDefinition {
+          override protected def steps(options: OptionSource): Iterable[LabeledStep] = Nil
+          override def configurationProblems(options: OptionSource): List[ConfigProblem] =
+            List(ConfigProblem(name, "", "needed"))
+        },
+        levels
+      )
+    val revision = revisionOf(procedure("runs"), procedure("excluded"), procedure("level", Some(Set(1))))
+    val options = run.excluding("excluded" -> "gap", "level" -> "not at level 2 anyway")
+    def decision(id: String) = revision.decide(revision.elements(id).asInstanceOf[TestProcedure], options, 2)
+    decision("runs") should equal(Decision.Run)
+    decision("excluded") should equal(Decision.Exclude("gap"))
+    decision("level") should equal(Decision.Skip(Skip.NotApplicable(List(1))))
+    (the[ConfigurationException] thrownBy revision.validate(options)).problems.map(_.key) should equal(List("runs"))
   }
 
   test("a procedure that doesn't apply at the device's subset level is skipped, saying so") {

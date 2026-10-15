@@ -16,6 +16,8 @@
   --fail-bg: #fbe4e6;
   --skip: #8a6400;
   --skip-bg: #fff3cd;
+  --excluded: #6a1b9a;
+  --excluded-bg: #f3e5f5;
   --mono: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
 }
 
@@ -100,6 +102,7 @@ h1 {
 .total.pass { color: var(--pass); }
 .total.fail { color: var(--fail); }
 .total.skip { color: var(--skip); }
+.total.excluded { color: var(--excluded); }
 .total.no-result { color: var(--sf-grey); }
 
 main {
@@ -197,7 +200,7 @@ tr.incomplete > td:first-child {
 }
 
 /* the result column, shown as a badge */
-td.pass a, td.fail a, td.skip a {
+td.pass a, td.fail a, td.skip a, td.excluded a {
   display: inline-block;
   min-width: 52px;
   padding: 0 10px;
@@ -211,9 +214,10 @@ td.pass a, td.fail a, td.skip a {
 td.pass a { color: var(--pass); background-color: var(--pass-bg); }
 td.fail a { color: var(--fail); background-color: var(--fail-bg); }
 td.skip a { color: var(--skip); background-color: var(--skip-bg); }
+td.excluded a { color: var(--excluded); background-color: var(--excluded-bg); white-space: nowrap; }
 
 /* a procedure's id (underlined, as links are) and its result badge open its log */
-td.pass a:hover, td.fail a:hover, td.skip a:hover {
+td.pass a:hover, td.fail a:hover, td.skip a:hover, td.excluded a:hover {
   text-decoration: underline;
 }
 
@@ -227,6 +231,25 @@ p.notice {
   background-color: var(--skip-bg);
   padding: 6px 10px;
   border-radius: 4px;
+}
+
+/* procedures the configuration excluded, which the device hasn't been shown to conform to */
+p.exclusions {
+  color: var(--excluded);
+  background-color: var(--excluded-bg);
+  padding: 6px 10px;
+  border-radius: 4px;
+}
+
+p.exclusions strong {
+  font-weight: 600;
+}
+
+/* why a procedure was excluded, under its title */
+span.exclusion {
+  color: var(--excluded);
+  font-size: 12px;
+  font-weight: 600;
 }
 
 /* what a procedure noted about a pass, under its title */

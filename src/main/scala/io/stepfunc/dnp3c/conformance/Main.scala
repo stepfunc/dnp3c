@@ -9,6 +9,7 @@ import java.nio.file.Path
 import io.stepfunc.dnp3c.conformance.api._
 import io.stepfunc.dnp3c.conformance.application.pcap.PacketCapture
 import io.stepfunc.dnp3c.conformance.application.{ Console, Logo, OptionFileWriter }
+import io.stepfunc.dnp3c.conformance.application.report.Report
 import io.stepfunc.dnp3c.dnp3.{ DefaultIntegrationPlugin, IntegrationPlugin }
 import io.stepfunc.dnp3c.protocol.logging.Colors
 import org.apache.commons.cli.ParseException
@@ -128,8 +129,12 @@ object Main {
     // and a subset level the revision tests; a run checks the rest of the configuration too, before it starts, while
     // the commands that only describe or report show what's wrong with it instead
     val level =
-      try revision.subsetLevel(options)
-      catch {
+      try {
+        val level = revision.subsetLevel(options)
+        // the exclusions -disabled and -describe show must name procedures of the revision
+        if (config.listDisabled || config.describe.nonEmpty) revision.checkExclusions(options)
+        level
+      } catch {
         case ex: ConfigurationException =>
           Colors.error.printLine(ErrorText.of(ex))
           return -1
@@ -143,13 +148,14 @@ object Main {
     config.describe match {
       case Some(id) =>
         revision.elements.get(id) match {
-          case Some(section: TestSection) => print(section, Int.MaxValue, 0)
+          case Some(section: TestSection) => print(section, Int.MaxValue, 0, exclusions(options, revision, level))
           case Some(procedure: TestProcedure) =>
-            revision.skip(procedure, options, level) match {
-              case Some(Skip.NotApplicable(levels)) =>
+            revision.decide(procedure, options, level) match {
+              case Decision.Skip(Skip.NotApplicable(levels)) =>
                 println(
                   s"Not applicable at subset level $level: ${procedure.id} applies to subset level(s) " +
                     levels.mkString(", "))
+              case Decision.Exclude(reason) => println(s"NOT RUN — EXCLUDED ${procedure.id}: $reason")
               case _ =>
                 // the description says if it isn't implemented, or which options disable it; building the steps checks
                 // the options the procedure uses, e.g. 8.23's device attributes
@@ -188,8 +194,13 @@ object Main {
             try {
               val summary = harness.run(id)
               if (!summary.succeeded) Colors.error.printLine("Abort due to test failure")
+              exclusionWarning(summary).foreach(Colors.warn.printLine)
               summary.succeeded
             } catch {
+              case ex: HarnessExecutionException =>
+                Colors.error.printLine(ErrorText.of(ex))
+                exclusionWarning(ex.partial).foreach(Colors.warn.printLine)
+                false
               case NonFatal(ex) =>
                 Colors.error.printLine(ErrorText.of(ex))
                 false
@@ -203,6 +214,19 @@ object Main {
       case None => 0
     }
   }
+
+  // how a run's end tells of the procedures it excluded, which it didn't run
+  private[conformance] def exclusionWarning(summary: RunSummary): Option[String] =
+    Option.when(summary.exclusions.nonEmpty)(Report.exclusionWarning(summary.exclusions.size))
+
+  // the procedures the configuration excludes that aren't skipped anyway, and why
+  private def exclusions(options: OptionSource, revision: Revision, level: Int): Map[String, String] =
+    revision.flatMapProcedures { p =>
+      revision.decide(p, options, level) match {
+        case Decision.Exclude(reason) => Some(p.id -> reason)
+        case _ => None
+      }
+    }.toMap
 
   private def writeReport(write: => Path): Boolean =
     try {
@@ -262,22 +286,25 @@ object Main {
     s"Unknown revision: $id. The revisions are: ${Revisions.list.map(_.id).mkString(", ")}"
 
   def listDisabled(options: OptionSource, revision: Revision, level: Int): Unit = {
-    Colors.text.printLine("Listing optional test procedures disabled by configuration: ")
+    Colors.text.printLine("Listing the test procedures the configuration skips or excludes: ")
     Colors.text.printLine("")
     disabledLines(options, revision, level).foreach(Colors.text.printLine)
   }
 
   // each procedure the configuration keeps from running, once: those that don't apply at the level, then those that
-  // options disable. One that isn't implemented isn't the configuration's doing.
+  // options disable, then those it excludes. One that isn't implemented isn't the configuration's doing.
   private[conformance] def disabledLines(options: OptionSource, revision: Revision, level: Int): List[String] = {
-    val skipped = revision.flatMapProcedures(p => revision.skip(p, options, level).map(p -> _)).toList
-    val notApplicable = skipped.collect { case (p, Skip.NotApplicable(_)) =>
+    val decided = revision.flatMapProcedures(p => Some(p -> revision.decide(p, options, level))).toList
+    val notApplicable = decided.collect { case (p, Decision.Skip(Skip.NotApplicable(_))) =>
       List("Procedure: " + p.id, s"    Not applicable at subset level $level")
     }
-    val disabled = skipped.collect { case (p, Skip.Disabled(unmet)) =>
+    val disabled = decided.collect { case (p, Decision.Skip(Skip.Disabled(unmet))) =>
       ("Procedure: " + p.id) :: unmet.values.map((option, value) => "    Option: " + option.id + " == " + value)
     }
-    (notApplicable ++ disabled).flatten
+    val excluded = decided.collect { case (p, Decision.Exclude(reason)) =>
+      List("Procedure: " + p.id, "    NOT RUN — EXCLUDED: " + reason)
+    }
+    (notApplicable ++ disabled ++ excluded).flatten
   }
 
   def printNetworkAdapters(): Unit = {
@@ -297,8 +324,11 @@ object Main {
 
     def printOption(option: TestOption): Unit = {
       Colors.success.printLine("// " + option.description)
-      if (option.required) Colors.text.printLine(option.id + " = (required)")
-      else Colors.text.printLine(option.id + " = " + option.defaultAsString)
+      option match {
+        case o: ExclusionsOption => Colors.text.printLine("# " + o.example)
+        case _ if option.required => Colors.text.printLine(option.id + " = (required)")
+        case _ => Colors.text.printLine(option.id + " = " + option.defaultAsString)
+      }
     }
 
     def printGroup(group: OptionGroup): Unit = {
@@ -337,10 +367,12 @@ object Main {
     }
   }
 
-  def print(element: TestElement, depth: Int, numSpaces: Int): Unit = {
+  // with the procedures the configuration excludes marked
+  def print(element: TestElement, depth: Int, numSpaces: Int, excluded: Map[String, String] = Map.empty): Unit = {
 
     val spaces = " " * numSpaces
-    def line = (spaces + element.id).padTo(30, " ").mkString + element.description
+    def line = (spaces + element.id).padTo(30, " ").mkString + element.description +
+      excluded.get(element.id).fold("")(reason => s"  [NOT RUN — EXCLUDED: $reason]")
 
     val colors: Colors = element match {
       case x: TestProcedure if x.incomplete => Colors.incomplete
@@ -350,7 +382,7 @@ object Main {
     colors.printLine(line)
 
     if (depth > 0) {
-      element.subElements.foreach(e => print(e, depth - 1, numSpaces + 2))
+      element.subElements.foreach(e => print(e, depth - 1, numSpaces + 2, excluded))
     }
 
   }

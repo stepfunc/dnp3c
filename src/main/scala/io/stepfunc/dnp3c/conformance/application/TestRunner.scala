@@ -6,7 +6,7 @@ package io.stepfunc.dnp3c.conformance.application
 import java.io.Closeable
 import java.nio.file.{ Files, Path }
 
-import io.stepfunc.dnp3c.conformance.{ Revision, Skip }
+import io.stepfunc.dnp3c.conformance.{ Decision, Revision, Skip }
 import io.stepfunc.dnp3c.conformance.application.pcap.PacketCapture
 import io.stepfunc.dnp3c.conformance.api._
 import io.stepfunc.dnp3c.conformance.api.options.{
@@ -120,23 +120,15 @@ object TestRunner {
   // the harness or the plugin failed, after the procedure reached the outcome, if any
   private class ProcedureAborted(val outcome: Option[ProcedureOutcome], val error: Throwable) extends Exception(error)
 
-  /**
-   * Why a procedure won't run, if it won't: it isn't implemented, it doesn't apply at the subset level, or the device
-   * lacks a feature it needs. Decided before anything is opened, so a skipped procedure never touches the device or the
-   * plugin.
-   */
-  private def skipReason(
-      revision: Revision,
-      level: Int,
-      procedure: TestProcedure,
-      options: OptionSource): Option[String] =
-    revision.skip(procedure, options, level).map {
-      case Skip.NotImplemented => "not implemented"
-      case Skip.NotApplicable(levels) =>
-        s"not applicable: it applies to subset level(s) ${levels.mkString(", ")}, and the device is configured for " +
-          s"level $level"
-      case Skip.Disabled(unmet) => s"disabled because ${unmet.message}"
-    }
+  // why a procedure is skipped: it isn't implemented, it doesn't apply at the subset level, or the device lacks a
+  // feature it needs
+  private def skipReason(skip: Skip, level: Int): String = skip match {
+    case Skip.NotImplemented => "not implemented"
+    case Skip.NotApplicable(levels) =>
+      s"not applicable: it applies to subset level(s) ${levels.mkString(", ")}, and the device is configured for " +
+        s"level $level"
+    case Skip.Disabled(unmet) => s"disabled because ${unmet.message}"
+  }
 
   private def runProcedure(
       revision: Revision,
@@ -156,10 +148,18 @@ object TestRunner {
       SavedResult.write(SavedResult(result, Some(revision.id), Some(level), kept), resultsFile)
     }
 
-    skipReason(revision, level, procedure, options) match {
-      case Some(reason) =>
-        return ProcedureResult(procedure.id, skip(procedure, path, title, reason, options, r => save(r)))
-      case None =>
+    // decided before anything is opened, so a procedure that's skipped or excluded never touches the device or the
+    // plugin
+    def record(outcome: ProcedureOutcome, message: String): ProcedureResult =
+      ProcedureResult(procedure.id, notRun(path, title, outcome, message, options, r => save(r)))
+
+    revision.decide(procedure, options, level) match {
+      case Decision.Skip(skip) =>
+        val reason = skipReason(skip, level)
+        return record(ProcedureOutcome.Skipped(reason), s"Skipped procedure: ${procedure.id}, $reason")
+      case Decision.Exclude(reason) =>
+        return record(ProcedureOutcome.Excluded(reason), s"NOT RUN — EXCLUDED ${procedure.id}: $reason")
+      case Decision.Run =>
     }
 
     // run once the procedure ends, however it ends, the last added first
@@ -217,23 +217,24 @@ object TestRunner {
     ProcedureResult(procedure.id, result, notes)
   }
 
-  // records a procedure that won't run: its log says why, and nothing is opened
-  private def skip(
-      procedure: TestProcedure,
+  // records a procedure that's skipped or excluded: its log says why, and nothing is opened
+  private def notRun(
       path: Path,
       title: String,
-      reason: String,
+      outcome: ProcedureOutcome,
+      message: String,
       options: OptionSource,
       save: ProcedureOutcome => Unit): ProcedureOutcome = {
-    val outcome = ProcedureOutcome.Skipped(reason)
     try {
       Files.createDirectories(path)
-      // results from an earlier run must not look like this run's, even if writing this one fails
+      // results from an earlier run must not look like this run's, even if writing this one fails: the result first
       Files.deleteIfExists(path.resolve(ResultFiles.result))
+      Files.deleteIfExists(path.resolve(ResultFiles.log))
       Files.deleteIfExists(path.resolve(ResultFiles.capture))
       val htmlLogger =
         new ReportLogger(path.resolve(ResultFiles.log).toFile, title, options.get(TestOptions.deviceUnderTest))
-      try Logger.aggregate(ConsoleLogger, htmlLogger).info(s"Skipped procedure: ${procedure.id}, $reason")
+      val logger = Logger.aggregate(ConsoleLogger, htmlLogger)
+      try if (outcome.isInstanceOf[ProcedureOutcome.Excluded]) logger.warn(message) else logger.info(message)
       finally htmlLogger.write()
       save(outcome)
     } catch { case NonFatal(ex) => throw new ProcedureAborted(Some(outcome), ex) }

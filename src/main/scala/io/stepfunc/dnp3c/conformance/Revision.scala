@@ -81,8 +81,9 @@ final class Revision private[conformance] (
   }
 
   /**
-   * Why a procedure won't run on a device configured for a subset level, if it won't. The runner, the configuration
-   * check and `-disabled` all decide with it.
+   * Why a procedure won't run on a device configured for a subset level, if it won't, because it doesn't apply to the
+   * device or its configuration. The runner, the configuration check and `-disabled` all decide with it, before any
+   * exclusion (see [[decide]]).
    */
   def skip(procedure: TestProcedure, options: OptionSource, level: Int): Option[Skip] =
     if (procedure.incomplete) Some(Skip.NotImplemented)
@@ -93,9 +94,41 @@ final class Revision private[conformance] (
     }
 
   /**
-   * Check that the configuration is one this revision can test: it gives a subset level the revision tests, and it has
-   * what the revision needs configured, whatever procedures run, and what each procedure selected needs, if it will run
-   * (see [[skip]]).
+   * Whether a procedure runs, is skipped, or is excluded by the configuration. A skip comes first: a procedure that
+   * doesn't apply stays skipped, even if it's excluded too.
+   */
+  private[conformance] def decide(procedure: TestProcedure, options: OptionSource, level: Int): Decision =
+    skip(procedure, options, level) match {
+      case Some(s) => Decision.Skip(s)
+      case None => options.get(TestOptions.exclude).get(procedure.id).fold(Decision.Run)(Decision.Exclude(_))
+    }
+
+  // every exclusion must name a procedure of this revision, whatever procedures a run selects
+  private def exclusionProblems(options: OptionSource): List[ConfigProblem] =
+    options.get(TestOptions.exclude).toList.sorted.flatMap { (procedure, reason) =>
+      val key = s"${TestOptions.exclude.id}.$procedure"
+      elements.get(procedure) match {
+        case Some(_: TestProcedure) => None
+        case Some(_) =>
+          Some(ConfigProblem(key, reason, "a section: exclude its procedures, each with its own property"))
+        case None => Some(ConfigProblem(key, reason, s"revision $id has no procedure $procedure"))
+      }
+    }
+
+  /**
+   * Check that every exclusion in the configuration names a procedure of this revision
+   *
+   * @throws ConfigurationException listing every one that doesn't
+   */
+  private[conformance] def checkExclusions(options: OptionSource): Unit = {
+    val problems = exclusionProblems(options)
+    if (problems.nonEmpty) throw new ConfigurationException("configuration", problems)
+  }
+
+  /**
+   * Check that the configuration is one this revision can test: it gives a subset level the revision tests, its
+   * exclusions name procedures of the revision, and it has what the revision needs configured, whatever procedures
+   * run, and what each procedure selected needs, if it will run (see [[decide]]).
    *
    * @param selected the procedures a run will run; all of them unless given
    * @return the subset level
@@ -104,9 +137,10 @@ final class Revision private[conformance] (
   def validate(options: OptionSource, selected: Iterable[TestProcedure] = flatMapProcedures(Some(_))): Int = {
     val level = subsetLevel(options)
     // what the procedures that will run need, each problem once
-    val procedures = selected.filter(skip(_, options, level).isEmpty)
+    val procedures = selected.filter(decide(_, options, level) == Decision.Run)
     val problems =
-      (configurationProblems(options) ++ procedures.flatMap(_.definition.configurationProblems(options))).distinct
+      (exclusionProblems(options) ++ configurationProblems(options) ++
+        procedures.flatMap(_.definition.configurationProblems(options))).distinct
     if (problems.nonEmpty) throw new ConfigurationException("configuration", problems)
     level
   }
@@ -155,6 +189,17 @@ enum Skip {
 
   /** the device lacks an optional feature it tests */
   case Disabled(unmet: Unmet)
+}
+
+/** whether a procedure runs, see [[Revision.decide]] */
+private[conformance] enum Decision {
+  case Run
+
+  /** it doesn't apply to the device or its configuration */
+  case Skip(skip: io.stepfunc.dnp3c.conformance.Skip)
+
+  /** it applies, but the configuration leaves it out, for this reason */
+  case Exclude(reason: String)
 }
 
 object Revisions {

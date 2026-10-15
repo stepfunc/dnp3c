@@ -35,4 +35,18 @@ class SavedResultTest extends AnyFunSuite with Matchers {
     SavedResult.read(results.toFile) should equal(SavedResult(ProcedureOutcome.Passed, None, None))
     List(results, directory).foreach(Files.delete)
   }
+
+  test("an excluded result keeps its reason, and can't be read without one") {
+    val directory = Files.createTempDirectory("dnp3c")
+    val results = directory.resolve("results.properties")
+    val saved = SavedResult(ProcedureOutcome.Excluded("Assign Class isn't supported: #480"), Some("3.1r1"), Some(2))
+    SavedResult.write(saved, results)
+    Files.readString(results) should include("result=excluded")
+    SavedResult.read(results.toFile) should equal(saved)
+    for (reason <- List("", "reason=\n", "reason=  \n")) {
+      Files.writeString(results, "result=excluded\nrevision=3.1r1\nsubsetLevel=2\n" + reason)
+      an[Exception] should be thrownBy SavedResult.read(results.toFile)
+    }
+    List(results, directory).foreach(Files.delete)
+  }
 }

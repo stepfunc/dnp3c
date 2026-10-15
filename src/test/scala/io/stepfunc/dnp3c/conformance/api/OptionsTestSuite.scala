@@ -128,6 +128,8 @@ class OptionsTestSuite extends AnyFunSuite with Matchers {
 
   test("every default parses back to itself") {
     for (option <- OptionGroups.list.flatMap(_.options).filterNot(_.required)) option match {
+      // exclusions have no value of their own, only a property per procedure
+      case _: ExclusionsOption =>
       case o: TypedTestOption[?] => withClue(o.id)(o.parse(o.defaultAsString) should equal(o.default))
     }
   }
@@ -147,6 +149,30 @@ class OptionsTestSuite extends AnyFunSuite with Matchers {
     // the subset level is written commented out, for you to set
     Files.readString(path) should include("# outstation.subset.level = ")
     Options.load(path).get(options.OutstationOptions.subsetLevel) should equal(None)
+    // and so is an example of an exclusion
+    Files.readString(path) should include(s"# ${TestOptions.exclude.id}.8.26.2 = ")
+    Options.load(path).get(TestOptions.exclude) should equal(Map())
+  }
+
+  test("each exclusion is a property of its own, naming the procedure and giving the reason") {
+    val exclusions = Options.load(file(
+      "test.exclude.8.26.2 = Assign Class isn't supported yet (stepfunc/dnp3#480)  ",
+      "test.exclude.8.6.5b = Relé: 50% done, see #12 — later",
+      s"${TestOptions.deviceUnderTest.id} = RTU"
+    )).get(TestOptions.exclude)
+    exclusions should equal(Map(
+      "8.26.2" -> "Assign Class isn't supported yet (stepfunc/dnp3#480)",
+      "8.6.5b" -> "Relé: 50% done, see #12 — later"))
+    Options.from(Map()).get(TestOptions.exclude) should equal(Map())
+  }
+
+  test("an exclusion needs a procedure and a reason, and there's no list of them") {
+    problems("test.exclude.8.26.2 =", "test.exclude.8.1.2 =   ", "test.exclude. = gap", "test.exclude = 8.26.2")
+      .map(_.key) should equal(List("test.exclude", "test.exclude.", "test.exclude.8.1.2", "test.exclude.8.26.2"))
+    problems("test.exclude = 8.26.2").map(_.message).head should include("test.exclude.<procedure id> = <reason>")
+    // keys like it are still unknown
+    problems("test.excluded.8.26.2 = gap", "test.exclude.8.26.2 = gap").map(_.key) should equal(
+      List("test.excluded.8.26.2"))
   }
 
   test("writing the default configuration file fails when the write does") {

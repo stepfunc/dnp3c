@@ -68,6 +68,8 @@ dnp3c -rev 2.7 -help                             # list the commands and test se
 
 Results, including `report.html`, are written to the revision's folder of the directory set by `test.output.directory`, e.g. `results/2.7/L2/`. The configuration must set `outstation.subset.level`, the DNP3 subset level the device is configured for: it has no default. See [Testing a device by hand](docs/manual-testing.md) for the whole workflow.
 
+A procedure the device can't pass yet, e.g. for a known gap, can be excluded in the configuration, with the reason: `test.exclude.8.26.2 = Assign Class isn't supported yet`. It isn't run, and the report shows it as not run, with the reason, apart from skipped procedures, which don't apply to the device. See [Exclude procedures](docs/manual-testing.md#exclude-procedures).
+
 ## Library
 
 The library jar, `io.stepfunc:dnp3c`, is published to Maven Central. See [Automating the tests](docs/automation.md) for writing an integration plugin and running it in CI.

@@ -3,7 +3,9 @@
 
 package io.stepfunc.dnp3c.conformance.api.options
 
-import io.stepfunc.dnp3c.conformance.api.{ IntegerOption, OptionGroup, OptionTypes, StringOption, TestOption }
+import io.stepfunc.dnp3c.conformance.api.{
+  ExclusionsOption, IntegerOption, OptionGroup, OptionTypes, StringOption, TestOption
+}
 
 object TestOptions extends OptionGroup {
 
@@ -25,8 +27,17 @@ object TestOptions extends OptionGroup {
     None
   )
 
+  val exclude: ExclusionsOption = OptionTypes.exclusions(
+    this,
+    "exclude",
+    "Procedures to leave out of a run, one property each, with the reason: test.exclude.<procedure id> = <reason>. " +
+      "An excluded procedure applies to the DUT but isn't run, and is reported as not run, so the DUT isn't shown to " +
+      "conform to it. A procedure for a feature the DUT lacks is skipped by its supports.* option instead",
+    "test.exclude.8.26.2 = Assign Class isn't supported yet"
+  )
+
   def prefix: String = "test"
   def description: String = "Options for the test harness itself"
-  def options: List[TestOption] = List(outputDirectory, deviceUnderTest, manualActionWindowMs)
+  def options: List[TestOption] = List(outputDirectory, deviceUnderTest, manualActionWindowMs, exclude)
 
 }

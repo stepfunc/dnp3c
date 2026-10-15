@@ -95,6 +95,45 @@ class HarnessTest extends AnyFunSuite with Matchers {
       "Note: compliant with 1815-2012 only")
   }
 
+  test("the report shows each exclusion's reason, counts exclusions apart from skips, and warns of them") {
+    val directory = output
+    val folder = directory.resolve("2.7").resolve("L2")
+    def result(id: String, outcome: ProcedureOutcome): Unit = {
+      Files.createDirectories(folder.resolve(id))
+      SavedResult.write(SavedResult(outcome, Some("2.7"), Some(2)), folder.resolve(id).resolve("results.properties"))
+      Files.writeString(folder.resolve(id).resolve("log.html"), "")
+      Files.writeString(folder.resolve(id).resolve("dump.pcap"), "")
+    }
+    result("8.1.2", ProcedureOutcome.Passed)
+    result("8.3.2", ProcedureOutcome.Skipped("disabled because supports.x == false"))
+    result("8.4.1.2.1", ProcedureOutcome.Excluded("Assign <b>Class</b> & co aren't supported"))
+    result("8.4.1.2.2", ProcedureOutcome.Excluded("a second gap"))
+    val report = Files.readString(Harness.writeReport(options(directory), revision))
+
+    report should include("Excluded: Assign &lt;b&gt;Class&lt;/b&gt; &amp; co aren't supported")
+    report should not include "<b>Class"
+    report should include("Excluded: a second gap")
+    report should include("""<a href="./8.4.1.2.1/log.html">NOT RUN — EXCLUDED</a>""")
+    for (total <- List("1 passed", "0 failed", "1 skipped", "2 excluded", "with no saved result"))
+      report should include(total)
+    report should include("2 procedures were excluded and not run. Conformance has not been demonstrated for them.")
+    // no traffic for a procedure that didn't run
+    report should include("./8.1.2/dump.pcap")
+    report should not include "./8.3.2/dump.pcap"
+    report should not include "./8.4.1.2.1/dump.pcap"
+    // skips as they were, and a procedure without a result, or that isn't implemented, says so
+    report should include("""<a href="./8.3.2/log.html">SKIP</a>""")
+    report should include("Skipped: disabled because supports.x == false")
+    report should include("Not run — no saved result")
+    report should include("Not implemented")
+  }
+
+  test("a report without exclusions doesn't warn of them") {
+    val report = Files.readString(Harness.writeReport(options(output), revision))
+    report should include("0 excluded")
+    report should not include "excluded and not run"
+  }
+
   test("tells about a procedure whose run left a log but no result") {
     val directory = output
     val folder = directory.resolve("2.7").resolve("L2").resolve("8.1.2")

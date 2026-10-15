@@ -34,21 +34,24 @@ case class Report(revision: Revision, level: Int, sections: Iterable[Report.Sect
     def link(text: String) = "<a href=\"./" + p.id + "/" + ResultFiles.log + "\">" + text + "</a>"
     // a procedure that has run has a log, which its id and its result both open
     def id = if (p.incomplete || p.outcome.isEmpty) p.id else link(p.id)
+    // a procedure that didn't run has no traffic
     def pcapLink =
       if (p.hasPcaps &&
         !p.incomplete &&
-        p.outcome.exists(o => !o.isInstanceOf[ProcedureOutcome.Skipped])) {
+        p.outcome.exists(o =>
+          !o.isInstanceOf[ProcedureOutcome.Skipped] && !o.isInstanceOf[ProcedureOutcome.Excluded])) {
         "<a href=\"./" + p.id + "/" + ResultFiles.capture + "\">pcap</a>"
       } else {
         "----"
       }
 
-    def getText(): String = if (p.incomplete) "----"
+    def getText(): String = if (p.incomplete) "Not implemented"
     else p.outcome match {
       case Some(ProcedureOutcome.Passed) => link("PASS")
       case Some(ProcedureOutcome.Failed(_)) => link("FAIL")
       case Some(ProcedureOutcome.Skipped(_)) => link("SKIP")
-      case None => "not run"
+      case Some(ProcedureOutcome.Excluded(_)) => link("NOT RUN — EXCLUDED")
+      case None => "Not run — no saved result"
     }
 
     def getClass(): Clazz = if (p.incomplete) Classes.unimplemented
@@ -56,13 +59,16 @@ case class Report(revision: Revision, level: Int, sections: Iterable[Report.Sect
       case Some(ProcedureOutcome.Passed) => Classes.pass
       case Some(ProcedureOutcome.Failed(_)) => Classes.fail
       case Some(ProcedureOutcome.Skipped(_)) => Classes.skip
+      case Some(ProcedureOutcome.Excluded(_)) => Classes.excluded
       case None => Classes.noResult
     }
 
-    // why the procedure was skipped, or what it noted about a pass, under its title
+    // why the procedure was skipped or excluded, or what it noted about a pass, under its title
     def skipReason: String = p.outcome match {
       case Some(ProcedureOutcome.Skipped(reason)) if reason.nonEmpty =>
         "<br><span class=\"reason\">Skipped: " + Tags.escape(reason) + "</span>"
+      case Some(ProcedureOutcome.Excluded(reason)) =>
+        "<br><span class=\"exclusion\">Excluded: " + Tags.escape(reason) + "</span>"
       case Some(ProcedureOutcome.Passed) =>
         p.notes.map(n => "<br><span class=\"note\">Note: " + Tags.escape(n) + "</span>").mkString
       case _ => ""
@@ -88,17 +94,31 @@ case class Report(revision: Revision, level: Int, sections: Iterable[Report.Sect
     case p: Report.Procedure => List(p)
   }
 
+  private def implemented: List[Report.Procedure] = sections.flatMap(procedures).filterNot(_.incomplete).toList
+
+  private def excluded: Int = implemented.count(_.outcome.exists(_.isInstanceOf[ProcedureOutcome.Excluded]))
+
   // e.g. "146 passed", counting implemented procedures by result
   private def totals: Iterable[(Clazz, String)] = {
-    val implemented = sections.flatMap(procedures).filterNot(_.incomplete).toList
     def count(counted: Option[ProcedureOutcome] => Boolean) = implemented.count(p => counted(p.outcome))
     List(
       (Classes.pass, s"${count(_.contains(ProcedureOutcome.Passed))} passed"),
       (Classes.fail, s"${count(_.exists(_.isInstanceOf[ProcedureOutcome.Failed]))} failed"),
       (Classes.skip, s"${count(_.exists(_.isInstanceOf[ProcedureOutcome.Skipped]))} skipped"),
-      (Classes.noResult, s"${count(_.isEmpty)} not run")
+      (Classes.excluded, s"$excluded excluded"),
+      (Classes.noResult, s"${count(_.isEmpty)} with no saved result")
     )
   }
+
+  // a report with exclusions mustn't read as a clean result
+  private def exclusionWarning(implicit i: Indentation): Iterable[String] =
+    if (excluded == 0) Nil
+    else
+      Tags.p(Attributes.classes(Clazz("exclusions")))(List(
+        s"<strong>${Tags.escape(Report.exclusionWarning(excluded))}</strong>",
+        "<br>A skipped procedure doesn't apply to the device or its configuration, and the device can still conform. " +
+          "An excluded procedure does apply, but the configuration left it out of the run (test.exclude)."
+      ))
 
   def toHTML(deviceUnderTest: String): Iterable[String] = {
 
@@ -122,7 +142,8 @@ case class Report(revision: Revision, level: Int, sections: Iterable[Report.Sect
         Tags.p(List(s"Generated $generated")),
       totals.flatMap { case (clazz, text) => Tags.span(Attributes.classes(Clazz("total"), clazz))(List(text)) }
     ) {
-      notices.flatMap(n => Tags.p(Attributes.classes(Clazz("notice")))(List(Tags.escape(n)))) ++
+      exclusionWarning ++
+        notices.flatMap(n => Tags.p(Attributes.classes(Clazz("notice")))(List(Tags.escape(n)))) ++
         Tags.p(Attributes.classes(Clazz("hint")))(List("Click a procedure's id or result to open its log.")) ++
         Tags.table(Attributes.classes(Clazz("results"))) {
           Tags.tr(headings) ++
@@ -134,6 +155,11 @@ case class Report(revision: Revision, level: Int, sections: Iterable[Report.Sect
 }
 
 object Report {
+
+  // what the report, and the end of a run, say of the procedures excluded
+  def exclusionWarning(count: Int): String =
+    if (count == 1) "1 procedure was excluded and not run. Conformance has not been demonstrated for it."
+    else s"$count procedures were excluded and not run. Conformance has not been demonstrated for them."
 
   sealed trait Element
 
