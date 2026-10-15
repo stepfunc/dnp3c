@@ -9,6 +9,7 @@ import java.nio.file.Path
 import io.stepfunc.dnp3c.conformance.api._
 import io.stepfunc.dnp3c.conformance.application.pcap.PacketCapture
 import io.stepfunc.dnp3c.conformance.application.{ Console, Logo, OptionFileWriter }
+import io.stepfunc.dnp3c.conformance.application.report.Report
 import io.stepfunc.dnp3c.dnp3.{ DefaultIntegrationPlugin, IntegrationPlugin }
 import io.stepfunc.dnp3c.protocol.logging.Colors
 import org.apache.commons.cli.ParseException
@@ -216,8 +217,7 @@ object Main {
 
   // how a run's end tells of the procedures it excluded, which it didn't run
   private[conformance] def exclusionWarning(summary: RunSummary): Option[String] =
-    Option.when(summary.exclusions.nonEmpty)(
-      s"${summary.exclusions.size} procedure(s) excluded and not run. Conformance has not been demonstrated for them.")
+    Option.when(summary.exclusions.nonEmpty)(Report.exclusionWarning(summary.exclusions.size))
 
   // the procedures the configuration excludes that aren't skipped anyway, and why
   private def exclusions(options: OptionSource, revision: Revision, level: Int): Map[String, String] =

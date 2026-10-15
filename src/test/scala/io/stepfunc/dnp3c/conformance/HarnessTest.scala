@@ -116,7 +116,7 @@ class HarnessTest extends AnyFunSuite with Matchers {
     report should include("""<a href="./8.4.1.2.1/log.html">NOT RUN — EXCLUDED</a>""")
     for (total <- List("1 passed", "0 failed", "1 skipped", "2 excluded", "with no saved result"))
       report should include(total)
-    report should include("2 procedure(s) excluded and not run. Conformance has not been demonstrated for them.")
+    report should include("2 procedures were excluded and not run. Conformance has not been demonstrated for them.")
     // no traffic for a procedure that didn't run
     report should include("./8.1.2/dump.pcap")
     report should not include "./8.3.2/dump.pcap"

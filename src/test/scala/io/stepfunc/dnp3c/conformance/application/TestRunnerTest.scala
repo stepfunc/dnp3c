@@ -317,9 +317,17 @@ class TestRunnerTest extends AnyFunSuite with Matchers {
     // the run succeeded, but the device isn't shown to conform to b
     summary.succeeded should equal(true)
     summary.exclusions.map(_.id) should equal(List("b"))
-    run.events.list.filter(_.endsWith(" b")) should equal(Nil)
-    run.events.list.count(_ == "start") should equal(2)
-    run.events.list.count(_ == "capture open") should equal(2)
+    // nothing at all for b
+    def ran(name: String) = List(
+      "capture open",
+      "driver open",
+      "start",
+      s"configure $name",
+      s"step $name",
+      "end",
+      "driver close",
+      "capture close")
+    run.events.list should equal(ran("a") ++ ran("c"))
 
     val saved = SavedResult.read(run.tFolder.resolve("b").resolve("results.properties").toFile)
     saved should equal(SavedResult(Excluded("Assign Class isn't supported yet"), Some("t"), Some(2)))

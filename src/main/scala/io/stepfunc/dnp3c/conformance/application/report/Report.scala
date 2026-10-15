@@ -115,7 +115,7 @@ case class Report(revision: Revision, level: Int, sections: Iterable[Report.Sect
     if (excluded == 0) Nil
     else
       Tags.p(Attributes.classes(Clazz("exclusions")))(List(
-        s"<strong>$excluded procedure(s) excluded and not run. Conformance has not been demonstrated for them.</strong>",
+        s"<strong>${Tags.escape(Report.exclusionWarning(excluded))}</strong>",
         "<br>A skipped procedure doesn't apply to the device or its configuration, and the device can still conform. " +
           "An excluded procedure does apply, but the configuration left it out of the run (test.exclude)."
       ))
@@ -155,6 +155,11 @@ case class Report(revision: Revision, level: Int, sections: Iterable[Report.Sect
 }
 
 object Report {
+
+  // what the report, and the end of a run, say of the procedures excluded
+  def exclusionWarning(count: Int): String =
+    if (count == 1) "1 procedure was excluded and not run. Conformance has not been demonstrated for it."
+    else s"$count procedures were excluded and not run. Conformance has not been demonstrated for them."
 
   sealed trait Element
 
