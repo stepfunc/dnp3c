@@ -14,7 +14,8 @@ import io.stepfunc.dnp3c.conformance.common.SupervisoryControl.Numbering
  *
  * A test 3.1r1 numbers has its number, whether in a heading or on its "Test Procedure" line. One it doesn't has its
  * section's number followed by a letter, a for the section's first unnumbered test, b for the next and so on, e.g.
- * 8.6.5b; a letter can't be mistaken for one of 3.1r1's own numbers, and no section has more than 26 such tests.
+ * 8.6.5b; a letter can't be mistaken for one of 3.1r1's own numbers, and no section has more than 26 such tests. A
+ * section whose only test is unnumbered is that test, with the section's number and title, e.g. 8.6.1 Restart.
  * Unsolicited and Polled Responses, one test in sections, has 8.11.2.5, which its numbers 8.11.2.5.1 to 8.11.2.5.9
  * give it. Material that isn't a test, such as desired behavior, terminology and setup, isn't in the tree. 3.1r1's 8.21
  * and 8.22 run the 8.13 and 8.14 tests with double-bit inputs: theirs are lettered in the same order, so 8.22c is
@@ -160,16 +161,12 @@ object Tree {
             "Binary Output, Direct Operate, No Acknowledge, Configurable Device",
             v27.Procedure8_2_3_2_3)
         ),
-        section("8.2.4", "Multiple Object Requests")(
-          test("8.2.4a", "Test Procedure", v27.Procedure8_2_4_2)
-        ),
+        test("8.2.4", "Multiple Object Requests", v27.Procedure8_2_4_2),
         section("8.2.5", "Control Code Support")(
           test("8.2.5.2.1", "Binary Output, Complementary Function Support", v27.Procedure8_2_5_2_1),
           test("8.2.5.2.2", "Binary Output, Single Function Support", v27.Procedure8_2_5_2_2)
         ),
-        section("8.2.6", "No Control When Status Code is Non-Zero")(
-          test("8.2.6a", "Test Procedure", ControlStatus.nonZeroStatus)
-        )
+        test("8.2.6", "No Control When Status Code is Non-Zero", ControlStatus.nonZeroStatus)
       ),
       section("8.3", "Analog Output Status")(
         test("8.3.2", "Test Procedure", Definitions.analogOutputStatus)
@@ -215,14 +212,10 @@ object Tree {
             "Analog Output, Direct Operate, No Acknowledge, Configurable Device",
             v27.Procedure8_4_3_2_3)
         ),
-        section("8.4.4", "Multiple Object Requests")(
-          test("8.4.4a", "Test Procedure", v27.Procedure8_4_4_2)
-        )
+        test("8.4.4", "Multiple Object Requests", v27.Procedure8_4_4_2)
       ),
       section("8.5", "Class Data")(
-        section("8.5.1", "Class 0")(
-          test("8.5.1a", "Test Procedure", v27.Procedure8_5_1_2)
-        ),
+        test("8.5.1", "Class 0", v27.Procedure8_5_1_2),
         section("8.5.2", "Class 1")(
           test("8.5.2.2.1", "Class 1 Data, 0x06", ClassData.class1All),
           test("8.5.2.2.2", "Class 1 Data, 0x07", ClassData.class1OneByteCount),
@@ -245,20 +238,12 @@ object Tree {
           test("8.5.5.2.1", "Multiple Object Request, Class 1, 2, and 3", v27.Procedure8_5_5_2_1),
           test("8.5.5.2.2", "Multiple Object Request, Class 1, 2, 3, and 0", v27.Procedure8_5_5_2_2)
         ),
-        section("8.5.6", "Class Assignment Verification")(
-          test("8.5.6a", "Test Procedure", ClassData.classAssignment)
-        )
+        test("8.5.6", "Class Assignment Verification", ClassData.classAssignment)
       ),
       section("8.6", "Indications")(
-        section("8.6.1", "Restart")(
-          test("8.6.1a", "Test Procedure", v27.Procedure8_6_1_2)
-        ),
-        section("8.6.2", "Bad Function")(
-          test("8.6.2a", "Test Procedure", v27.Procedure8_6_2_2)
-        ),
-        section("8.6.3", "Object Unknown")(
-          test("8.6.3a", "Test Procedure", v27.Procedure8_6_3_2)
-        ),
+        test("8.6.1", "Restart", v27.Procedure8_6_1_2),
+        test("8.6.2", "Bad Function", v27.Procedure8_6_2_2),
+        test("8.6.3", "Object Unknown", v27.Procedure8_6_3_2),
         section("8.6.4", "Local")(
           test("8.6.4a", "Test Procedure for Devices with Global Remote Supervisory Control", global8641),
           test("8.6.4b", "Test Procedure for Devices with Individual Remote Supervisory Control", individual8642)
@@ -279,20 +264,14 @@ object Tree {
           test("8.7.1.1.2", "Delay Measurement", v27.Procedure8_7_1_2),
           test("8.7.1.2.2", "Synchronization", v27.Procedure8_7_2_2)
         ),
-        section("8.7.2", "LAN Time Sync Method")(
-          test("8.7.2a", "Test Procedure", LanTimeSync.lanTimeSync)
-        )
+        test("8.7.2", "LAN Time Sync Method", LanTimeSync.lanTimeSync)
       ),
       section("8.8", "Cold Restart")(
         test("8.8.2", "Test Procedure", new v27.ColdRestart(configures = true))
       ),
       section("8.9", "Application Layer Fragmentation")(
-        section("8.9.1", "Use of FIR, FIN and SEQUENCE in Fragmentation")(
-          test("8.9.1a", "Test Procedure", v27.Procedure8_9_1_2)
-        ),
-        section("8.9.2", "Use of Confirmation in Fragmentation")(
-          test("8.9.2a", "Test Procedure", v27.Procedure8_9_2_2)
-        )
+        test("8.9.1", "Use of FIR, FIN and SEQUENCE in Fragmentation", v27.Procedure8_9_1_2),
+        test("8.9.2", "Use of Confirmation in Fragmentation", v27.Procedure8_9_2_2)
       ),
       section("8.10", "Multi-Drop Support")(
         test("8.10.2", "Test Procedure", MultiDrop.multiDrop)
@@ -629,33 +608,19 @@ object Tree {
           test("9.5.3.4.2", "Data Filled Messages to Originating Port", Network.unsolicitedDataOriginatingPort),
           test("9.5.3.5.2", "Data Filled Messages to a Fixed Port Other Than 20000", Network.unsolicitedDataFixedPort)
         ),
-        section("9.5.4", "Unsolicited with Both UDP and TCP")(
-          test("9.5.4a", "Test Procedure", Network.unsolicitedUdpAndTcp)
-        )
+        test("9.5.4", "Unsolicited with Both UDP and TCP", Network.unsolicitedUdpAndTcp)
       )
     ),
     section("10", "Output Control Events")(
       section("10.3", "Binary")(
-        section("10.3.2", "Binary Status in Group 0")(
-          test("10.3.2a", "Test Procedure", OutputEvents.binaryStatusInClassZero)
-        ),
-        section("10.3.3", "Binary Output Status Events")(
-          test("10.3.3a", "Test Procedure", OutputEvents.binaryStatusEvents)
-        ),
-        section("10.3.4", "Binary Command Events")(
-          test("10.3.4a", "Test Procedure", OutputEvents.binaryCommandEvents)
-        )
+        test("10.3.2", "Binary Status in Group 0", OutputEvents.binaryStatusInClassZero),
+        test("10.3.3", "Binary Output Status Events", OutputEvents.binaryStatusEvents),
+        test("10.3.4", "Binary Command Events", OutputEvents.binaryCommandEvents)
       ),
       section("10.4", "Analog")(
-        section("10.4.2", "Analog Status in Group 0")(
-          test("10.4.2a", "Test Procedure", OutputEvents.analogStatusInClassZero)
-        ),
-        section("10.4.3", "Analog Output Status Events")(
-          test("10.4.3a", "Test Procedure", OutputEvents.analogStatusEvents)
-        ),
-        section("10.4.4", "Analog Command Events")(
-          test("10.4.4a", "Test Procedure", OutputEvents.analogCommandEvents)
-        )
+        test("10.4.2", "Analog Status in Group 0", OutputEvents.analogStatusInClassZero),
+        test("10.4.3", "Analog Output Status Events", OutputEvents.analogStatusEvents),
+        test("10.4.4", "Analog Command Events", OutputEvents.analogCommandEvents)
       )
     )
   )
