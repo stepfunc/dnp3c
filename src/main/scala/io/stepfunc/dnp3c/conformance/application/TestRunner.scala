@@ -77,9 +77,9 @@ object TestRunner {
       integrationPlugin: IntegrationPlugin,
       environment: ProcedureEnvironment): RunSummary = {
 
-    // the sections and procedures in the order they run: a section's subsections, then its procedures
+    // the sections and procedures in the order they run, the tree's
     def walk(e: TestElement): List[TestElement] = e match {
-      case s: TestSection => s :: (s.sections.toList ++ s.procedures.toList).flatMap(walk)
+      case s: TestSection => s :: s.subElements.toList.flatMap(walk)
       case p: TestProcedure => List(p)
     }
 

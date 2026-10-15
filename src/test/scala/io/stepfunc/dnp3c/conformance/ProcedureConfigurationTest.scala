@@ -103,4 +103,17 @@ class ProcedureConfigurationTest extends AnyFunSuite with Matchers {
     }
     Revisions.list.foreach(_.sections.foreach(check))
   }
+
+  test("a section lists its sections and tests in the order of their ids, which is the order they run in") {
+    // e.g. 8.6.1 before 8.6.4, and 8.6.5 before 8.6.5a; a letter after a number
+    def key(id: String): List[Int] =
+      id.split('.').toList.flatMap(part =>
+        part.takeWhile(_.isDigit).toInt :: part.dropWhile(_.isDigit).map(_ - 'a' + 1).toList)
+    def check(section: TestElement): Unit = {
+      val keys = section.subElements.map(e => key(e.id)).toList
+      withClue(s"${section.id}: ")(keys should equal(keys.sorted(using Ordering.Implicits.seqOrdering[List, Int])))
+      section.subElements.foreach(check)
+    }
+    Revisions.list.foreach(_.sections.foreach(check))
+  }
 }

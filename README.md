@@ -27,7 +27,7 @@ Commercial DNP3 test tools save their results in proprietary formats. dnp3c writ
 
 dnp3c implements two revisions of the DNP Users Group's *DNP3 IED Certification Procedure*, chosen with `-rev` (`-revs` lists them):
 
-- **3.1 rev 1** (`3.1r1`, 13 September 2022) covers Subset Levels 1 to 3. Its tests have the numbers it gives them. One it leaves without a number has its section's number followed by a letter for its place among the section's unnumbered tests, e.g. 8.6.5b for the second.
+- **3.1 rev 1** (`3.1r1`, 13 September 2022) covers Subset Levels 1 to 3. Its tests have the numbers it gives them. One it leaves without a number has its section's number followed by a letter for its place among the section's unnumbered tests, e.g. 8.6.5b for the second; if it's the section's only test, it has the section's number and title, e.g. 8.6.1 Restart.
 - **2.7** (`2.7`, 2 March 2016) covers Subset Level 2. Where a technical bulletin replaces a 2.7 test outright, dnp3c runs the replacement: TB2017-001's 8.6.4.2 and 8.6.4.3, whose steps are numbered 1.a, 1.b, and so on.
 
 The section, procedure and step numbers in the tool, its logs and the report are those of the revision being run. Each revision is run as published, so a result under 2.7 can differ from one under 3.1 rev 1, which changes what some tests send or accept, often to apply technical bulletins published after 2.7.

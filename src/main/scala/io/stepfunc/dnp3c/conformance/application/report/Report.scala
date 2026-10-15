@@ -23,7 +23,10 @@ case class Report(revision: Revision, level: Int, sections: Iterable[Report.Sect
         Tags.td(Nil) ++
         Tags.td(Nil) ++
         Tags.td { List(Tags.escape(s.description)) }
-    } ++ s.sections.flatMap(convert(level + 1, _)) ++ s.procedures.flatMap(convert(level + 1, _))
+    } ++ s.children.flatMap {
+      case c: Report.Section => convert(level + 1, c)
+      case p: Report.Procedure => convert(level + 1, p)
+    }
   }
 
   private def convert(level: Int, p: Report.Procedure)(implicit i: Indentation): Iterable[String] = {
@@ -80,8 +83,10 @@ case class Report(revision: Revision, level: Int, sections: Iterable[Report.Sect
     }
   }
 
-  private def procedures(s: Report.Section): Iterable[Report.Procedure] =
-    s.procedures ++ s.sections.flatMap(procedures)
+  private def procedures(s: Report.Section): Iterable[Report.Procedure] = s.children.flatMap {
+    case c: Report.Section => procedures(c)
+    case p: Report.Procedure => List(p)
+  }
 
   // e.g. "146 passed", counting implemented procedures by result
   private def totals: Iterable[(Clazz, String)] = {
@@ -130,6 +135,8 @@ case class Report(revision: Revision, level: Int, sections: Iterable[Report.Sect
 
 object Report {
 
+  sealed trait Element
+
   case class Procedure(
       id: String,
       incomplete: Boolean,
@@ -137,7 +144,10 @@ object Report {
       outcome: Option[ProcedureOutcome],
       hasPcaps: Boolean,
       notes: List[String] = Nil)
-  case class Section(id: String, description: String, sections: Iterable[Section], procedures: Iterable[Procedure])
+      extends Element
+
+  /** @param children its sections and procedures, in the tree's order */
+  case class Section(id: String, description: String, children: Iterable[Element]) extends Element
 
   /**
    * The report of a revision's results at a subset level
@@ -148,7 +158,13 @@ object Report {
     val ignored = List.newBuilder[String]
 
     def convert(section: TestSection): Section =
-      Section(section.id, section.description, section.sections.map(convert), section.procedures.map(read))
+      Section(
+        section.id,
+        section.description,
+        section.subElements.collect {
+          case s: TestSection => convert(s)
+          case p: TestProcedure => read(p)
+        })
 
     def read(procedure: TestProcedure): Procedure = {
       val folder = path.resolve(procedure.id)
