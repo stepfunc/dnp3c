@@ -1,8 +1,10 @@
 name: CI
 
-# pull requests only: main is protected, and these checks must pass on an up-to-date branch before merging
+# pull requests, and the merge queue: main is protected, and a pull request merges through the queue, which runs
+# these checks on it together with main and the pull requests ahead of it
 on:
   pull_request:
+  merge_group:
 
 jobs:
   format:
