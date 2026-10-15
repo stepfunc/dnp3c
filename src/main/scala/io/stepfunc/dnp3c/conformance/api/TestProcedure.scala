@@ -222,7 +222,8 @@ trait TestSection extends TestElement {
 
   def procedures: Iterable[TestProcedure] = Nil
 
-  final override def subElements: Iterable[TestElement] = sections ++ procedures
+  // its sections and procedures in order, by default its sections first
+  override def subElements: Iterable[TestElement] = sections ++ procedures
 }
 
 object TestProcedure {

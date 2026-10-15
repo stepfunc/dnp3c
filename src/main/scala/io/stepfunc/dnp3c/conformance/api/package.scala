@@ -60,7 +60,7 @@ package object api {
     }
   }
 
-  /** a section of a revision's tree, holding sections and procedures, which it lists sections first */
+  /** a section of a revision's tree, holding sections and procedures in the order given */
   def section(id: String, title: String)(children: TestElement*): TestSection = {
     val (sectionId, sectionTitle) = (id, title)
     new TestSection {
@@ -68,6 +68,7 @@ package object api {
       def description: String = sectionTitle
       override def sections: Iterable[TestSection] = children.collect { case s: TestSection => s }
       override def procedures: Iterable[TestProcedure] = children.collect { case p: TestProcedure => p }
+      override def subElements: Iterable[TestElement] = children
     }
   }
 

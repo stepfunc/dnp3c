@@ -103,9 +103,11 @@ final class Revision private[conformance] (
     subsetLevels.map(l => s"level $l").mkString(", ")
 
   def flatMapProcedures[B](optional: TestProcedure => Option[B]): Iterable[B] = {
-    def recurse(section: TestSection): Iterable[B] =
-      section.procedures.flatMap(x => optional(x)) ++ section.sections.flatMap(s => recurse(s))
-    sections.flatMap(s => recurse(s))
+    def recurse(e: TestElement): Iterable[B] = e match {
+      case p: TestProcedure => optional(p)
+      case s => s.subElements.flatMap(recurse)
+    }
+    sections.flatMap(recurse)
   }
 
   /** the revision's own folder in the output directory, which holds a folder for each subset level */
