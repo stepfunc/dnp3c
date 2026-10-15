@@ -42,6 +42,14 @@ package object api {
     driver.reporter.note(text)
   }
 
+  /**
+   * a step that records a warning, `text`, on the procedure's result, which the report shows even when it passes: what
+   * the device should probably change, though the procedure passes it
+   */
+  def warning(text: String): TestStep = TestStep(List(Comment(s"Record a warning on the result: $text"))) { driver =>
+    driver.reporter.warning(text)
+  }
+
   def repeat(count: Int)(step: => TestStep): TestStep = new TestStep {
 
     assert(count >= 0)

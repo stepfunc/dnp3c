@@ -95,6 +95,61 @@ class HarnessTest extends AnyFunSuite with Matchers {
       "Note: compliant with 1815-2012 only")
   }
 
+  test("the report shows a pass's warnings before its notes, and counts it apart from the clean passes") {
+    val directory = output
+    val folder = directory.resolve("2.7").resolve("L2")
+    def result(id: String, saved: SavedResult): Unit = {
+      Files.createDirectories(folder.resolve(id))
+      SavedResult.write(saved, folder.resolve(id).resolve("results.properties"))
+    }
+    def plain(outcome: ProcedureOutcome) = SavedResult(outcome, Some("2.7"), Some(2))
+    result("8.1.2", plain(ProcedureOutcome.Passed))
+    result(
+      "8.3.2",
+      SavedResult(
+        ProcedureOutcome.Passed,
+        Some("2.7"),
+        Some(2),
+        notes = List("an allowed answer"),
+        warnings = List("complies with <1815-2012> & not 202x", "a second warning")
+      )
+    )
+    result("8.4.1.2.1", plain(ProcedureOutcome.Skipped("disabled")))
+    result("8.4.1.2.2", plain(ProcedureOutcome.Failed("no response")))
+    result("6.1.2", plain(ProcedureOutcome.Excluded("a known gap")))
+    val report = Files.readString(Harness.writeReport(options(directory), revision))
+
+    val warning = report.indexOf("⚠ Warning: complies with &lt;1815-2012&gt; &amp; not 202x")
+    warning should be >= 0
+    report should not include "<1815-2012>"
+    report.indexOf("⚠ Warning: a second warning") should be > warning
+    report.indexOf("Note: an allowed answer") should be > report.indexOf("⚠ Warning: a second warning")
+    report should include("""<span class="result-warning">⚠ Warning: """)
+
+    // each implemented procedure in exactly one count
+    val totals = """<span class="total ([a-z-]+)">\s*(\d+) ([^<]*?)\s*</span>""".r
+      .findAllMatchIn(report).map(m => (m.group(1), m.group(3)) -> m.group(2).toInt).toList
+    totals.map(_._1) should equal(List(
+      ("pass", "passed"),
+      ("warning", "passed with warnings"),
+      ("fail", "failed"),
+      ("skip", "skipped"),
+      ("excluded", "excluded"),
+      ("no-result", "with no saved result")
+    ))
+    totals.map(_._2).take(5) should equal(List(1, 1, 1, 1, 1))
+    totals.map(_._2).sum should equal(revision.flatMapProcedures(p => Option.when(!p.incomplete)(p)).size)
+  }
+
+  test("the report counts no passes with warnings when none has any") {
+    val directory = output
+    save(directory.resolve("2.7").resolve("L2").resolve("8.1.2"), Some("2.7"))
+    val report = Files.readString(Harness.writeReport(options(directory), revision))
+    report should include regex """<span class="total pass">\s*1 passed\s*</span>"""
+    report should include regex """<span class="total warning">\s*0 passed with warnings\s*</span>"""
+    report should not include "⚠"
+  }
+
   test("the report shows each exclusion's reason, counts exclusions apart from skips, and warns of them") {
     val directory = output
     val folder = directory.resolve("2.7").resolve("L2")

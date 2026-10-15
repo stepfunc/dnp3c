@@ -63,14 +63,15 @@ case class Report(revision: Revision, level: Int, sections: Iterable[Report.Sect
       case None => Classes.noResult
     }
 
-    // why the procedure was skipped or excluded, or what it noted about a pass, under its title
+    // why the procedure was skipped or excluded, or what it warned of and noted about a pass, under its title
     def skipReason: String = p.outcome match {
       case Some(ProcedureOutcome.Skipped(reason)) if reason.nonEmpty =>
         "<br><span class=\"reason\">Skipped: " + Tags.escape(reason) + "</span>"
       case Some(ProcedureOutcome.Excluded(reason)) =>
         "<br><span class=\"exclusion\">Excluded: " + Tags.escape(reason) + "</span>"
       case Some(ProcedureOutcome.Passed) =>
-        p.notes.map(n => "<br><span class=\"note\">Note: " + Tags.escape(n) + "</span>").mkString
+        p.warnings.map(w => "<br><span class=\"result-warning\">⚠ Warning: " + Tags.escape(w) + "</span>").mkString +
+          p.notes.map(n => "<br><span class=\"note\">Note: " + Tags.escape(n) + "</span>").mkString
       case _ => ""
     }
 
@@ -98,11 +99,15 @@ case class Report(revision: Revision, level: Int, sections: Iterable[Report.Sect
 
   private def excluded: Int = implemented.count(_.outcome.exists(_.isInstanceOf[ProcedureOutcome.Excluded]))
 
-  // e.g. "146 passed", counting implemented procedures by result
+  // e.g. "146 passed", counting implemented procedures by result: each in one count, so they add up to the total, with
+  // a pass that has warnings counted apart from a clean pass
   private def totals: Iterable[(Clazz, String)] = {
     def count(counted: Option[ProcedureOutcome] => Boolean) = implemented.count(p => counted(p.outcome))
+    def passed(withWarnings: Boolean) =
+      implemented.count(p => p.outcome.contains(ProcedureOutcome.Passed) && p.warnings.nonEmpty == withWarnings)
     List(
-      (Classes.pass, s"${count(_.contains(ProcedureOutcome.Passed))} passed"),
+      (Classes.pass, s"${passed(withWarnings = false)} passed"),
+      (Classes.warning, s"${passed(withWarnings = true)} passed with warnings"),
       (Classes.fail, s"${count(_.exists(_.isInstanceOf[ProcedureOutcome.Failed]))} failed"),
       (Classes.skip, s"${count(_.exists(_.isInstanceOf[ProcedureOutcome.Skipped]))} skipped"),
       (Classes.excluded, s"$excluded excluded"),
@@ -169,7 +174,8 @@ object Report {
       description: String,
       outcome: Option[ProcedureOutcome],
       hasPcaps: Boolean,
-      notes: List[String] = Nil)
+      notes: List[String] = Nil,
+      warnings: List[String] = Nil)
       extends Element
 
   /** @param children its sections and procedures, in the tree's order */
@@ -218,7 +224,9 @@ object Report {
         procedure.description,
         counted.map(_.outcome),
         hasPcaps,
-        counted.toList.flatMap(_.notes))
+        counted.toList.flatMap(_.notes),
+        counted.toList.flatMap(_.warnings)
+      )
     }
 
     val sections = revision.sections.map(convert)

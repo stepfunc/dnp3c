@@ -17,13 +17,16 @@ import scala.util.control.NonFatal
  *
  * @param revision the revision it was run under; None for a result saved before results recorded one (0.1.0)
  * @param level the subset level it was run at; None for a result saved before results recorded one
- * @param notes what the procedure noted about a pass, e.g. that it's to IEEE 1815-2012 but not 1815-202x
+ * @param notes what the procedure noted about a pass, e.g. an answer it allows as an alternative
+ * @param warnings what the device should probably change, though the procedure passed it, e.g. that it's to IEEE
+ *                 1815-2012 but not 1815-202x
  */
 case class SavedResult(
     outcome: ProcedureOutcome,
     revision: Option[String],
     level: Option[Int],
-    notes: List[String] = Nil)
+    notes: List[String] = Nil,
+    warnings: List[String] = Nil)
 
 object SavedResult {
 
@@ -38,6 +41,14 @@ object SavedResult {
   private val levelKey = "subsetLevel"
   private val reasonKey = "reason"
   private val noteKey = "note"
+  private val warningKey = "warning"
+
+  // a list saved as key.1, key.2, ...
+  private def list(props: Properties, key: String): List[String] =
+    Iterator.from(1).map(i => props.getProperty(s"$key.$i")).takeWhile(_ != null).toList
+
+  private def setList(props: Properties, key: String, values: List[String]): Unit =
+    values.zipWithIndex.foreach((v, i) => props.setProperty(s"$key.${i + 1}", v))
 
   def read(file: File): SavedResult = {
     val stream = new FileInputStream(file)
@@ -58,7 +69,8 @@ object SavedResult {
         outcome,
         Option(props.getProperty(revisionKey)),
         Option(props.getProperty(levelKey)).flatMap(_.toIntOption),
-        Iterator.from(1).map(i => props.getProperty(s"$noteKey.$i")).takeWhile(_ != null).toList
+        list(props, noteKey),
+        list(props, warningKey)
       )
     } finally {
       stream.close()
@@ -87,7 +99,8 @@ object SavedResult {
         }
         saved.revision.foreach(props.setProperty(revisionKey, _))
         saved.level.foreach(l => props.setProperty(levelKey, l.toString))
-        saved.notes.zipWithIndex.foreach((n, i) => props.setProperty(s"$noteKey.${i + 1}", n))
+        setList(props, noteKey, saved.notes)
+        setList(props, warningKey, saved.warnings)
         props.store(stream, "test result")
       }
       Files.move(temporary, file, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)

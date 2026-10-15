@@ -487,23 +487,56 @@ class TestRunnerTest extends AnyFunSuite with Matchers {
     environment.policies.map(_.all) should equal(Some(List(rule)))
   }
 
-  test("a pass keeps the notes its procedure made") {
-    val run = new Run()
-    val noting = TestProcedure(
-      "a",
-      "a",
+  // a procedure that notes and warns, then fails if told to
+  private def remarking(name: String, fail: Failures): TestProcedure =
+    TestProcedure(
+      name,
+      name,
       new ProcedureDefinition {
         override protected def steps(options: OptionSource): Iterable[LabeledStep] = List(LabeledStep(
-          "note",
+          "remark",
           new TestStep {
             def description: List[Comment] = Nil
-            def run(driver: TestDriver): List[DeferredCheck] = { driver.reporter.note("compliant with 2012 only"); Nil }
+            def run(driver: TestDriver): List[DeferredCheck] = {
+              driver.reporter.note("an allowed alternative")
+              driver.reporter.warning("compliant with <2012> only")
+              fail(s"step $name")
+              Nil
+            }
           }
         ))
       }
     )
-    run(noting).results.map(_.notes) should equal(List(List("compliant with 2012 only")))
-    run.saved("a").map(_.notes) should equal(Some(List("compliant with 2012 only")))
+
+  test("a pass keeps the notes and warnings its procedure made, and logs a warning as one") {
+    val run = new Run()
+    val summary = run(section(remarking("a", run.fail), procedure("b", run.fail)))
+    summary.results.map(r => (r.id, r.notes, r.warnings)) should equal(List(
+      ("a", List("an allowed alternative"), List("compliant with <2012> only")),
+      ("b", Nil, Nil)))
+    summary.passedWithWarnings.map(_.id) should equal(List("a"))
+    run.saved("a").map(s => (s.notes, s.warnings)) should equal(
+      Some((List("an allowed alternative"), List("compliant with <2012> only"))))
+    val log = Files.readString(run.folder.resolve("a").resolve("log.html"))
+    log should include regex
+      """<tr class="warn">\s*<td>[^<]*</td>\s*<td>[^<]*</td>\s*<td>\s*Warning on the result: compliant with &lt;2012&gt; only"""
+  }
+
+  test("a pass whose plugin then fails to end it keeps its notes and warnings in the partial summary") {
+    val run = new Run("end")
+    val ex = intercept[HarnessExecutionException](run(remarking("a", run.fail)))
+    ex.getCause.getMessage should equal("end failed")
+    ex.partial.results.map(r => (r.outcome, r.notes, r.warnings)) should equal(
+      List((Passed, List("an allowed alternative"), List("compliant with <2012> only"))))
+    ex.partial.passedWithWarnings.map(_.id) should equal(List("a"))
+  }
+
+  test("a failure keeps no notes or warnings, and isn't a pass with warnings") {
+    val run = new Run("step a")
+    val summary = run(remarking("a", run.fail))
+    summary.results.map(r => (r.notes, r.warnings)) should equal(List((Nil, Nil)))
+    summary.passedWithWarnings should equal(Nil)
+    run.saved("a").map(s => (s.notes, s.warnings)) should equal(Some((Nil, Nil)))
   }
 
   test("a saved result records its revision, and why the procedure was skipped") {

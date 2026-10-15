@@ -4,10 +4,12 @@
 package io.stepfunc.dnp3c.conformance.v31r1
 
 import io.stepfunc.dnp3c.conformance.Run
-import io.stepfunc.dnp3c.conformance.api.options.{ CounterOptions, OutstationOptions }
+import io.stepfunc.dnp3c.conformance.api.options.{ AnalogOutputOptions, CounterOptions, OutstationOptions }
 import io.stepfunc.dnp3c.dnp3._
 import io.stepfunc.dnp3c.dnp3.app._
-import io.stepfunc.dnp3c.dnp3.app.objects.{ Group20Var1, Group20Var2, Group20Var5, Group20Var6 }
+import io.stepfunc.dnp3c.dnp3.app.objects.{
+  Group20Var1, Group20Var2, Group20Var5, Group20Var6, Group40Var1, Group40Var2
+}
 import io.stepfunc.dnp3c.protocol.Hex
 import org.junit.runner.RunWith
 import org.scalatestplus.junit.JUnitRunner
@@ -85,9 +87,11 @@ class StaticVariationsTest extends AnyFunSuite with Matchers {
 
   test("counters in the variations requested, the abnormal one with flags, pass, and the flags are noted") {
     val plugin = new Plugin
-    val (passed, notes) = run(plugin, dut(plugin))
+    val d = dut(plugin)
+    val (passed, notes) = run(plugin, d)
     passed should equal(true)
     notes.exists(_.contains("came back with flags 0x03")) should equal(true)
+    d.reporter.warnings should equal(Nil)
     plugin.abnormal should equal(None) // set back to normal at the end
   }
 
@@ -108,9 +112,11 @@ class StaticVariationsTest extends AnyFunSuite with Matchers {
 
   test("a level 1 or 2 device may answer with IIN2.1 and skip the test; a level 3 one may not") {
     val plugin = new Plugin
-    val (passed, notes) = run(plugin, dut(plugin, nullError = true), level = 2)
+    val d = dut(plugin, nullError = true)
+    val (passed, notes) = run(plugin, d, level = 2)
     passed should equal(true)
     notes.exists(_.contains("as a subset level 1 or 2 device may")) should equal(true)
+    d.reporter.warnings should equal(Nil)
     run(new Plugin, dut(new Plugin, nullError = true), level = 3)._1 should equal(false)
   }
 
@@ -119,5 +125,28 @@ class StaticVariationsTest extends AnyFunSuite with Matchers {
     run(plugin, dut(plugin, dropsAbnormal = true))._1 should equal(false)
     val plugin2 = new Plugin(says = 0x02)
     run(plugin2, dut(plugin2))._1 should equal(false)
+  }
+
+  // analog output status points 0 and 1, flags 0x01, each in the variation requested, but point 0 always in 32 bits
+  private def analogOutputs = new ScriptedDut(
+    StubDriver.reporter(new Plugin),
+    request => {
+      val requested = request.headers.head.variation
+      val headers = List(0, 1).flatMap { i =>
+        val v = if (i == 0) Group40Var1 else requested
+        val value = if (v == Group40Var1) "01 05 00 00 00" else "01 05 00"
+        Message.parseObjectHeaders(Hex.from("28 %02X 00 %02X %02X %s".format(v.id, i, i, value)))
+      }
+      (IIN.empty, headers)
+    }
+  )
+
+  test("analog output status kept only in 32 bits passes with a warning that it isn't conformant at level 1 or 2") {
+    val d = analogOutputs
+    val options = Map(OutstationOptions.subsetLevel.id -> "2", AnalogOutputOptions.statusOnly32Bit.id -> "0")
+    Run.passes(StaticVariations.test(StaticVariations.analogOutputStatus), d, options) should equal(true)
+    d.reporter.warnings should equal(List(
+      "analog output status point 0 comes back only in 32 bits: the DUT isn't conformant at subset level 1 or 2"))
+    d.reporter.notes should equal(Nil)
   }
 }

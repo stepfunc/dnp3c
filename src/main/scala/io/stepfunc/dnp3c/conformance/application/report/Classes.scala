@@ -12,6 +12,7 @@ object Classes {
   def level(i: Int) = Clazz(s"level$i")
 
   val pass = Clazz("pass")
+  val warning = Clazz("warning")
   val fail = Clazz("fail")
   val skip = Clazz("skip")
   val excluded = Clazz("excluded")

@@ -104,7 +104,7 @@ Some questions come after a procedure's steps, where stopping for your answer wo
 
 If you miss a time limit, the procedure fails with a message saying so; rerun it. A limit that's too short to work to by hand is usually a timeout on the DUT that you can lengthen, along with its option here.
 
-A run stops at the first procedure that fails, and the procedures after it don't run. The exit code is 0 if every procedure passed, was skipped or was excluded and the report was written, and nonzero otherwise.
+A run stops at the first procedure that fails, and the procedures after it don't run. It ends by listing each procedure that passed with warnings, with its warnings (see [Results](#results)). The exit code is 0 if every procedure passed, was skipped or was excluded and the report was written, and nonzero otherwise.
 
 ## Results
 
@@ -118,13 +118,13 @@ results/
       report.css
       8.6.5.4/
         log.html           every step, frame and check, with the outcome
-        results.properties the result (pass, fail, skip or excluded), the revision and subset level, and why it failed, was skipped or was excluded
+        results.properties the result (pass, fail, skip or excluded), the revision and subset level, and why it failed, was skipped or was excluded, or a pass's warnings and notes
         dump.pcap          the packet capture, if capture is on
 ```
 
 A procedure that won't run, because the DUT lacks a feature it needs, it doesn't apply at the subset level, or it isn't implemented, is recorded as skipped without connecting to the DUT.
 
-The report is rebuilt after every run, including runs that fail. It names the revision and the subset level, and shows every procedure: the ones you've run with their result (and, for one that was skipped or excluded, why, or for one that passed, anything it noted, such as a device that complies with IEEE 1815-2012 but not 1815-202x), and the rest as not run, with no saved result. Excluded procedures are shown as "NOT RUN — EXCLUDED", and if there are any, the report says at the top that conformance hasn't been demonstrated for them. To rebuild it without running anything, use `dnp3c -rev 2.7 -config device.ini -report`.
+The report is rebuilt after every run, including runs that fail. It names the revision and the subset level, and shows every procedure: the ones you've run with their result (and, for one that was skipped or excluded, why, or for one that passed, its warnings and notes), and the rest as not run, with no saved result. A warning, shown under the procedure's title as "⚠ Warning: …", before any notes, means the DUT passes the procedure but departs from the standard, or should probably change something: e.g. it complies with IEEE 1815-2012 but not 1815-202x. A note, shown as "Note: …", is information, such as an answer the procedure allows as an alternative. The counts at the top count a pass with warnings as "passed with warnings", apart from the clean passes, so each procedure is in exactly one count. Excluded procedures are shown as "NOT RUN — EXCLUDED", and if there are any, the report says at the top that conformance hasn't been demonstrated for them. To rebuild it without running anything, use `dnp3c -rev 2.7 -config device.ini -report`.
 
 The report counts only results saved under its revision and level. It lists anything else it finds at the top and leaves it out: a result saved under another revision or level, or a procedure whose last run didn't finish (it has a log but no result).
 

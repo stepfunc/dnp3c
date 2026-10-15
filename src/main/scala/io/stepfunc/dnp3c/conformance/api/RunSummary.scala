@@ -23,10 +23,15 @@ object ProcedureOutcome {
 /**
  * A procedure's outcome
  *
- * @param notes what the procedure noted about a pass, e.g. that the device complies with IEEE 1815-2012 but not
- *              1815-202x; empty otherwise
+ * @param notes what the procedure noted about a pass, e.g. an answer it allows as an alternative; empty otherwise
+ * @param warnings what the device should probably change, though the procedure passed it, e.g. that it complies with
+ *                 IEEE 1815-2012 but not 1815-202x; empty otherwise
  */
-case class ProcedureResult(id: String, outcome: ProcedureOutcome, notes: List[String] = Nil)
+case class ProcedureResult(
+    id: String,
+    outcome: ProcedureOutcome,
+    notes: List[String] = Nil,
+    warnings: List[String] = Nil)
 
 /**
  * The procedures a run reached, in order, and the ones it didn't because it stopped at a failure
@@ -41,6 +46,10 @@ case class RunSummary(results: List[ProcedureResult], unreached: List[String]) {
 
   /** the procedures the configuration excluded, in order, which the device hasn't been shown to conform to */
   def exclusions: List[ProcedureResult] = results.filter(_.outcome.isInstanceOf[ProcedureOutcome.Excluded])
+
+  /** the procedures that passed with warnings, in order: what the device should probably change */
+  def passedWithWarnings: List[ProcedureResult] =
+    results.filter(r => r.outcome == ProcedureOutcome.Passed && r.warnings.nonEmpty)
 }
 
 /**

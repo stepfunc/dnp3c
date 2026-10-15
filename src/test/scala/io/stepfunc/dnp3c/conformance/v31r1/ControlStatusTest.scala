@@ -3,9 +3,10 @@
 
 package io.stepfunc.dnp3c.conformance.v31r1
 
+import io.stepfunc.dnp3c.conformance.Run
 import io.stepfunc.dnp3c.conformance.api.{ Index, Options }
 import io.stepfunc.dnp3c.conformance.api.options.BinaryOutputOptions
-import io.stepfunc.dnp3c.dnp3.Validate
+import io.stepfunc.dnp3c.dnp3.{ LinkOverride, RespondingDriver, Validate }
 import io.stepfunc.dnp3c.dnp3.app.Message
 import io.stepfunc.dnp3c.dnp3.app.objects.CommandStatus
 import org.junit.runner.RunWith
@@ -13,7 +14,8 @@ import org.scalatestplus.junit.JUnitRunner
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.funsuite.AnyFunSuite
 
-// 3.1r1's 8.2.6: a select whose status field is non-zero is echoed with a non-zero status, or with 0, which is noted
+// 3.1r1's 8.2.6: a select whose status field is non-zero is echoed with a non-zero status, or with 0, which is warned
+// of
 @RunWith(classOf[JUnitRunner])
 class ControlStatusTest extends AnyFunSuite with Matchers {
 
@@ -31,7 +33,7 @@ class ControlStatusTest extends AnyFunSuite with Matchers {
     (passes, zero)
   }
 
-  test("an echo with a non-zero status passes, as does one with status 0, which is noted") {
+  test("an echo with a non-zero status passes, as does one with status 0, which is flagged") {
     result(response(126)) should equal((true, false))
     result(response(4)) should equal((true, false))
     result(response(0)) should equal((true, true))
@@ -43,5 +45,24 @@ class ControlStatusTest extends AnyFunSuite with Matchers {
     result(response(4, iin2 = 0x01))._1 should equal(false)
     // a different control code
     result(response(4, change = bytes => bytes.updated(7, (bytes(7) ^ 0x01).toByte)))._1 should equal(false)
+  }
+
+  // a DUT that echoes each select with the status given
+  private class Echoing(status: Int) extends RespondingDriver() {
+    override def writeMessage(message: Message, options: LinkOverride): Unit =
+      enqueue(response(status, change = _ => message.headers.head.toBytes.init :+ status.toByte))
+  }
+
+  test("8.2.6 passes an echo with status 0 with a warning that it complies with 1815-2012 only, and not a note") {
+    val zero = new Echoing(0)
+    Run.passes(ControlStatus.nonZeroStatus, zero) should equal(true)
+    zero.reporter.warnings should equal(List(
+      "the DUT echoes a select whose status field isn't zero with status code 0: it complies with IEEE 1815-2012, but " +
+        "not with IEEE 1815-202x"))
+    zero.reporter.notes should equal(Nil)
+
+    val nonZero = new Echoing(4)
+    Run.passes(ControlStatus.nonZeroStatus, nonZero) should equal(true)
+    nonZero.reporter.warnings should equal(Nil)
   }
 }

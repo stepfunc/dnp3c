@@ -134,10 +134,11 @@ class TestReporter(val logger: Logger) {
 final class ProcedureReporter(logger: Logger, val plugin: IntegrationPlugin) extends TestReporter(logger) {
 
   private val noted = scala.collection.mutable.ListBuffer.empty[String]
+  private val warned = scala.collection.mutable.ListBuffer.empty[String]
 
   /**
-   * Note something about the result that a reader of the report should see, e.g. that a passing device complies with
-   * IEEE 1815-2012 but not 1815-202x. The note goes in the log now, and with the result if the procedure passes.
+   * Note something about the result that a reader of the report should see, e.g. an answer the procedure allows as an
+   * alternative. The note goes in the log now, and with the result if the procedure passes.
    */
   def note(text: String): Unit = {
     noted += text
@@ -145,4 +146,16 @@ final class ProcedureReporter(logger: Logger, val plugin: IntegrationPlugin) ext
   }
 
   def notes: List[String] = noted.toList
+
+  /**
+   * Warn of something about a pass that the device should probably change, though the procedure passes it, e.g. that
+   * it complies with IEEE 1815-2012 but not 1815-202x. The warning goes in the log now, and with the result if the
+   * procedure passes.
+   */
+  def warning(text: String): Unit = {
+    warned += text
+    warn("Warning on the result: " + text)
+  }
+
+  def warnings: List[String] = warned.toList
 }

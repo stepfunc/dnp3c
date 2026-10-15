@@ -97,9 +97,9 @@ object TestRunner {
 
     def failed: Boolean = results.exists(_.outcome.isInstanceOf[ProcedureOutcome.Failed])
     def unreachedAfter(count: Int): List[String] = procedures.drop(count).map(_.id)
-    def aborted(p: TestProcedure, outcome: Option[ProcedureOutcome], error: Throwable): HarnessExecutionException = {
-      val partial = results.toList ++ outcome.map(ProcedureResult(p.id, _))
-      new HarnessExecutionException(p.id, RunSummary(partial, unreachedAfter(results.size + 1)), error)
+    def aborted(p: TestProcedure, ex: ProcedureAborted): HarnessExecutionException = {
+      val partial = results.toList ++ ex.outcome.map(ProcedureResult(p.id, _, ex.notes, ex.warnings))
+      new HarnessExecutionException(p.id, RunSummary(partial, unreachedAfter(results.size + 1)), ex.error)
     }
 
     elements.iterator.takeWhile(_ => !failed).foreach {
@@ -109,16 +109,22 @@ object TestRunner {
         try {
           results += runProcedure(revision, level, p, options, integrationPlugin, environment)
         } catch {
-          case ex: ProcedureAborted => throw aborted(p, ex.outcome, ex.error)
-          case NonFatal(ex) => throw aborted(p, None, ex)
+          case ex: ProcedureAborted => throw aborted(p, ex)
+          case NonFatal(ex) => throw aborted(p, new ProcedureAborted(None, ex))
         }
     }
 
     RunSummary(results.toList, unreachedAfter(results.size))
   }
 
-  // the harness or the plugin failed, after the procedure reached the outcome, if any
-  private class ProcedureAborted(val outcome: Option[ProcedureOutcome], val error: Throwable) extends Exception(error)
+  // the harness or the plugin failed, after the procedure reached the outcome, if any, with the notes and warnings a
+  // pass keeps
+  private class ProcedureAborted(
+      val outcome: Option[ProcedureOutcome],
+      val error: Throwable,
+      val notes: List[String] = Nil,
+      val warnings: List[String] = Nil)
+      extends Exception(error)
 
   // why a procedure is skipped: it isn't implemented, it doesn't apply at the subset level, or the device lacks a
   // feature it needs
@@ -142,11 +148,8 @@ object TestRunner {
     val resultsFile = path.resolve(ResultFiles.result)
     val title = s"${procedure.id} ${procedure.description} (revision ${revision.id}, subset level $level)"
 
-    // a pass keeps the notes the procedure made about it
-    def save(result: ProcedureOutcome, notes: List[String] = Nil): Unit = {
-      val kept = if (result == ProcedureOutcome.Passed) notes else Nil
-      SavedResult.write(SavedResult(result, Some(revision.id), Some(level), kept), resultsFile)
-    }
+    def save(result: ProcedureOutcome, notes: List[String] = Nil, warnings: List[String] = Nil): Unit =
+      SavedResult.write(SavedResult(result, Some(revision.id), Some(level), notes, warnings), resultsFile)
 
     // decided before anything is opened, so a procedure that's skipped or excluded never touches the device or the
     // plugin
@@ -204,17 +207,20 @@ object TestRunner {
           throw cleanUp(cleanup, Some(ex)).getOrElse(ex)
       }
 
+    // a pass keeps the notes and warnings the procedure made about it, even if what follows it fails
+    val passed = if (outcome.contains(ProcedureOutcome.Passed)) reporter.toList else Nil
+    val (notes, warnings) = (passed.flatMap(_.notes), passed.flatMap(_.warnings))
+
     cleanUp(cleanup, failure).foreach {
-      case NonFatal(ex) => throw new ProcedureAborted(outcome, ex)
+      case NonFatal(ex) => throw new ProcedureAborted(outcome, ex, notes, warnings)
       case ex => throw ex
     }
 
     // the procedure, and everything around it, completed, so the outcome is known
     val result = outcome.get
-    val notes = if (result == ProcedureOutcome.Passed) reporter.toList.flatMap(_.notes) else Nil
-    try save(result, notes)
-    catch { case NonFatal(ex) => throw new ProcedureAborted(outcome, ex) }
-    ProcedureResult(procedure.id, result, notes)
+    try save(result, notes, warnings)
+    catch { case NonFatal(ex) => throw new ProcedureAborted(outcome, ex, notes, warnings) }
+    ProcedureResult(procedure.id, result, notes, warnings)
   }
 
   // records a procedure that's skipped or excluded: its log says why, and nothing is opened

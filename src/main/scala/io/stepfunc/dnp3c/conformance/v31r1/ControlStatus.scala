@@ -15,7 +15,7 @@ import io.stepfunc.dnp3c.dnp3.app.objects.CommandStatus
 /**
  * 3.1r1's 8.2.6, No Control When Status Code is Non-Zero (TB2014-002): a select to binary output 0 whose status field
  * is 126 is echoed with a non-zero status. One echoed with status 0 complies with IEEE 1815-2012, though not with
- * 202x, so it passes, and the result notes it.
+ * 202x, so it passes, with a warning on the result.
  */
 object ControlStatus {
 
@@ -27,8 +27,8 @@ object ControlStatus {
   private[v31r1] def echoesWithAnyStatus(select: ObjectHeader, onZero: => Unit): MessageValidation =
     MessageValidation.check(
       "Verify that the response echoes the select, but for its status code",
-      "Verify that the status code isn't zero; a DUT that answers with zero complies with IEEE 1815-2012, which is " +
-        "noted, but not with IEEE 1815-202x",
+      "Verify that the status code isn't zero; a DUT that answers with zero passes with a warning: it complies with " +
+        "IEEE 1815-2012, but not with IEEE 1815-202x",
       "Verify that the IIN field has no error bits but IIN2.1 and IIN2.2, which are optional"
     ) { message =>
       message.headers match {
@@ -55,7 +55,7 @@ object ControlStatus {
             var zero = false
             val checks = expectSingleResponse(Sequence.zero, check { zero = true }).run(driver)
             if (zero)
-              driver.reporter.note(
+              driver.reporter.warning(
                 "the DUT echoes a select whose status field isn't zero with status code 0: it complies with IEEE " +
                   "1815-2012, but not with IEEE 1815-202x")
             checks

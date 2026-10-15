@@ -7,7 +7,10 @@ import java.io.{ ByteArrayOutputStream, File, PrintStream }
 import java.nio.charset.StandardCharsets
 import java.nio.file.{ Files, Path }
 
-import io.stepfunc.dnp3c.conformance.api.{ BooleanOption, OptionGroups, Options, ProcedureOutcome, TestProcedure }
+import io.stepfunc.dnp3c.conformance.api.{
+  BooleanOption, HarnessExecutionException, OptionGroups, Options, ProcedureOutcome, ProcedureResult, RunSummary,
+  TestProcedure
+}
 import io.stepfunc.dnp3c.conformance.api.options.{ OutstationOptions, SupportOptions, TestOptions }
 import io.stepfunc.dnp3c.conformance.application.SavedResult
 import io.stepfunc.dnp3c.conformance.application.Console
@@ -284,5 +287,53 @@ class MainTest extends AnyFunSuite with Matchers {
       command31r1(withOutput(withExclusion("3.1r1/6.1.2"))._1, run = Some("6"), plugin = failing)
     aborted should not equal 0
     told.indexOf(oneExcluded) should be > told.indexOf("can't start")
+  }
+
+  private val warned = ProcedureResult(
+    "8.2.6",
+    ProcedureOutcome.Passed,
+    notes = List("an allowed answer"),
+    warnings = List("complies with IEEE 1815-2012 only"))
+
+  test("a run's end lists each procedure that passed with warnings, with its warnings, even after a failure") {
+    val summary = RunSummary(
+      List(
+        ProcedureResult("8.1.2", ProcedureOutcome.Passed, notes = List("only a note")),
+        warned,
+        ProcedureResult("8.24.4", ProcedureOutcome.Passed, warnings = List("point 0 in 32 bits", "point 1 in 32 bits")),
+        ProcedureResult("8.3.2", ProcedureOutcome.Failed("no response"))
+      ),
+      List("8.4.1")
+    )
+    val (code, printed) = output(if (Main.concludeRun(summary)) 0 else 1)
+    code should equal(1)
+    val listed = printed.indexOf("2 procedures passed with warnings:")
+    listed should be > printed.indexOf("Abort due to test failure")
+    // each warning, in order, after the heading
+    val lines = List(
+      "    8.2.6: complies with IEEE 1815-2012 only",
+      "    8.24.4: point 0 in 32 bits",
+      "    8.24.4: point 1 in 32 bits").map(printed.indexOf(_))
+    (listed :: lines) shouldBe sorted
+    lines.distinct.size should equal(3)
+    printed should not include "8.1.2"
+    printed should not include "note"
+
+    // or when the plugin fails around a later procedure
+    val partial = RunSummary(List(warned), List("8.3.2"))
+    val (aborted, told) =
+      output(if (Main.concludeRun(throw new HarnessExecutionException("8.3.2", partial, new Exception("can't start"))))
+        0
+      else 1)
+    aborted should equal(1)
+    told.indexOf("1 procedure passed with warnings:") should be > told.indexOf("can't start")
+    told should include("    8.2.6: complies with IEEE 1815-2012 only")
+  }
+
+  test("a run's end lists no warnings when no procedure passed with any") {
+    val summary = RunSummary(List(ProcedureResult("8.1.2", ProcedureOutcome.Passed, notes = List("a note"))), Nil)
+    val (code, printed) = output(if (Main.concludeRun(summary)) 0 else 1)
+    code should equal(0)
+    printed should not include "warnings"
   }
 }

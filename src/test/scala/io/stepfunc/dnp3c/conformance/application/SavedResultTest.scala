@@ -36,6 +36,24 @@ class SavedResultTest extends AnyFunSuite with Matchers {
     List(results, directory).foreach(Files.delete)
   }
 
+  test("a pass keeps its warnings and notes, each in order, as warning.N and note.N") {
+    val directory = Files.createTempDirectory("dnp3c")
+    val results = directory.resolve("results.properties")
+    val saved = SavedResult(
+      ProcedureOutcome.Passed,
+      Some("3.1r1"),
+      Some(2),
+      notes = List("a note"),
+      warnings = List("complies with 1815-2012 only", "point 0 only in 32 bits"))
+    SavedResult.write(saved, results)
+    val written = Files.readString(results)
+    written should include("warning.1=complies with 1815-2012 only")
+    written should include("warning.2=point 0 only in 32 bits")
+    written should include("note.1=a note")
+    SavedResult.read(results.toFile) should equal(saved)
+    List(results, directory).foreach(Files.delete)
+  }
+
   test("an excluded result keeps its reason, and can't be read without one") {
     val directory = Files.createTempDirectory("dnp3c")
     val results = directory.resolve("results.properties")
