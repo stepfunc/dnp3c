@@ -140,21 +140,19 @@ object AssignClass {
 
         val escape = new TestStep {
           private val full = expectSingleResponse(seqs(4), isNull)
+          private val notImplemented = isNullErrorResponse(IIN.FUNC_NOT_SUPPORTED)
           def description: List[Comment] =
             "If the DUT, which isn't tested at subset level 3, answers with a Null Error Response with IIN2.0, it " +
               "passes and the rest of the test is skipped" :: full.description
           def run(driver: TestDriver): List[DeferredCheck] =
             if (levelThree) full.run(driver)
             else {
-              val responses = driver.readAllResponses(seqs(4), AutoConfirm.Yes)
-              val notImplemented = responses.size == 1 &&
-                scala.util.Try(isNullErrorResponse(IIN.FUNC_NOT_SUPPORTED).validate(driver.reporter, responses.head))
-                  .isSuccess
-              if (notImplemented) {
+              val response = singleResponse(driver.readAllResponses(seqs(4), AutoConfirm.Yes))
+              if (scala.util.Try(notImplemented.validate(driver.reporter, response)).isSuccess) {
                 driver.reporter.note("the DUT answers Assign Class with IIN2.0, as a subset level 1 or 2 device may")
                 reassigned = false
                 throw new EndProcedure("the DUT answered the Assign Class request as a level 1 or 2 device may")
-              } else isNull.toResponseValidation.validate(driver.reporter, responses)
+              } else isNull.validate(driver.reporter, response)
             }
         }
 

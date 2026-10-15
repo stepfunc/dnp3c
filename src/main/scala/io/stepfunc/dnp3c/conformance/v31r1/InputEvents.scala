@@ -118,9 +118,13 @@ object InputEvents {
       empty(Sequence.one) ++ countReads(options, noTimeVariation, twoByteCount, 6 to 12, 13, 14 to 16, Some(17))
   }
 
-  // the note on a device that answers a read of events with time with IIN2.1
-  private val compliantWith2012Only = "the DUT answers a read of events with time with IIN2.1: it complies with IEEE " +
-    "1815-2012, but not with IEEE 1815-202x"
+  // a read of events with time, absolute or relative, answered with IIN2.1, as a device configured to reject it may:
+  // that passes, noted as compliant with 1815-2012 but not 1815-202x; the steps ask for IIN2.1, and other error bits
+  // aren't ruled out
+  private[v31r1] def rejectedWithIIN21(seq: Sequence, time: String): TestStep =
+    expectSingleResponse(seq, Validations.isEmpty && Validations.containing(IIN.OBJECT_UNKNOWN)) +
+      noting(s"the DUT answers a read of events with $time with IIN2.1: it complies with IEEE 1815-2012, but not " +
+        "with IEEE 1815-202x")
 
   /**
    * With time, qualifier 0x06 (8.14.2j). A device without events with time may answer with a Null Error Response
@@ -135,10 +139,7 @@ object InputEvents {
         5 --> send(Requests.readAllObjects(Sequence.two, absoluteTimeVariation)))
       if (options.get(withTimeRejected))
         start :+
-          (6 -->
-            // the step asks for IIN2.1; other error bits aren't ruled out
-            (expectSingleResponse(Sequence.two, Validations.isEmpty && Validations.containing(IIN.OBJECT_UNKNOWN)) +
-              noting(compliantWith2012Only)))
+          (6 --> rejectedWithIIN21(Sequence.two, "time"))
       else
         start ++ List(
           (7 to 12) --> expectSingleResponse(
@@ -216,11 +217,6 @@ object InputEvents {
       }
   }
 
-  // the note on a device that answers a read of events with relative time with IIN2.1
-  private[v31r1] val relativeCompliantWith2012Only =
-    "the DUT answers a read of events with relative time with IIN2.1: it " +
-      "complies with IEEE 1815-2012, but not with IEEE 1815-202x"
-
   /**
    * With relative time, qualifier 0x06 (8.14.2m), in three phases: after a restart, while the clock is
    * unsynchronized; after a time write, synchronized; and after the synchronization expires. A device without events
@@ -252,8 +248,7 @@ object InputEvents {
           6 --> generateEvents,
           7 -->
             (send(Requests.readAllObjects(Sequence.one, relativeTimeVariation)) +
-              expectSingleResponse(Sequence.one, Validations.isEmpty && Validations.containing(IIN.OBJECT_UNKNOWN)) +
-              noting(relativeCompliantWith2012Only)),
+              rejectedWithIIN21(Sequence.one, "relative time")),
           (8 to 38) --> describe("Skipped, with the rest of 8.14 and all of 8.15")
         )
       else {

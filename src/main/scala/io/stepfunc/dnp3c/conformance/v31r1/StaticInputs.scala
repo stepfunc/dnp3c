@@ -103,7 +103,7 @@ object StaticInputs {
         kind,
         variation,
         seq,
-        isNullErrorResponse(IIN.objectErrors)) {
+        MissingPoints.answer) {
     override protected def requiredOptions: List[OptionCondition] = input.withDisabling :+ OptionCondition(input.reads)
   }
 

@@ -114,7 +114,7 @@ object EventVariations {
             val nullError =
               if (!present) answers(MissingPoints.answer)
               else
-                ((!supported || !levelThree) && answers(isNullErrorResponse(IIN.objectErrors))) ||
+                ((!supported || !levelThree) && answers(MissingPoints.answer)) ||
                 (!has && answers(isNullErrorResponse(IIN.OBJECT_UNKNOWN)))
             val plainNull = present && !has && answers(isNull)
             if (nullError || plainNull) {

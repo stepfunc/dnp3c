@@ -20,9 +20,10 @@ class EventVariationsTest extends AnyFunSuite with Matchers {
 
   /**
    * Counters 0 and 1; each generation makes an event of each, which the DUT keeps until a read's response is confirmed,
-   * and reports in the variation requested, or always 32-bit if wide, or with IIN2.1 if it has no counter events
+   * and reports in the variation requested, or always 32-bit if wide, or with IIN2.1 if it has no counter events; if
+   * split, it answers the first read in two fragments, an event in each
    */
-  private class Dut(wide: Boolean = false, noEvents: Boolean = false, iin: Int = 0x02)
+  private class Dut(wide: Boolean = false, noEvents: Boolean = false, iin: Int = 0x02, split: Boolean = false)
       extends RespondingDriver {
     private var pending = List.empty[Int]
     private var awaiting: Option[Int] = None
@@ -41,10 +42,16 @@ class EventVariationsTest extends AnyFunSuite with Matchers {
     override def writeMessage(message: Message, options: LinkOverride): Unit = {
       val seq = message.ctrl.seq.value.toInt
       if (message.function == AppFunction.confirm) {
-        if (awaiting.contains(seq)) pending = Nil
-        awaiting = None
+        if (awaiting.contains(seq)) {
+          pending = Nil
+          awaiting = None
+        }
       } else if (noEvents) enqueue("%02X 81 00 %02X".format(0xC0 | seq, iin))
-      else {
+      else if (split && seq == 1) {
+        enqueue("%02X 81 00 00 16 01 17 01 00 01 05 00 00 00".format(0xA0 | seq))
+        enqueue("%02X 81 00 00 16 01 17 01 01 01 05 00 00 00".format(0x60 | (seq + 1)))
+        awaiting = Some(seq + 1)
+      } else {
         val variation = if (wide) 1 else message.headers.head.variation.id.toInt
         val objects = pending.map(i =>
           if (variation == 1) "%02X 01 05 00 00 00".format(i) else "%02X 01 05 00".format(i)).mkString(" ")
@@ -75,6 +82,10 @@ class EventVariationsTest extends AnyFunSuite with Matchers {
     run(new Dut(noEvents = true), level = 2) should equal(true)
     run(new Dut(noEvents = true), level = 3) should equal(false)
     run(new Dut(noEvents = true), settings = Map(Inputs.counter.events.id -> "false")) should equal(true)
+  }
+
+  test("at level 2, the first read's events may come in two fragments") {
+    run(new Dut(split = true), level = 2) should equal(true)
   }
 
   test("at level 3, a device with counters but without their events may answer IIN2.1, but not IIN2.2") {
