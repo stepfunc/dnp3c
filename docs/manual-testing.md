@@ -11,7 +11,7 @@ You don't have to run every procedure in one sitting. Run any procedure or secti
 - Java 17 or newer, and the CLI from the [releases](https://github.com/stepfunc/dnp3c/releases). See the [README](../README.md).
 - The DUT, reachable from your machine over TCP or a serial port.
 - The DUT's Device Profile. The configuration describes what the DUT supports, and the profile is where those answers come from.
-- If the DUT sends DNP3 keep-alives (link status requests) and closes the connection when one goes unanswered, turn them off for testing. dnp3c answers them only while it's waiting for the DUT, not during its own waits (70.5 s in 8.14.2.15 and 8.22.2.15, longer for some timeouts you configure) or while it waits for you.
+- If the DUT sends DNP3 keep-alives (link status requests) and closes the connection when one goes unanswered, turn them off for testing. dnp3c answers them only while it's waiting for the DUT, not during its own waits (70.5 s in 2.7's 8.14.2.15 and 8.22.2.15 and 3.1r1's 8.14.2p and 8.22p, longer for some timeouts you configure) or while it waits for you.
 
 ## Configure
 
@@ -41,7 +41,7 @@ The file is a Java properties file in UTF-8, where a backslash starts an escape:
 
 Pass the file with `-config` on every command. Without `-config`, dnp3c uses `./device.properties`, and creates it with the defaults if it doesn't exist.
 
-dnp3c checks the whole file before doing anything else, and lists every option it doesn't recognize or whose value is invalid. Options you leave out of the file have their defaults, except `outstation.subset.level`, which has none.
+Every command that reads the configuration checks the whole file first, and lists every option it doesn't recognize or whose value is invalid. Options you leave out of the file have their defaults, except those `-options` marks as required: `outstation.subset.level`, which every configuration needs, and four Device Profile values that only the procedures using them need (`binaryInput.defaultEventVariation`, `doubleBitInput.defaultEventVariation`, `timesync.timeToUnsynchronizedMs` and `analogInput.valueReturn.deadband`).
 
 `dnp3c -options` prints every option and its default without writing a file.
 
@@ -53,11 +53,11 @@ dnp3c can hold more than one revision of the certification procedure, and every 
 dnp3c -revs
 ```
 
-There are two: `2.7`, the DNP3 IED Certification Procedure, Subset Level 2, version 2.7; and `3.1r1`, Subset Levels 1, 2 and 3, version 3.1 rev 1. 3.1r1 also has rules for every response, which every 3.1r1 test checks: a response asks for confirmation only when it carries events or another fragment follows (its Section 2, Note 7). Where 3.1r1 doesn't number a test, its id is its section's number followed by a letter for its place among the section's unnumbered tests, e.g. `8.6.5b` for the second, or, for a section's only test, the section's number, e.g. `8.6.1`.
+There are two: `2.7`, the DNP3 IED Certification Procedure, Subset Level 2, version 2.7; and `3.1r1`, Subset Levels 1, 2 and 3, version 3.1 rev 1. 3.1r1 also has rules for every response, which every 3.1r1 test checks: a response asks for confirmation only when it carries events, another fragment follows, or it reports a broadcast (IIN1.0) (its Section 2, Note 7), and an unsolicited response carries only event data (8.11.1). Where 3.1r1 doesn't number a test, its id is its section's number followed by a letter for its place among the section's unnumbered tests, e.g. `8.6.5b` for the second, or, for a section's only test, the section's number, e.g. `8.6.1`.
 
 ## See what will run
 
-The procedures are organized in sections: 6 (link layer), 7 (transport layer) and 8 (application layer), each with subsections, and in 3.1r1 also 9 (network). `dnp3c -rev 2.7 -help` lists the top-level sections.
+The procedures are organized in sections: 6 (link layer), 7 (transport layer) and 8 (application layer), each with subsections, and in 3.1r1 also 9 (network) and 10 (output control events). `dnp3c -rev 2.7 -help` lists the top-level sections.
 
 ```
 dnp3c -rev 2.7 -config device.ini -describe 8.6       # the procedures in a section
@@ -104,7 +104,7 @@ Some questions come after a procedure's steps, where stopping for your answer wo
 
 If you miss a time limit, the procedure fails with a message saying so; rerun it. A limit that's too short to work to by hand is usually a timeout on the DUT that you can lengthen, along with its option here.
 
-A run stops at the first procedure that fails, and the procedures after it don't run. The exit code is 0 if every procedure passed, was skipped or was excluded, and nonzero otherwise.
+A run stops at the first procedure that fails, and the procedures after it don't run. The exit code is 0 if every procedure passed, was skipped or was excluded and the report was written, and nonzero otherwise.
 
 ## Results
 

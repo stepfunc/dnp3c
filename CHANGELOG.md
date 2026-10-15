@@ -14,7 +14,8 @@
 - `outstation.subset.level` is required in the configuration.
 - Results are kept by revision and level, e.g. `results/2.7/L2/`.
 - Some configuration keys were renamed or removed; an old key is reported as an unknown option. `-write` writes a file with every current option.
-- Integration plugins: `IntegrationPlugin`'s per-type methods take the kind of point, and runs can report a procedure as `ProcedureOutcome.Excluded`. See [Automating the tests](docs/automation.md).
+- Library: `Harness` takes the revision to run, e.g. `new Harness(options, plugin, Revisions.v2_7)`, and so does `Harness.writeReport(options, revision)`. `ProcedureResult` has a third field, `notes`.
+- Integration plugins: `IntegrationPlugin`'s per-type methods take the kind of point, and runs can report a procedure as `ProcedureOutcome.Excluded`. See [Automating the tests](https://github.com/stepfunc/dnp3c/blob/0.2.0/docs/automation.md).
 
 ## 0.1.0
 

@@ -16,7 +16,7 @@ dnp3c can be used in two ways:
 Commercial DNP3 test tools save their results in proprietary formats. dnp3c writes plain HTML and pcap files:
 
 - **The report is a web page.** It shows every procedure with its result, and it opens in any browser. You can archive it, email it, or publish it next to a release, and nobody needs a license to read it.
-- **Every result can be traced.** Each procedure links to a log of every step, every frame it sent and received, decoded at each layer, and every check with its outcome.
+- **Every result can be traced.** Each result links to a log of every step, every frame it sent and received, decoded at each layer, and every check with its outcome.
 - **The traffic is in Wireshark's format.** With capture on, each procedure's traffic is saved as a pcap that opens in Wireshark, decoded as DNP3.
 
 ![The report's summary](docs/images/report.png)
@@ -62,7 +62,7 @@ Download `dnp3c-<version>.zip` from the [releases](https://github.com/stepfunc/d
 dnp3c -write device.ini                          # write a configuration file with every option
 dnp3c -revs                                      # list the revisions of the test procedures
 dnp3c -rev 2.7 -config device.ini -run all       # run every procedure and write the report
-dnp3c -rev 2.7 -config device.ini -describe 8.23 # print the steps of a section or procedure
+dnp3c -rev 2.7 -config device.ini -describe 8.23 # list a section's procedures, or a procedure's steps
 dnp3c -rev 2.7 -help                             # list the commands and test sections
 ```
 
@@ -90,7 +90,7 @@ The library jar, `io.stepfunc:dnp3c`, is published to Maven Central. See [Automa
 
 ## Building
 
-Building needs a full JDK 21, which can compile for Java 17.
+Building needs a full JDK 17 or newer (not just a JRE).
 
 ```
 mvn test       # compile and run the unit tests

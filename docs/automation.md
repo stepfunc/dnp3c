@@ -47,7 +47,7 @@ object Main {
 For each procedure, the harness:
 
 1. calls `startProcedure` on the plugin;
-2. connects to the DUT over TCP and runs the steps, calling the plugin for each step it can't perform itself;
+2. connects to the DUT (over TCP, or the serial port where `serial.enabled` is set) and runs the steps, calling the plugin for each step it can't perform itself;
 3. calls `endProcedure`, closes the connection, and writes the procedure's results.
 
 A procedure that won't run is skipped before any of that: one that isn't implemented, doesn't apply at the subset level, or needs a feature the device lacks. So is one the configuration excludes. It gets a log and a result saying why, but the harness doesn't connect to the DUT, capture or call the plugin, not even `startProcedure` or `endProcedure`.
@@ -95,7 +95,7 @@ To get the whole command-line tool, with its commands and options, but with your
 io.stepfunc.dnp3c.conformance.Main.run(args, new MyDevicePlugin())
 ```
 
-`Main.run` exits the JVM with 0 if every procedure passed, was skipped or was excluded, and nonzero otherwise.
+`Main.run` exits the JVM with 0 if every procedure passed, was skipped or was excluded and the report was written, and nonzero otherwise.
 
 ## Dependency
 
@@ -105,11 +105,11 @@ Plugins depend on the library jar, `io.stepfunc:dnp3c`:
 <dependency>
     <groupId>io.stepfunc</groupId>
     <artifactId>dnp3c</artifactId>
-    <version>0.1.0</version>
+    <version>0.2.0</version>
 </dependency>
 ```
 
-Until it's published, install it into your local Maven repository from a checkout of this repository with `mvn install`, and depend on the version that installs, `0.1.0-SNAPSHOT`.
+To use a build that isn't released yet, install it into your local Maven repository from a checkout of this repository with `mvn install`, and depend on the version in its `pom.xml`.
 
 dnp3c is written in Scala 3, and so is `IntegrationPlugin`. Writing the plugin in Scala is the easiest path, since its methods take Scala collections.
 
@@ -136,7 +136,7 @@ Every method gets a `PluginReporter` (verifications get a `CheckReporter`, which
 
 ### Automating step by step
 
-`DefaultIntegrationPlugin` is the plugin the CLI uses: every method prompts the user. Extend it, and override only what you've automated:
+`DefaultIntegrationPlugin` is the plugin the CLI uses: every action and verification prompts the user. Extend it, and override only what you've automated:
 
 ```scala
 class MyDevicePlugin extends DefaultIntegrationPlugin {
@@ -156,7 +156,7 @@ The rest still prompts. You can automate the steps you hit most often first, and
 
 [stepfunc/dnp3](https://github.com/stepfunc/dnp3) runs every procedure on each pull request against its DNP3 outstation, and is a complete working example. Its plugin, in the `conformance` directory, starts the outstation inside the JVM for each procedure, generates events through the outstation's API, and checks controls and attributes against what the outstation recorded. The `conformance` job in its `.github/workflows/ci.yml`:
 
-1. builds the plugin and runs it with `-rev 2.7 -config device.ini -run all`;
+1. builds the plugin and runs it with `-rev <revision> -config device.ini -run all`, for each revision;
 2. turns on packet capture, by setting `tcp.capture.adapter` to the loopback adapter, which works because the job runs as root;
 3. checks that every procedure which sent frames captured packets;
 4. uploads the whole output directory, with the report, logs and captures, as a build artifact, even when the run fails.
