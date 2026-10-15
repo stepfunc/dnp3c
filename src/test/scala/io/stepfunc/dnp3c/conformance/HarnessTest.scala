@@ -124,7 +124,7 @@ class HarnessTest extends AnyFunSuite with Matchers {
     report should not include "<1815-2012>"
     report.indexOf("⚠ Warning: a second warning") should be > warning
     report.indexOf("Note: an allowed answer") should be > report.indexOf("⚠ Warning: a second warning")
-    report should include("""<span class="warning">⚠ Warning: """)
+    report should include("""<span class="result-warning">⚠ Warning: """)
 
     // each implemented procedure in exactly one count
     val totals = """<span class="total ([a-z-]+)">\s*(\d+) ([^<]*?)\s*</span>""".r

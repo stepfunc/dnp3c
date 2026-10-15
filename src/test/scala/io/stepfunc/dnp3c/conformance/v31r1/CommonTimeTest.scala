@@ -31,12 +31,12 @@ class CommonTimeTest extends AnyFunSuite with Matchers {
     describes(CommonTime.relativeTimeSupported, relative) should not include "DUT supports Binary Input Change"
   }
 
-  test("8.15.2 accepts IIN2.1 from a device configured to reject reads of relative time events, and notes it") {
+  test("8.15.2 accepts IIN2.1 from a device configured to reject reads of relative time events, and warns of it") {
     val rejecting = Map(
       TimeSyncOptions.binaryInput.withRelativeTime.id -> "false",
       TimeSyncOptions.binaryInput.withRelativeTimeRejected.id -> "true")
-    describes(CommonTime.readWithRelativeTime, rejecting) should include("Note the result")
-    describes(CommonTime.readWithRelativeTime, relative) should not include "Note the result"
+    describes(CommonTime.readWithRelativeTime, rejecting) should include("Record a warning on the result")
+    describes(CommonTime.readWithRelativeTime, relative) should not include "Record a warning on the result"
   }
 
   test("8.15.3 runs where 8.15.2 gets events with relative time: with time recorded, and the read not rejected") {

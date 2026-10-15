@@ -256,7 +256,7 @@ span.exclusion {
 }
 
 /* what a passing procedure warned the device should probably change, under its title */
-span.warning {
+span.result-warning {
   color: var(--warning);
   font-size: 12px;
   font-weight: 600;

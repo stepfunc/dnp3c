@@ -70,7 +70,7 @@ case class Report(revision: Revision, level: Int, sections: Iterable[Report.Sect
       case Some(ProcedureOutcome.Excluded(reason)) =>
         "<br><span class=\"exclusion\">Excluded: " + Tags.escape(reason) + "</span>"
       case Some(ProcedureOutcome.Passed) =>
-        p.warnings.map(w => "<br><span class=\"warning\">⚠ Warning: " + Tags.escape(w) + "</span>").mkString +
+        p.warnings.map(w => "<br><span class=\"result-warning\">⚠ Warning: " + Tags.escape(w) + "</span>").mkString +
           p.notes.map(n => "<br><span class=\"note\">Note: " + Tags.escape(n) + "</span>").mkString
       case _ => ""
     }

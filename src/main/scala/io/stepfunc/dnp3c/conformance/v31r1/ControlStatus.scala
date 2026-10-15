@@ -27,8 +27,8 @@ object ControlStatus {
   private[v31r1] def echoesWithAnyStatus(select: ObjectHeader, onZero: => Unit): MessageValidation =
     MessageValidation.check(
       "Verify that the response echoes the select, but for its status code",
-      "Verify that the status code isn't zero; a DUT that answers with zero complies with IEEE 1815-2012, which is " +
-        "noted, but not with IEEE 1815-202x",
+      "Verify that the status code isn't zero; a DUT that answers with zero passes with a warning: it complies with " +
+        "IEEE 1815-2012, but not with IEEE 1815-202x",
       "Verify that the IIN field has no error bits but IIN2.1 and IIN2.2, which are optional"
     ) { message =>
       message.headers match {

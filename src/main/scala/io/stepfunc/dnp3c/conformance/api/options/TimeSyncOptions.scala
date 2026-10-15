@@ -45,8 +45,8 @@ object TimeSyncOptions extends OptionGroup {
       s"${input}ChangeWithTimeRejected",
       false,
       s"For a DUT without $name Change with Time events: does it answer a read of g${eventGroup}v2 with IIN2.1, as " +
-        "IEEE 1815-2012 allows? 3.1r1 then notes it as compliant with 1815-2012 but not 1815-202x, and skips its " +
-        "other with-time tests"
+        "IEEE 1815-2012 allows? 3.1r1 then passes it with a warning that it complies with 1815-2012 but not 1815-202x, " +
+        "and skips its other with-time tests"
     )
     // 3.1r1: likewise for events with relative time
     val withRelativeTimeRejected: BooleanOption = OptionTypes.boolean(
@@ -54,8 +54,8 @@ object TimeSyncOptions extends OptionGroup {
       s"${input}ChangeWithRelativeTimeRejected",
       false,
       s"For a DUT without $name Change with Relative Time events: does it answer a read of g${eventGroup}v3 with " +
-        "IIN2.1, as IEEE 1815-2012 allows? 3.1r1 then notes it as compliant with 1815-2012 but not 1815-202x, and " +
-        s"skips $relativeTimeSkipped"
+        "IIN2.1, as IEEE 1815-2012 allows? 3.1r1 then passes it with a warning that it complies with 1815-2012 but not " +
+        s"1815-202x, and skips $relativeTimeSkipped"
     )
   }
 

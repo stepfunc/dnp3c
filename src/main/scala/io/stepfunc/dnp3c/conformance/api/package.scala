@@ -43,10 +43,10 @@ package object api {
   }
 
   /**
-   * a step that warns of `text` on the procedure's result, which the report shows even when it passes: what the device
-   * should probably change, though the procedure passes it. It's described as a note step is.
+   * a step that records a warning, `text`, on the procedure's result, which the report shows even when it passes: what
+   * the device should probably change, though the procedure passes it
    */
-  def warning(text: String): TestStep = TestStep(List(Comment(s"Note the result: $text"))) { driver =>
+  def warning(text: String): TestStep = TestStep(List(Comment(s"Record a warning on the result: $text"))) { driver =>
     driver.reporter.warning(text)
   }
 
