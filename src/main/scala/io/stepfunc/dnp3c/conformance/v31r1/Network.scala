@@ -7,6 +7,7 @@ import java.net.{ ConnectException, InetAddress, InetSocketAddress, SocketTimeou
 
 import io.stepfunc.dnp3c.conformance.api._
 import io.stepfunc.dnp3c.conformance.api.options.{ ChannelOptions, NetworkOptions, SupportOptions, UnsolicitedOptions }
+import io.stepfunc.dnp3c.conformance.api.options.NetworkOptions.isAddress
 import io.stepfunc.dnp3c.conformance.common.LinkSteps.{ expectFrame, sendLinkControl, withAnyControl }
 import io.stepfunc.dnp3c.conformance.common.GenericSteps.{
   expectAtLeastOneResponse, expectNoUnsolicitedResponse, expectSingleResponse, expectUnsolicitedResponse, send
@@ -63,7 +64,7 @@ object Network {
         ConfigProblem(NetworkOptions.udpOtherPort.id, port.toString, "must be a port other than 20000")),
       Option.when(test == unsolicitedNullOtherPort && options.get(NetworkOptions.udpUnsolicitedPort) == port)(
         ConfigProblem(NetworkOptions.udpUnsolicitedPort.id, port.toString, "must be a port other than 20000")),
-      Option.when(test == udpMulticast && !isMulticast(group))(
+      Option.when(test == udpMulticast && NetworkOptions.group(options).isEmpty)(
         ConfigProblem(NetworkOptions.multicastGroup.id, group, "needs a multicast group's IP address, e.g. 239.0.0.1"))
     ).flatten
   }
@@ -75,19 +76,6 @@ object Network {
       .filter(o => address.nonEmpty && options.get(o) == address)
       .map(_.id)
   }
-
-  private val ipv4 = """(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})""".r
-
-  // an IPv4 or IPv6 address, other than the one for every address
-  private def isAddress(s: String): Boolean = s match {
-    case ipv4(a, b, c, d) => List(a, b, c, d).forall(_.toInt <= 255) && s != "0.0.0.0"
-    case _ =>
-      s.contains(':') && s.forall(c => Character.digit(c, 16) >= 0 || c == ':' || c == '.') &&
-      s.exists(c => c != ':' && c != '0')
-  }
-
-  private def isMulticast(s: String): Boolean =
-    isAddress(s) && scala.util.Try(InetAddress.getByName(s).isMulticastAddress).getOrElse(false)
 
   /** a section 9 test: restores the DUT's network once it ends */
   abstract class Test extends ProcedureDefinition {

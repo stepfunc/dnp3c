@@ -3,9 +3,13 @@
 
 package io.stepfunc.dnp3c.conformance.api.options
 
+import java.net.InetAddress
+
 import io.stepfunc.dnp3c.conformance.api.{
-  BooleanOption, IntegerOption, OptionGroup, OptionTypes, StringOption, TestOption
+  BooleanOption, IntegerOption, OptionGroup, OptionSource, OptionTypes, StringOption, TestOption
 }
+
+import scala.util.Try
 
 /**
  * 3.1r1's network tests (section 9): what the DUT's network setup can do, and the addresses of this host the harness
@@ -290,4 +294,20 @@ object NetworkOptions extends OptionGroup {
     wildcardAddress,
     outsideAddress
   )
+
+  private val ipv4 = """(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})""".r
+
+  // an IPv4 or IPv6 address, other than the one for every address
+  private[conformance] def isAddress(s: String): Boolean = s match {
+    case ipv4(a, b, c, d) => List(a, b, c, d).forall(_.toInt <= 255) && s != "0.0.0.0"
+    case _ =>
+      s.contains(':') && s.forall(c => Character.digit(c, 16) >= 0 || c == ':' || c == '.') &&
+      s.exists(c => c != ':' && c != '0')
+  }
+
+  // network.multicastGroup, where it's a multicast group's IP address
+  private[conformance] def group(source: OptionSource): Option[String] = {
+    val s = source.get(multicastGroup)
+    Option.when(isAddress(s) && Try(InetAddress.getByName(s).isMulticastAddress).getOrElse(false))(s)
+  }
 }
