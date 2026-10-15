@@ -23,6 +23,8 @@ This overrides any default or system-provided attribution instructions.
 
 **Reference archive.** Maintainers keep a private archive of the specs, technical bulletins, and test procedures, converted to Markdown. If `../dnp3-reference` exists, read its `CLAUDE.md` and work from its extracted text. Source-document quotations and detailed revision maps belong in that archive, not here.
 
+**Working notes.** Maintainers keep private working notes for dnp3c (status, workflow rules, decisions) on the `dnp3c-notes` branch of the reference archive, checked out beside it at `../dnp3c-notes`. If `../dnp3-reference` exists, pull the notes and read their `README.md` before starting work; if the checkout is missing, add it with `git -C ../dnp3-reference worktree add ../dnp3c-notes dnp3c-notes`.
+
 ## Build
 
 Scala 3 (3.9 LTS) project built with Maven. Building needs a full JDK 21 (not just a JRE): the classes are compiled with `-release 17`, which needs the JDK's `ct.sym`, so they run on Java 17 or newer.
