@@ -14,8 +14,8 @@ object ProcedureOutcome {
   case class Skipped(reason: String) extends ProcedureOutcome
 
   /**
-   * The configuration left it out (`test.exclude.<id>`), for this reason. Unlike a skipped procedure, it applies to
-   * the device, so the device hasn't been shown to conform to it.
+   * The configuration left it out (`test.exclude.<revision id>/<id>`), for this reason. Unlike a skipped procedure,
+   * it applies to the device, so the device hasn't been shown to conform to it.
    */
   case class Excluded(reason: String) extends ProcedureOutcome
 }

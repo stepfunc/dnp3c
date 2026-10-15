@@ -57,10 +57,10 @@ A procedure that won't run is skipped before any of that: one that isn't impleme
 A device with a known gap would stop every run at the procedure that tests it. Exclude the procedure in the configuration, with the reason, and the run carries on past it:
 
 ```
-test.exclude.8.26.2 = Assign Class isn't supported yet (stepfunc/dnp3#480)
+test.exclude.3.1r1/8.26.2 = Assign Class isn't supported yet (stepfunc/dnp3#480)
 ```
 
-[Testing a device by hand](manual-testing.md#exclude-procedures) has the rules: one property per procedure of the revision, each with a reason, checked before anything runs, and a procedure that's skipped stays skipped. Exclude a procedure for a feature the device has; turn off a `supports.*` option only for one it lacks.
+[Testing a device by hand](manual-testing.md#exclude-procedures) has the rules: one property per procedure, naming its revision, each with a reason, checked before anything runs, and a procedure that's skipped stays skipped. A run excludes only its own revision's procedures, so one configuration can serve every revision. Exclude a procedure for a feature the device has; turn off a `supports.*` option only for one it lacks.
 
 An excluded procedure's outcome is `Excluded(reason)`, which is new: a match over `ProcedureOutcome` must handle it. Unlike `Skipped`, it means the procedure applies to the device but didn't run, so the device hasn't been shown to conform to it. The report shows it as not run, with the reason, and says that conformance hasn't been demonstrated.
 

@@ -174,10 +174,10 @@ class TestRunnerTest extends AnyFunSuite with Matchers {
 
     def logged(id: String): Boolean = Files.exists(folder.resolve(id).resolve("log.html"))
 
-    // at level 2, excluding procedures by id, each with its reason
+    // at level 2, excluding procedures of revision "t" by id, each with its reason
     def excluding(exclusions: (String, String)*): Options = Options.from(
       Map(TestOptions.outputDirectory.id -> directory.toString, OutstationOptions.subsetLevel.id -> "2") ++
-        exclusions.map((id, reason) => s"${TestOptions.exclude.id}.$id" -> reason))
+        exclusions.map((id, reason) => s"${TestOptions.exclude.id}.t/$id" -> reason))
 
     // runs an element of a revision of its own, "t", whose results go in tFolder
     def in(revision: Revision, element: TestElement, options: Options): RunSummary =
@@ -381,7 +381,7 @@ class TestRunnerTest extends AnyFunSuite with Matchers {
     val revision = revisionOf(procedure("a", run.fail), procedure("b", run.fail))
     for (id <- List("9.9", "section", "all")) {
       val ex = the[ConfigurationException] thrownBy run.in(revision, revision.elements("a"), run.excluding(id -> "gap"))
-      ex.problems.map(_.key) should equal(List(s"${TestOptions.exclude.id}.$id"))
+      ex.problems.map(_.key) should equal(List(s"${TestOptions.exclude.id}.t/$id"))
       (the[ConfigurationException] thrownBy revision.checkExclusions(run.excluding(id -> "gap"))).problems should
         equal(ex.problems)
     }
