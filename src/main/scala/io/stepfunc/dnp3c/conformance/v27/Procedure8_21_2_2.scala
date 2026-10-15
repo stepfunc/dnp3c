@@ -6,12 +6,13 @@ package io.stepfunc.dnp3c.conformance.v27
 import io.stepfunc.dnp3c.conformance.api._
 import io.stepfunc.dnp3c.conformance.api.options.SupportOptions.Inputs
 import io.stepfunc.dnp3c.conformance.common.ConfigurableInputProcedure
+import io.stepfunc.dnp3c.dnp3.PointKind
 import io.stepfunc.dnp3c.dnp3.app.Sequence
 import io.stepfunc.dnp3c.dnp3.app.objects.Group3Var0
 
 object Procedure8_21_2_2 extends ConfigurableInputProcedure(
       "double-bit inputs",
-      PluginSteps.uninstallDoubleBitBinaryInputs,
+      PointKind.DoubleBitInput,
       Group3Var0,
       Sequence.zero) {
 

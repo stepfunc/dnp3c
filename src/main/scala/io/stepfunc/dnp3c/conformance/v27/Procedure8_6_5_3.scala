@@ -32,7 +32,7 @@ object Procedure8_6_5_3 extends ProcedureDefinition {
     steps(
       primary.oneByteHeader,
       s"${output.name} ${primary.index.value}",
-      output.checkOperate(primary.index.value),
+      PluginSteps.checkOperate(output.kind, primary.index.value),
       options)
   }
 

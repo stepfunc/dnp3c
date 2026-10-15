@@ -11,7 +11,7 @@ import io.stepfunc.dnp3c.conformance.common.Validations._
 import io.stepfunc.dnp3c.conformance.v27
 import io.stepfunc.dnp3c.dnp3.app.{ IIN, Sequence, Variation }
 import io.stepfunc.dnp3c.dnp3.app.objects.{ Group1Var0, Group20Var0, Group20Var1, Group21Var0, Group30Var0, Group3Var0 }
-import io.stepfunc.dnp3c.dnp3.{ Comment, DeferredCheck, MessageValidation, Requests, TestDriver }
+import io.stepfunc.dnp3c.dnp3.{ Comment, DeferredCheck, MessageValidation, PointKind, Requests, TestDriver }
 
 /**
  * 3.1r1's tests of reads of static inputs: 8.13 (binary inputs), 8.21 (the same tests with double-bit inputs), 8.16
@@ -95,12 +95,12 @@ object StaticInputs {
   final class Configurable(
       input: InputOptions,
       points: String,
-      uninstall: TestStep,
+      kind: PointKind,
       variation: Variation,
       seq: Sequence)
       extends ConfigurableInputProcedure(
         points,
-        uninstall,
+        kind,
         variation,
         seq,
         isNullErrorResponse(IIN.objectErrors)) {
@@ -111,7 +111,7 @@ object StaticInputs {
   val binaryWithout = new WithoutPoints(Inputs.binary, Group1Var0)
   val binaryHas = v27.Procedure8_13_2_2.requiring(OptionCondition(Inputs.binary.reads))
   val binaryConfigurable =
-    new Configurable(Inputs.binary, "binary inputs", PluginSteps.uninstallBinaryInputs, Group1Var0, Sequence.one)
+    new Configurable(Inputs.binary, "binary inputs", PointKind.BinaryInput, Group1Var0, Sequence.one)
 
   val doubleBitLevelOne = new LevelOneWithoutReads(Inputs.doubleBit, List(Group3Var0))
   val doubleBitWithout = new WithoutPoints(Inputs.doubleBit, Group3Var0)
@@ -119,7 +119,7 @@ object StaticInputs {
   val doubleBitConfigurable = new Configurable(
     Inputs.doubleBit,
     "double-bit inputs",
-    PluginSteps.uninstallDoubleBitBinaryInputs,
+    PointKind.DoubleBitInput,
     Group3Var0,
     Sequence.zero)
 
@@ -127,7 +127,7 @@ object StaticInputs {
   val counterWithout = new WithoutPoints(Inputs.counter, Group20Var0)
   val counterHas = v27.Procedure8_16_1_2_2.requiring(OptionCondition(Inputs.counter.reads))
   val counterConfigurable =
-    new Configurable(Inputs.counter, "counters", PluginSteps.uninstallCounterInputs, Group20Var0, Sequence.one)
+    new Configurable(Inputs.counter, "counters", PointKind.Counter, Group20Var0, Sequence.one)
 
   val frozenCounterLevelOne = new LevelOneWithoutReads(Inputs.frozenCounter, List(Group21Var0), condition = true)
   val frozenCounterWithout = new WithoutPoints(Inputs.frozenCounter, Group21Var0)

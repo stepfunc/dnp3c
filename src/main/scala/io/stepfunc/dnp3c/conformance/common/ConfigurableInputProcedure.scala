@@ -5,7 +5,7 @@ package io.stepfunc.dnp3c.conformance.common
 
 import io.stepfunc.dnp3c.conformance.api._
 import io.stepfunc.dnp3c.conformance.common.GenericSteps._
-import io.stepfunc.dnp3c.dnp3.{ MessageValidation, Requests }
+import io.stepfunc.dnp3c.dnp3.{ MessageValidation, PointKind, Requests }
 import io.stepfunc.dnp3c.dnp3.app.{ IIN, Sequence, Variation }
 
 // 8.13.2.3, 8.16.1.2.3 and 8.21.2.2: with the DUT's points of a type uninstalled or disabled, a read of them gets a
@@ -13,13 +13,13 @@ import io.stepfunc.dnp3c.dnp3.app.{ IIN, Sequence, Variation }
 // `withoutPoints` is the answer expected with them gone: 2.7 takes a Null Response or IIN2-1
 abstract class ConfigurableInputProcedure(
     points: String,
-    uninstall: TestStep,
+    kind: PointKind,
     variation: Variation,
     seq: Sequence,
     withoutPoints: MessageValidation = Validations.isNullOrErrorResponse(IIN.OBJECT_UNKNOWN))
     extends ProcedureDefinition {
   override protected def plan(options: OptionSource): Plan = {
-    val removal = Undoable(uninstall, PluginSteps.reinstallPoints)
+    val removal = PluginSteps.removal(kind)
     Plan(
       List(
         1 --> describe(s"The DUT's $points can be uninstalled or disabled through its configuration"),

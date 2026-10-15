@@ -4,7 +4,7 @@
 package io.stepfunc.dnp3c.conformance.api
 import io.stepfunc.dnp3c.dnp3.app.EventClass
 import io.stepfunc.dnp3c.dnp3.{
-  ActionTiming, Comment, InputKind, IntegrationPlugin, PluginReporter, PointKind, TestDriver
+  ActionTiming, Comment, InputKind, IntegrationPlugin, OutputKind, PluginReporter, PointKind, TestDriver
 }
 import io.stepfunc.dnp3c.dnp3.DeferredCheck
 
@@ -43,47 +43,48 @@ object PluginSteps {
 
   private def enable(value: Boolean): String = if (value) "Enable" else "Disable"
 
-  def uninstallBinaryOutputs: TestStep = action("Uninstall or disable every binary output point on the DUT") {
+  // uninstalls or disables every point of the kind, until reinstallPoints
+  def uninstall(kind: PointKind): TestStep = action(s"Uninstall or disable every ${uninstalled(kind)} on the DUT") {
     (plugin, reporter) =>
-      plugin.uninstall(reporter, PointKind.BinaryOutputStatus)
+      plugin.uninstall(reporter, kind)
   }
 
-  def checkBinaryOutputsOperate(indices: Iterable[Int]): PluginCheck =
-    PluginCheck(indices.map(idx => Comment(s"Check that binary control point $idx operate")).toSeq*)(
-      (plugin, reporter) =>
-        indices.toList.flatMap(idx => plugin.checkOperate(reporter, PointKind.BinaryOutputStatus, idx)))
+  // each kind as the steps have always named it
+  private def uninstalled(kind: PointKind): String = kind match {
+    case PointKind.BinaryInput => "binary input point"
+    case PointKind.DoubleBitInput => "double-bit binary input point"
+    case PointKind.BinaryOutputStatus => "binary output point"
+    case PointKind.Counter => "counter point"
+    case PointKind.FrozenCounter => "frozen counter"
+    case PointKind.AnalogInput => "analog input"
+    case PointKind.AnalogOutputStatus => "analog output point"
+  }
 
-  def checkBinaryOutputOperate(index: Int): PluginCheck =
-    PluginCheck(s"Check that binary control point $index operate")((plugin, reporter) =>
-      plugin.checkOperate(reporter, PointKind.BinaryOutputStatus, index))
+  // the points uninstalled, and the restore that reinstalls them
+  def removal(kind: PointKind): Undoable = Undoable(uninstall(kind), reinstallPoints)
 
-  def checkBinaryOutputNotOperate(): PluginCheck =
-    PluginCheck("Check that no binary control point operated")((plugin, reporter) =>
-      plugin.checkNotOperate(reporter, PointKind.BinaryOutputStatus))
+  def checkOperate(kind: OutputKind, indices: Iterable[Int]): PluginCheck =
+    PluginCheck(indices.map(idx => Comment(s"Check that ${control(kind)} point $idx operate")).toSeq*)(
+      (plugin, reporter) => indices.toList.flatMap(idx => plugin.checkOperate(reporter, kind, idx)))
+
+  def checkOperate(kind: OutputKind, index: Int): PluginCheck =
+    PluginCheck(s"Check that ${control(kind)} point $index operate")((plugin, reporter) =>
+      plugin.checkOperate(reporter, kind, index))
+
+  def checkNotOperate(kind: OutputKind): PluginCheck =
+    PluginCheck(s"Check that no ${control(kind)} point operated")((plugin, reporter) =>
+      plugin.checkNotOperate(reporter, kind))
+
+  private def control(kind: OutputKind): String = kind match {
+    case PointKind.BinaryOutputStatus => "binary control"
+    case PointKind.AnalogOutputStatus => "analog control"
+  }
 
   def reinstallPoints: TestStep =
     action("Reinstall or re-enable the points that were uninstalled or disabled, so later procedures can use them") {
       (plugin, reporter) =>
         plugin.reinstallPoints(reporter)
     }
-
-  def uninstallAnalogOutputs: TestStep = action("Uninstall or disable every analog output point on the DUT") {
-    (plugin, reporter) =>
-      plugin.uninstall(reporter, PointKind.AnalogOutputStatus)
-  }
-
-  def checkAnalogOutputsOperate(indices: Iterable[Int]): PluginCheck =
-    PluginCheck(indices.map(idx => Comment(s"Check that analog control point $idx operate")).toSeq*)(
-      (plugin, reporter) =>
-        indices.toList.flatMap(idx => plugin.checkOperate(reporter, PointKind.AnalogOutputStatus, idx)))
-
-  def checkAnalogOutputOperate(index: Int): PluginCheck =
-    PluginCheck(s"Check that analog control point $index operate")((plugin, reporter) =>
-      plugin.checkOperate(reporter, PointKind.AnalogOutputStatus, index))
-
-  def checkAnalogOutputNotOperate(): PluginCheck =
-    PluginCheck("Check that no analog control point operated")((plugin, reporter) =>
-      plugin.checkNotOperate(reporter, PointKind.AnalogOutputStatus))
 
   def generateClassEvents(eventClass: EventClass): TestStep = action(s"Generate known ${eventClass} event data") {
     (plugin, reporter) =>
@@ -105,11 +106,6 @@ object PluginSteps {
   }
 
   // Binary Inputs
-  def uninstallBinaryInputs: TestStep = action("Uninstall or disable every binary input point on the DUT") {
-    (plugin, reporter) =>
-      plugin.uninstall(reporter, PointKind.BinaryInput)
-  }
-
   def generateBinaryInputPattern(): TestStep = action("Set the binary inputs to a known pattern") {
     (plugin, reporter) =>
       plugin.generatePattern(reporter, PointKind.BinaryInput)
@@ -127,11 +123,6 @@ object PluginSteps {
     }
 
   // Double-bit Binary Inputs
-  def uninstallDoubleBitBinaryInputs: TestStep =
-    action("Uninstall or disable every double-bit binary input point on the DUT") { (plugin, reporter) =>
-      plugin.uninstall(reporter, PointKind.DoubleBitInput)
-    }
-
   def generateDoubleBitBinaryInputPattern(): TestStep = action("Set the double-bit inputs to a known pattern") {
     (plugin, reporter) =>
       plugin.generatePattern(reporter, PointKind.DoubleBitInput)
@@ -149,21 +140,6 @@ object PluginSteps {
     }
 
   // Counters
-  def uninstallFrozenCounters: TestStep = action("Uninstall or disable every frozen counter on the DUT") {
-    (plugin, reporter) =>
-      plugin.uninstall(reporter, PointKind.FrozenCounter)
-  }
-
-  def uninstallAnalogInputs: TestStep = action("Uninstall or disable every analog input on the DUT") {
-    (plugin, reporter) =>
-      plugin.uninstall(reporter, PointKind.AnalogInput)
-  }
-
-  def uninstallCounterInputs: TestStep = action("Uninstall or disable every counter point on the DUT") {
-    (plugin, reporter) =>
-      plugin.uninstall(reporter, PointKind.Counter)
-  }
-
   def generateCounterInputData(): TestStep = action("Make every binary counter count up") { (plugin, reporter) =>
     plugin.generateInputChanges(reporter, PointKind.Counter)
   }

@@ -6,11 +6,12 @@ package io.stepfunc.dnp3c.conformance.v27
 import io.stepfunc.dnp3c.conformance.api._
 import io.stepfunc.dnp3c.conformance.api.options.SupportOptions.Inputs
 import io.stepfunc.dnp3c.conformance.common.ConfigurableInputProcedure
+import io.stepfunc.dnp3c.dnp3.PointKind
 import io.stepfunc.dnp3c.dnp3.app.Sequence
 import io.stepfunc.dnp3c.dnp3.app.objects.Group1Var0
 
 object Procedure8_13_2_3
-    extends ConfigurableInputProcedure("binary inputs", PluginSteps.uninstallBinaryInputs, Group1Var0, Sequence.one) {
+    extends ConfigurableInputProcedure("binary inputs", PointKind.BinaryInput, Group1Var0, Sequence.one) {
 
   override protected def requiredOptions: List[OptionCondition] = Inputs.binary.withDisabling
 }

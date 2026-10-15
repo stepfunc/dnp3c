@@ -9,7 +9,7 @@ import io.stepfunc.dnp3c.conformance.common.GenericSteps._
 import io.stepfunc.dnp3c.conformance.common.Validations
 import io.stepfunc.dnp3c.dnp3.app.{ IIN, Sequence, Variation }
 import io.stepfunc.dnp3c.dnp3.app.objects.{ Group3Var0, Group4Var0 }
-import io.stepfunc.dnp3c.dnp3.{ Comment, DeferredCheck, MessageValidation, Requests, TestDriver }
+import io.stepfunc.dnp3c.dnp3.{ Comment, DeferredCheck, MessageValidation, PointKind, Requests, TestDriver }
 
 /**
  * 3.1r1's 8.21.1 and 8.22.1: a device with double-bit inputs is configured to disable them, failing if it can't be;
@@ -21,7 +21,7 @@ final class DisableDoubleBit(read: Variation, answer: MessageValidation) extends
   override protected def plan(options: OptionSource): Plan = {
     val points = options.get(Inputs.doubleBit.points)
     val disabling = options.get(Inputs.doubleBit.disabling)
-    val removal = Undoable(PluginSteps.uninstallDoubleBitBinaryInputs, PluginSteps.reinstallPoints)
+    val removal = PluginSteps.removal(PointKind.DoubleBitInput)
     val disable: TestStep =
       if (!points) describe("The DUT has no double-bit inputs: there's nothing to disable")
       else if (disabling) removal.apply
