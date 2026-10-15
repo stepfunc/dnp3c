@@ -51,10 +51,11 @@ object Procedure8_11_2_1 extends ProcedureDefinition {
       20 --> expectSingleResponse(Sequence.zero, Validations.isNull && Validations.without(IIN.DEVICE_RESTART)),
       (21 to 22) --> restartResponse.expectRetry(Validations.isNull && Validations.without(IIN.DEVICE_RESTART)),
       23 --> send(Requests.readClass0(Sequence.one)),
-      // The test procedures' own 8.11.1 has the DUT defer a READ received while any unsolicited response awaits
-      // confirmation, until the confirmation arrives or its timeout expires, and step 24 only asks for an answer; IEEE
-      // 1815-2012 4.6.6 rule 16 (with TB2015-002a) requires the deferral. So step 24 accepts an answer deferred to the
-      // startup response's confirm timeout, and warns of one that comes well before it.
+      // the procedures pull both ways here (see the README): step 24 and 8.11.1's restart behavior read as an answer
+      // within the usual response time, while 8.11.1's unsolicited and polled responses, IEEE 1815-2012 4.6.6 rule 16
+      // and TB2015-002a have the DUT defer the READ until the confirmation or its timeout. So step 24 accepts either:
+      // an answer deferred to the startup response's confirm timeout, or one well before it, with a warning
+
       24 --> expectDeferrableAnswer(responseTimeoutMs(options), unsolConfirmTimeoutMs, restartResponse),
       (25 to 26) --> restartResponse.expectRetry(Validations.isNull, AutoConfirm.Wrong),
       (27 to 28) --> restartResponse.expectRetry(Validations.isNull, AutoConfirm.Yes),

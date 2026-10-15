@@ -50,6 +50,8 @@ dnp3c resolves this the same way for every point type. A device without the poin
 
 A level 1 test of a device that can't read a type (8.13.2a and the like) runs only for a device that has the type; a device without it gets the test above instead.
 
+3.1 rev 1 is also of two minds about when a device answers a READ sent while its startup unsolicited response is unconfirmed (8.11.2a step 24; 2.7's 8.11.2.1 has the same text). Step 24, and 8.11.1's restart behavior, read as an answer within the usual response time. 8.11.1's rules for unsolicited and polled responses have the device defer a READ received while any unsolicited response awaits confirmation, until the confirmation arrives or its timeout expires, and so does IEEE 1815-2012 4.6.6 rule 16. TB2015-002a makes the intent plain: it rewrites rule 16 to say the READ is deferred for the startup response too, then answered, then the startup response sent again. dnp3c reads step 24 in that light, in both revisions: step 24 waits the response timeout plus the unsolicited confirm timeout, and an answer that comes well before that timeout passes with a warning that the standard has it deferred.
+
 ## Requirements
 
 Java 17 or newer.
