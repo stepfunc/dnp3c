@@ -34,6 +34,16 @@ jobs:
             echo "A dependency's license changed: review src/license/texts and commit it"
             exit 1
           fi
+      # the release notes are the version's section of CHANGELOG.md; a release candidate (0.2.0-RC1) uses its
+      # version's (0.2.0). Taken before publishing, so a missing section stops the release before anything is published
+      - name: Take the release notes from the changelog
+        run: |
+          base="${VERSION%%-*}"
+          awk -v v="$base" '$0 == "## " v {f = 1; next} /^## / {f = 0} f' CHANGELOG.md > release-notes.md
+          if [ ! -s release-notes.md ]; then
+            echo "CHANGELOG.md has no section for $base"
+            exit 1
+          fi
       - name: Import the PGP key
         id: import_gpg
         uses: crazy-max/ghaction-import-gpg@v7
@@ -50,6 +60,7 @@ jobs:
       - name: Create the GitHub release
         uses: softprops/action-gh-release@v2
         with:
+          body_path: release-notes.md
           files: |
             target/dnp3c-${{ github.ref_name }}.zip
             target/dnp3c-${{ github.ref_name }}-cli.jar
