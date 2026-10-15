@@ -52,8 +52,8 @@ object Procedure8_11_2_1 extends ProcedureDefinition {
       23 --> send(Requests.readClass0(Sequence.one)),
       24 -->
         // the procedure expects this READ answered while the startup unsolicited response is still unconfirmed
-        // (8.11.1.3); IEEE 1815's outstation state table would defer it until the confirm. An open question: the
-        // procedure is followed here.
+        // (8.11.1.3), where 1815-2012 4.6.6 rule 16 requires it deferred until the confirm. The procedure is followed,
+        // but a deferred answer passes if it comes within the response timeout plus 200 ms (see issue #1)
         expectAtLeastOneResponse(Sequence.one),
       (25 to 26) --> restartResponse.expectRetry(Validations.isNull, AutoConfirm.Wrong),
       (27 to 28) --> restartResponse.expectRetry(Validations.isNull, AutoConfirm.Yes),
