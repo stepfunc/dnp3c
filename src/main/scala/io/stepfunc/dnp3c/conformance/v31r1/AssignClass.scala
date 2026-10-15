@@ -118,14 +118,14 @@ object AssignClass {
         val restore = new TestStep {
           def description: List[Comment] =
             List("If the procedure ended with the classes reassigned, assign them back to the ones at startup")
-          def run(driver: TestDriver): List[DeferredCheck] = {
-            if (reassigned) {
-              driver.writeMessage(assign(seqs(60), Nil, Group60Var2 -> c1.points, Group60Var3 -> c2.points))
-              driver.readAllResponses(seqs(60), AutoConfirm.Yes)
+          // checked as step 46 checks the same request, so a DUT left with the classes reassigned is reported
+          def run(driver: TestDriver): List[DeferredCheck] =
+            if (!reassigned) Nil
+            else {
               reassigned = false
+              driver.writeMessage(assign(seqs(60), Nil, Group60Var2 -> c1.points, Group60Var3 -> c2.points))
+              expectSingleResponse(seqs(60), AutoConfirm.Yes, isNull).run(driver)
             }
-            Nil
-          }
         }
 
         def read(n: Int, request: Sequence => Message): TestStep = send(request(seqs(n)))
