@@ -60,6 +60,7 @@ class DefaultTestDriverTest extends AnyFunSuite with Matchers {
       1000,
       1000,
       1000,
+      500,
       new VirtualClock)
 
   test("a reconnected DUT starts its FCB at 1 again") {

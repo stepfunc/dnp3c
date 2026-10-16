@@ -26,7 +26,8 @@ class UnsolicitedAndPolledResponses(retryLimit: OptionSource => RetryLimit) exte
       options.get(OutstationOptions.appConfirmTimeout),
       options.get(UnsolicitedOptions.holdOffMs),
       Validations.Tables(options),
-      options.get(TestOptions.manualActionWindowMs)
+      options.get(TestOptions.manualActionWindowMs),
+      options.get(TestOptions.timingToleranceMs)
     )
   }
 }

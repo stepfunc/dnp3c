@@ -231,9 +231,6 @@ trait TestDriver {
 
 object TestDriver {
 
-  // added to the configured response timeouts, for the time a response takes to arrive
-  val readToleranceMs = 200
-
   // what every fragment of a solicited response must carry
   def checkSolicited(message: Message, seq: Sequence): Unit = {
     if (message.ctrl.uns.value) throw new Exception("Unexpected unsolicited response")

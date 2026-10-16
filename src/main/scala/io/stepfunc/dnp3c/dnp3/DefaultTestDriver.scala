@@ -28,6 +28,8 @@ class DefaultTestDriver(
     defaultLinkTimeoutMs: Int,
     appTimeoutMs: Int,
     unsolTimeoutMs: Int,
+    // added to the response timeouts, for the time a response takes to arrive
+    timingToleranceMs: Int,
     val clock: Clock = Clock.system,
     override val policies: Policies = Policies.none) extends TestDriver {
 
@@ -199,7 +201,7 @@ class DefaultTestDriver(
       linkOverride: LinkOverride,
       timeoutMs: Option[Int]): Option[Message] = getConnection { c =>
     val timeout =
-      timeoutMs.getOrElse((if (unsolicited.value) unsolTimeoutMs else appTimeoutMs) + TestDriver.readToleranceMs)
+      timeoutMs.getOrElse((if (unsolicited.value) unsolTimeoutMs else appTimeoutMs) + timingToleranceMs)
     val message = c.messageReader.read(timeout, validator, linkOverride).map(Message.parse)
     message.foreach(reporter.receive)
     message.foreach(policies.check)

@@ -5,7 +5,7 @@ package io.stepfunc.dnp3c.conformance.v27
 
 import io.stepfunc.dnp3c.conformance.Run
 import io.stepfunc.dnp3c.conformance.api.Options
-import io.stepfunc.dnp3c.conformance.api.options.{ OutstationOptions, UnsolicitedOptions }
+import io.stepfunc.dnp3c.conformance.api.options.{ OutstationOptions, TestOptions, UnsolicitedOptions }
 import io.stepfunc.dnp3c.dnp3._
 import io.stepfunc.dnp3c.dnp3.app._
 import io.stepfunc.dnp3c.dnp3.link.FrameValidator
@@ -87,15 +87,15 @@ class Procedure8_11_2_1Test extends AnyFunSuite with Matchers {
   private val responseTimeoutMs = 2000
 
   // a read's default timeout: the response timeout plus the driver's tolerance
-  private val defaultResponseTimeoutMs = responseTimeoutMs + TestDriver.readToleranceMs
+  private val defaultResponseTimeoutMs = responseTimeoutMs + TestOptions.timingToleranceMs.default
 
   test("step 30 waits for an unsolicited response to the events as long as the DUT could take to send one") {
     val plugin = new Plugin
     val dut = new Dut(plugin, 5000)
     val options = Options.from(Map(UnsolicitedOptions.holdOffMs.id -> "3000"))
     Run.passing(Procedure8_11_2_1, dut, options)
-    // the hold-off, the confirm timeout and a 200 ms margin
-    dut.timeoutsAfterEvents.toList should equal(List(Some(8200)))
+    // the hold-off, the confirm timeout and the default timing tolerance
+    dut.timeoutsAfterEvents.toList should equal(List(Some(8500)))
   }
 
   test("each unsolicited response after the first is a retry, one confirm timeout after the one before") {

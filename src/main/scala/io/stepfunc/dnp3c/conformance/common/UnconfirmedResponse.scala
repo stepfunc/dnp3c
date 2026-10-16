@@ -5,7 +5,6 @@ package io.stepfunc.dnp3c.conformance.common
 
 import io.stepfunc.dnp3c.conformance.api._
 import io.stepfunc.dnp3c.conformance.common.GenericSteps.validateUnsolicitedResponse
-import io.stepfunc.dnp3c.conformance.common.UnconfirmedResponse.timingToleranceMs
 import io.stepfunc.dnp3c.dnp3.app._
 import io.stepfunc.dnp3c.dnp3.{ ActionTiming, AutoConfirm, Comment, MessageValidation, Requests, TestDriver }
 import io.stepfunc.dnp3c.dnp3.DeferredCheck
@@ -13,7 +12,7 @@ import io.stepfunc.dnp3c.dnp3.DeferredCheck
 // A response left unconfirmed, to check that the DUT holds back what it would otherwise send (e.g. the answer to a
 // READ) until the response is confirmed or its confirm timeout expires. Timing is measured from when the response
 // was received, on the driver's clock.
-class UnconfirmedResponse(confirmTimeoutMs: Int) {
+class UnconfirmedResponse(confirmTimeoutMs: Int, timingToleranceMs: Int) {
   private var response: Option[Message] = None
   private var receivedAtMs = 0L
 
@@ -117,10 +116,4 @@ class UnconfirmedResponse(confirmTimeoutMs: Int) {
       Nil
     }
   }
-}
-
-object UnconfirmedResponse {
-  // Timing tolerance, e.g. between the DUT sending and us receiving a response. Adopted from the measurement
-  // accuracy 8.11.2.1 allows for unsolicited retries.
-  private[conformance] val timingToleranceMs = 500
 }

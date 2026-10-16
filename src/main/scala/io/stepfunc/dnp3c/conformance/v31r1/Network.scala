@@ -6,13 +6,14 @@ package io.stepfunc.dnp3c.conformance.v31r1
 import java.net.{ ConnectException, InetAddress, InetSocketAddress, SocketTimeoutException }
 
 import io.stepfunc.dnp3c.conformance.api._
-import io.stepfunc.dnp3c.conformance.api.options.{ ChannelOptions, NetworkOptions, SupportOptions, UnsolicitedOptions }
+import io.stepfunc.dnp3c.conformance.api.options.{
+  ChannelOptions, NetworkOptions, SupportOptions, TestOptions, UnsolicitedOptions
+}
 import io.stepfunc.dnp3c.conformance.api.options.NetworkOptions.isAddress
 import io.stepfunc.dnp3c.conformance.common.LinkSteps.{ expectFrame, sendLinkControl, withAnyControl }
 import io.stepfunc.dnp3c.conformance.common.GenericSteps.{
   expectAtLeastOneResponse, expectNoUnsolicitedResponse, expectSingleResponse, expectUnsolicitedResponse, send
 }
-import io.stepfunc.dnp3c.conformance.common.UnconfirmedResponse
 import io.stepfunc.dnp3c.conformance.common.GenericSteps.validateUnsolicitedResponse
 import io.stepfunc.dnp3c.conformance.common.Validations.{ isNull, without }
 import io.stepfunc.dnp3c.dnp3._
@@ -418,7 +419,7 @@ object Network {
 
   // a retry of an unconfirmed unsolicited response comes within the confirm timeout, give or take the tolerance
   private def retryWindow(options: OptionSource): Option[Int] =
-    Some(options.get(UnsolicitedOptions.unsolicitedConfirmTimeoutMs) + UnconfirmedResponse.timingToleranceMs)
+    Some(options.get(UnsolicitedOptions.unsolicitedConfirmTimeoutMs) + options.get(TestOptions.timingToleranceMs))
 
   private val withEvents = MessageValidation.check("Verify that the response reports events") { m =>
     if (m.headers.isEmpty) throw new Exception("The unsolicited response reports no events")
@@ -479,7 +480,7 @@ object Network {
       LinkOverride.default,
       Some(
         options.get(UnsolicitedOptions.holdOffMs) + options.get(UnsolicitedOptions.unsolicitedConfirmTimeoutMs) +
-          UnconfirmedResponse.timingToleranceMs)
+          options.get(TestOptions.timingToleranceMs))
     ),
     expectNoUnsolicitedResponse(retryWindow(options))
   )

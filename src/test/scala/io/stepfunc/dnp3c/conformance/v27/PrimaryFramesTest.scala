@@ -50,6 +50,7 @@ class PrimaryFramesTest extends AnyFunSuite with Matchers {
       1000,
       1000,
       1000,
+      500,
       new VirtualClock)
     step.run(driver)
     line.writes.toList should equal(List(bytes))

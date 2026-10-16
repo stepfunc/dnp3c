@@ -27,6 +27,18 @@ object TestOptions extends OptionGroup {
     None
   )
 
+  val timingToleranceMs: IntegerOption = OptionTypes.integer(
+    this,
+    "timingToleranceMs",
+    500,
+    "How far a time the harness measures may be off, in ms, both ways: how late a message may arrive past a timeout " +
+      "the harness waits on, and how far an interval it times may be from the one expected, e.g. an unsolicited " +
+      "retry from the confirm timeout. A larger value is more forgiving of a slow network or a busy machine, both " +
+      "early and late. For the serial line's own timing, see serial.timingToleranceMs",
+    Some(0),
+    None
+  )
+
   val exclude: ExclusionsOption = OptionTypes.exclusions(
     this,
     "exclude",
@@ -40,6 +52,7 @@ object TestOptions extends OptionGroup {
 
   def prefix: String = "test"
   def description: String = "Options for the test harness itself"
-  def options: List[TestOption] = List(outputDirectory, deviceUnderTest, manualActionWindowMs, exclude)
+  def options: List[TestOption] =
+    List(outputDirectory, deviceUnderTest, manualActionWindowMs, timingToleranceMs, exclude)
 
 }
