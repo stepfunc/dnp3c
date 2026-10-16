@@ -5,7 +5,7 @@ package io.stepfunc.dnp3c.conformance.v27
 
 import io.stepfunc.dnp3c.conformance.v31r1.Rules
 import io.stepfunc.dnp3c.conformance.api._
-import io.stepfunc.dnp3c.conformance.api.options.{ OutstationOptions, SupportOptions }
+import io.stepfunc.dnp3c.conformance.api.options.{ OutstationOptions, SupportOptions, TestOptions }
 import io.stepfunc.dnp3c.conformance.common.GenericSteps._
 import io.stepfunc.dnp3c.conformance.common.UnconfirmedResponse
 import io.stepfunc.dnp3c.conformance.common.Validations._
@@ -21,7 +21,7 @@ object Procedure8_9_2_2 extends ProcedureDefinition {
   override protected def steps(options: OptionSource): Iterable[LabeledStep] = {
 
     val confirmTimeout = options.get(OutstationOptions.appConfirmTimeout)
-    val pending = new UnconfirmedResponse(confirmTimeout)
+    val pending = new UnconfirmedResponse(confirmTimeout, options.get(TestOptions.timingToleranceMs))
     // past the application confirmation timeout: a second longer
     val pastConfirmTimeout = confirmTimeout + 1000
     // inside the application confirmation timeout: half of it

@@ -38,7 +38,7 @@ class SecondFragmentTest extends AnyFunSuite with Matchers {
 
   // runs the step, then confirms the fragment it holds, to see which one that is
   private def run(dut: Dut): List[(AppFunction, Int)] = {
-    val pending = new UnconfirmedResponse(5000)
+    val pending = new UnconfirmedResponse(5000, 500)
     Procedure8_9_2_2.readSecondFragment(pending).run(dut)
     pending.confirm.run(dut)
     dut.written.toList

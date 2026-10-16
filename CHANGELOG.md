@@ -6,6 +6,7 @@
 - **Serial and UDP**, as well as TCP, including 3.1 rev 1's network, multi-drop and collision avoidance tests.
 - **Exclusions:** leave a procedure out of a run with a reason, e.g. for a known gap in the device. The report shows it as not run, apart from skipped procedures, with its reason.
 - **Reports** say why each procedure was skipped, flag the procedures that pass with warnings, where the device should probably change something, and name the revision and subset level.
+- **Timing tolerance:** `test.timingToleranceMs` (500 ms by default) sets how far the times dnp3c measures may be off, e.g. for a busy machine or a slow network. It replaces two fixed allowances, of 500 ms for timed intervals and 200 ms past each timeout, so the steps that expect no message now wait 300 ms longer by default.
 - The runnable jar and the CLI zip list the licenses of the dependencies they bundle.
 
 ### Upgrading from 0.1.0

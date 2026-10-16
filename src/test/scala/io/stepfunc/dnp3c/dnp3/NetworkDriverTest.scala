@@ -30,7 +30,8 @@ class NetworkDriverTest extends AnyFunSuite with Matchers {
     UInt16LE(1024),
     200,
     1000,
-    1000)
+    1000,
+    500)
 
   // a server that handles one connection in the background; what the handler returns completes the future
   private def serve[A](handle: Socket => A): (InetSocketAddress, CompletableFuture[A]) = {

@@ -68,7 +68,7 @@ class UnsolicitedChecksTest extends AnyFunSuite with Matchers {
 
   test("a retry must come one confirm timeout after the response, within the tolerance") {
     def retryAfter(intervalMs: Option[Long]): (Boolean, Option[Int]) = {
-      val held = new UnconfirmedResponse(2000)
+      val held = new UnconfirmedResponse(2000, 500)
       val dut = new Dut(List(intervalMs.map(_ => unsolicited)), intervalMs.getOrElse(2500L))
       held.record(unsolicited, dut)
       val passed = scala.util.Try(held.expectRetry(MessageValidation.none).run(dut)).isSuccess
@@ -175,7 +175,11 @@ class UnsolicitedChecksTest extends AnyFunSuite with Matchers {
       override def generateUnsolicitedEvents(reporter: PluginReporter, timing: ActionTiming): ActionResult =
         ActionResult.Performed
     }
-    val step = UnsolicitedResponseSteps.generateAndExpectEvents(holdOffMs = 0, 2000, actionWindowMs = 0)(AutoConfirm.No)
+    val step = UnsolicitedResponseSteps.generateAndExpectEvents(
+      holdOffMs = 0,
+      2000,
+      toleranceMs = 500,
+      actionWindowMs = 0)(AutoConfirm.No)
     def dut(response: Message) = new Dut(List(Some(response)), plugin = plugin)
     def withObjects(objects: String) =
       unsolicited.copy(headers = Message.parse(Hex.from("C0 81 00 00 " + objects)).headers)

@@ -39,8 +39,9 @@ class TimedActionTest extends AnyFunSuite with Matchers {
     override def close(): Unit = {}
   }
 
-  private val step = UnsolicitedResponseSteps.generateAndExpectEvents(holdOffMs = 0, 2000, actionWindowMs = 10000)(
-    AutoConfirm.No)
+  private val step =
+    UnsolicitedResponseSteps.generateAndExpectEvents(holdOffMs = 0, 2000, toleranceMs = 500, actionWindowMs = 10000)(
+      AutoConfirm.No)
 
   test("an armed manual action gives the DUT's response the action window as well") {
     val plugin = new Plugin({
@@ -50,19 +51,19 @@ class TimedActionTest extends AnyFunSuite with Matchers {
     val driver = new Driver(plugin)
     an[Exception] should be thrownBy step.run(driver)
     plugin.timings.toList should equal(List(ActionTiming.ArmThenAct(10000)))
-    driver.readTimeouts.toList should equal(List(Some(12200)))
+    driver.readTimeouts.toList should equal(List(Some(12500)))
   }
 
   test("an action performed before returning, as an automated plugin's is, gets no extra time") {
     val driver = new Driver(new Plugin(_ => ActionResult.Performed))
     an[Exception] should be thrownBy step.run(driver)
-    driver.readTimeouts.toList should equal(List(Some(2200)))
+    driver.readTimeouts.toList should equal(List(Some(2500)))
   }
 
   test("an action inside a held response's window is given the time left, or isn't asked once it has run out") {
     val plugin = new Plugin(_ => ActionResult.Performed)
     val driver = new Driver(plugin)
-    val held = new UnconfirmedResponse(2000)
+    val held = new UnconfirmedResponse(2000, 500)
     held.record(Message(Control.request(Sequence.zero), AppFunction.response, Some(IIN.empty), Nil), driver)
 
     driver.clock.advance(100)

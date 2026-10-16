@@ -126,7 +126,7 @@ class SilenceWaitsTest extends AnyFunSuite with Matchers {
     val settings =
       Map(UnsolicitedOptions.holdOffMs.id -> "500", UnsolicitedOptions.unsolicitedConfirmTimeoutMs.id -> "2000")
     def eventWaits(procedure: ProcedureDefinition) =
-      runEachStep(procedure, settings).unsolicitedWaits.count(_.contains(2700))
+      runEachStep(procedure, settings).unsolicitedWaits.count(_.contains(3000))
     // 8.11.2.6: after the events, and after the request to enable unsolicited responses
     eventWaits(Procedure8_11_2_6) should equal(2)
     // 8.11.2.2: before unsolicited responses are enabled, when they are, and for the other classes' events

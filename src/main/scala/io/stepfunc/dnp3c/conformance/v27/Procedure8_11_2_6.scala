@@ -4,7 +4,7 @@
 package io.stepfunc.dnp3c.conformance.v27
 
 import io.stepfunc.dnp3c.conformance.api._
-import io.stepfunc.dnp3c.conformance.api.options.{ SupportOptions, UnsolicitedOptions }
+import io.stepfunc.dnp3c.conformance.api.options.{ SupportOptions, TestOptions, UnsolicitedOptions }
 import io.stepfunc.dnp3c.conformance.common.UnsolicitedResponseSteps
 
 object Procedure8_11_2_6 extends ProcedureDefinition {
@@ -14,6 +14,7 @@ object Procedure8_11_2_6 extends ProcedureDefinition {
   override protected def steps(options: OptionSource): Iterable[LabeledStep] = {
     UnsolicitedResponseSteps.offSteps(
       options.get(UnsolicitedOptions.unsolicitedConfirmTimeoutMs),
-      options.get(UnsolicitedOptions.holdOffMs))
+      options.get(UnsolicitedOptions.holdOffMs),
+      options.get(TestOptions.timingToleranceMs))
   }
 }

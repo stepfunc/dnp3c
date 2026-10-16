@@ -51,6 +51,7 @@ private[application] object ProcedureEnvironment {
         options.get(LinkOptions.timeout),
         options.get(OutstationOptions.responseTimeout),
         options.get(UnsolicitedOptions.unsolicitedConfirmTimeoutMs),
+        options.get(TestOptions.timingToleranceMs),
         policies = policies
       )
   }

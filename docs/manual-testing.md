@@ -45,6 +45,10 @@ Every command that reads the configuration checks the whole file first, and list
 
 `dnp3c -options` prints every option and its default without writing a file.
 
+### Timing
+
+The tests that time the DUT, e.g. its unsolicited retries in 8.11, measure on the machine running dnp3c, so a busy machine or a slow network can make the DUT look early or late. `test.timingToleranceMs` (500 ms by default) is how far off those measurements may be, both ways: how long past a timeout dnp3c waits for a message, and how far an interval it times may be from the one expected. Run the timing tests on a machine that isn't busy with other work. If one fails under load, rerun it before treating it as a device problem, or raise the tolerance. A larger tolerance only makes the steps that expect no message wait longer: a step that gets its message moves on as soon as it arrives.
+
 ## Choose the revision
 
 dnp3c can hold more than one revision of the certification procedure, and every command that uses procedures needs the one to use, given with `-rev`. Revisions number their procedures differently, so `-rev` decides what an id like 8.6.5.4 means. `dnp3c -revs` lists the revisions:

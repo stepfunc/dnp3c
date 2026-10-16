@@ -4,7 +4,7 @@
 package io.stepfunc.dnp3c.conformance.common
 
 import io.stepfunc.dnp3c.conformance.api._
-import io.stepfunc.dnp3c.conformance.api.options.{ SupportOptions, UnsolicitedOptions }
+import io.stepfunc.dnp3c.conformance.api.options.{ SupportOptions, TestOptions, UnsolicitedOptions }
 import io.stepfunc.dnp3c.dnp3.link.FrameValidator
 import io.stepfunc.dnp3c.conformance.common.GenericSteps._
 import io.stepfunc.dnp3c.conformance.common.Validations._
@@ -20,14 +20,17 @@ object UnsolicitedResponseSteps {
 
   // how long the DUT can take to send an unsolicited response to new events: its hold-off time, and any wait for the
   // confirmation of an earlier response
-  private def eventsTimeoutMs(holdOffMs: Int, unsolConfirmTimeoutMs: Int): Int =
-    holdOffMs + unsolConfirmTimeoutMs + TestDriver.readToleranceMs
+  private def eventsTimeoutMs(holdOffMs: Int, unsolConfirmTimeoutMs: Int, toleranceMs: Int): Int =
+    holdOffMs + unsolConfirmTimeoutMs + toleranceMs
 
   // no unsolicited response to new events: wait as long as the DUT could take to send one
-  private[conformance] def expectNoEventsUnsolicited(holdOffMs: Int, unsolConfirmTimeoutMs: Int): TestStep =
-    expectNoUnsolicitedResponse(Some(eventsTimeoutMs(holdOffMs, unsolConfirmTimeoutMs)))
+  private[conformance] def expectNoEventsUnsolicited(
+      holdOffMs: Int,
+      unsolConfirmTimeoutMs: Int,
+      toleranceMs: Int): TestStep =
+    expectNoUnsolicitedResponse(Some(eventsTimeoutMs(holdOffMs, unsolConfirmTimeoutMs, toleranceMs)))
 
-  private def expectEventsUnsolicited(holdOffMs: Int, unsolConfirmTimeoutMs: Int)(
+  private def expectEventsUnsolicited(holdOffMs: Int, unsolConfirmTimeoutMs: Int, toleranceMs: Int)(
       autoConfirm: AutoConfirm,
       validation: MessageValidation = MessageValidation.none): TestStep =
     expectUnsolicitedResponse(
@@ -35,7 +38,7 @@ object UnsolicitedResponseSteps {
       FrameValidator.none,
       withEvents(validation),
       LinkOverride.default,
-      Some(eventsTimeoutMs(holdOffMs, unsolConfirmTimeoutMs)))
+      Some(eventsTimeoutMs(holdOffMs, unsolConfirmTimeoutMs, toleranceMs)))
 
   // a response to new events carries them: checks that compare it with other responses would otherwise pass on a
   // response without any
@@ -49,13 +52,17 @@ object UnsolicitedResponseSteps {
    * tester) is armed first and acts within actionWindowMs, so the harness is already reading when the DUT responds,
    * and times the response from when it actually arrives.
    */
-  private[common] def generateAndExpectEvents(holdOffMs: Int, unsolConfirmTimeoutMs: Int, actionWindowMs: Int)(
+  private[common] def generateAndExpectEvents(
+      holdOffMs: Int,
+      unsolConfirmTimeoutMs: Int,
+      toleranceMs: Int,
+      actionWindowMs: Int)(
       autoConfirm: AutoConfirm,
       validation: MessageValidation = MessageValidation.none): TestStep = new TestStep {
 
     override def description: List[Comment] =
       PluginSteps.generateUnsolicitedEvents().description ++
-        expectEventsUnsolicited(holdOffMs, unsolConfirmTimeoutMs)(autoConfirm, validation).description
+        expectEventsUnsolicited(holdOffMs, unsolConfirmTimeoutMs, toleranceMs)(autoConfirm, validation).description
 
     override def run(driver: TestDriver): List[DeferredCheck] = {
       val action = driver.reporter.plugin.generateUnsolicitedEvents(
@@ -74,7 +81,7 @@ object UnsolicitedResponseSteps {
         FrameValidator.none,
         withEvents(validation),
         LinkOverride.default,
-        Some(eventsTimeoutMs(holdOffMs, unsolConfirmTimeoutMs) + extraMs),
+        Some(eventsTimeoutMs(holdOffMs, unsolConfirmTimeoutMs, toleranceMs) + extraMs),
         noResponse
       ).run(driver)
     }
@@ -89,7 +96,8 @@ object UnsolicitedResponseSteps {
       options.get(data.support),
       otherSupportedClasses(data, options),
       options.get(UnsolicitedOptions.unsolicitedConfirmTimeoutMs),
-      options.get(UnsolicitedOptions.holdOffMs)
+      options.get(UnsolicitedOptions.holdOffMs),
+      options.get(TestOptions.timingToleranceMs)
     )
   }
 
@@ -104,8 +112,9 @@ object UnsolicitedResponseSteps {
       supportsClass: Boolean,
       otherClasses: List[EventClass],
       unsolConfirmTimeoutMs: Int,
-      holdOffMs: Int): List[LabeledStep] = {
-    val unconfirmed = new UnconfirmedResponse(unsolConfirmTimeoutMs)
+      holdOffMs: Int,
+      toleranceMs: Int): List[LabeledStep] = {
+    val unconfirmed = new UnconfirmedResponse(unsolConfirmTimeoutMs, toleranceMs)
     val eventClass = data.eventClass
     val classVariation = data.variation
     // step 12: a retry carries at least the events of the response it repeats; analog events may carry current values,
@@ -121,14 +130,14 @@ object UnsolicitedResponseSteps {
       3 -->
         (if (supportsClass) PluginSteps.generateClassEvents(eventClass)
          else describe(s"Device cannot generate Class ${classVariation.clazz} data")),
-      4 --> expectNoEventsUnsolicited(holdOffMs, unsolConfirmTimeoutMs),
+      4 --> expectNoEventsUnsolicited(holdOffMs, unsolConfirmTimeoutMs, toleranceMs),
       5 --> send(enableUnsolicitedResponses(Sequence.one, classVariation)),
       6 --> expectNullResponse(Sequence.one)
     )
 
     val steps7to15 = if (supportsClass) List(
       // the retries are timed from this response and the next, so a manual answer here waits until the steps are done
-      (7 to 10) --> expectEventsUnsolicited(holdOffMs, unsolConfirmTimeoutMs)(
+      (7 to 10) --> expectEventsUnsolicited(holdOffMs, unsolConfirmTimeoutMs, toleranceMs)(
         unconfirmed.hold,
         PluginValidations.verifyOldAndNewClassEvents(eventClass).deferrable && recorder.record),
       (11 to 13) --> unconfirmed.expectRetry(sameEvents.deferrable && recorder.record, AutoConfirm.Wrong),
@@ -140,7 +149,7 @@ object UnsolicitedResponseSteps {
 
     val steps16to17 = List(
       16 --> PluginSteps.generateClassEvents(otherClasses),
-      17 --> expectNoEventsUnsolicited(holdOffMs, unsolConfirmTimeoutMs)
+      17 --> expectNoEventsUnsolicited(holdOffMs, unsolConfirmTimeoutMs, toleranceMs)
     )
 
     steps1to6 ++ steps7to15 ++ steps16to17
@@ -169,21 +178,22 @@ object UnsolicitedResponseSteps {
       appConfirmTimeoutMs: Int,
       holdOffMs: Int,
       tables: Validations.Tables,
-      actionWindowMs: Int): Iterable[LabeledStep] = {
+      actionWindowMs: Int,
+      toleranceMs: Int): Iterable[LabeledStep] = {
     val messageRecorder = new MessageRecorder
 
     val seq = MutableSequence.zero
 
     def expectEvents(autoConfirm: AutoConfirm, validation: MessageValidation = MessageValidation.none): TestStep =
-      expectEventsUnsolicited(holdOffMs, unsolConfirmTimeoutMs)(autoConfirm, validation)
+      expectEventsUnsolicited(holdOffMs, unsolConfirmTimeoutMs, toleranceMs)(autoConfirm, validation)
     def generateAndExpect(autoConfirm: AutoConfirm, validation: MessageValidation = MessageValidation.none): TestStep =
-      generateAndExpectEvents(holdOffMs, unsolConfirmTimeoutMs, actionWindowMs)(autoConfirm, validation)
-    val unconfirmedUnsolicited = new UnconfirmedResponse(unsolConfirmTimeoutMs)
-    val unconfirmedPolled = new UnconfirmedResponse(appConfirmTimeoutMs)
+      generateAndExpectEvents(holdOffMs, unsolConfirmTimeoutMs, toleranceMs, actionWindowMs)(autoConfirm, validation)
+    val unconfirmedUnsolicited = new UnconfirmedResponse(unsolConfirmTimeoutMs, toleranceMs)
+    val unconfirmedPolled = new UnconfirmedResponse(appConfirmTimeoutMs, toleranceMs)
     // an unsolicited retry comes within a confirm timeout, plus the tolerance expectRetry allows, of the response it
     // repeats, so no response in that window means no more retries; 8.11.2.5.9 only counts its retries, so it doesn't
     // check they come no sooner, as expectRetry does
-    val retryWindowMs = Some(unsolConfirmTimeoutMs + UnconfirmedResponse.timingToleranceMs)
+    val retryWindowMs = Some(unsolConfirmTimeoutMs + toleranceMs)
     def expectRetry(autoConfirm: AutoConfirm): TestStep = expectUnsolicitedResponse(
       autoConfirm,
       FrameValidator.none,
@@ -329,7 +339,7 @@ object UnsolicitedResponseSteps {
       )
   }
 
-  def offSteps(unsolConfirmTimeoutMs: Int, holdOffMs: Int): Iterable[LabeledStep] = {
+  def offSteps(unsolConfirmTimeoutMs: Int, holdOffMs: Int, toleranceMs: Int): Iterable[LabeledStep] = {
     List(
       1 --> PluginSteps.enableUnsolicitedResponse(false),
       2 --> PluginSteps.cyclePower,
@@ -340,10 +350,10 @@ object UnsolicitedResponseSteps {
       7 --> send(Requests.readClass123(Sequence.one)),
       8 --> expectAtLeastOneResponse(Sequence.one),
       9 --> PluginSteps.generateUnsolicitedEvents(),
-      10 --> expectNoEventsUnsolicited(holdOffMs, unsolConfirmTimeoutMs),
+      10 --> expectNoEventsUnsolicited(holdOffMs, unsolConfirmTimeoutMs, toleranceMs),
       11 --> send(enableUnsolicitedResponses(Sequence.two)),
       12 --> expectSingleResponse(Sequence.two, containing(IIN.FUNC_NOT_SUPPORTED)),
-      13 --> expectNoEventsUnsolicited(holdOffMs, unsolConfirmTimeoutMs),
+      13 --> expectNoEventsUnsolicited(holdOffMs, unsolConfirmTimeoutMs, toleranceMs),
       14 --> send(disableUnsolicitedResponses(Sequence.three)),
       15 --> expectSingleResponse(Sequence.three, containing(IIN.FUNC_NOT_SUPPORTED))
     )

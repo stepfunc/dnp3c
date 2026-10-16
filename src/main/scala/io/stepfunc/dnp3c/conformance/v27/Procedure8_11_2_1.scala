@@ -4,11 +4,10 @@
 package io.stepfunc.dnp3c.conformance.v27
 
 import io.stepfunc.dnp3c.conformance.api._
-import io.stepfunc.dnp3c.conformance.api.options.{ LinkOptions, SupportOptions, UnsolicitedOptions }
+import io.stepfunc.dnp3c.conformance.api.options.{ LinkOptions, SupportOptions, TestOptions, UnsolicitedOptions }
 import io.stepfunc.dnp3c.dnp3.link.FrameValidator
 import io.stepfunc.dnp3c.conformance.common.GenericSteps._
 import io.stepfunc.dnp3c.conformance.common.UnconfirmedResponse
-import io.stepfunc.dnp3c.conformance.common.UnconfirmedResponse.timingToleranceMs
 import io.stepfunc.dnp3c.conformance.common.UnsolicitedResponseSteps.expectNoEventsUnsolicited
 import io.stepfunc.dnp3c.conformance.common.Validations
 import io.stepfunc.dnp3c.dnp3.app._
@@ -22,7 +21,8 @@ object Procedure8_11_2_1 extends ProcedureDefinition {
   override protected def steps(options: OptionSource): Iterable[LabeledStep] = {
     val unsolConfirmTimeoutMs = options.get(UnsolicitedOptions.unsolicitedConfirmTimeoutMs)
     val holdOffMs = options.get(UnsolicitedOptions.holdOffMs)
-    val restartResponse = new UnconfirmedResponse(unsolConfirmTimeoutMs)
+    val toleranceMs = options.get(TestOptions.timingToleranceMs)
+    val restartResponse = new UnconfirmedResponse(unsolConfirmTimeoutMs, toleranceMs)
     val nullWithRestart = Validations.containing(IIN.DEVICE_RESTART) && Validations.isNull
     val originalAddress = options.get(LinkOptions.source)
     val otherMasterAddress = options.get(UnsolicitedOptions.otherMasterAddress)
@@ -56,11 +56,11 @@ object Procedure8_11_2_1 extends ProcedureDefinition {
       // and TB2015-002a have the DUT defer the READ until the confirmation or its timeout. So step 24 accepts either:
       // an answer deferred to the startup response's confirm timeout, or one well before it, with a warning
 
-      24 --> expectDeferrableAnswer(responseTimeoutMs(options), unsolConfirmTimeoutMs, restartResponse),
+      24 --> expectDeferrableAnswer(responseTimeoutMs(options), unsolConfirmTimeoutMs, toleranceMs, restartResponse),
       (25 to 26) --> restartResponse.expectRetry(Validations.isNull, AutoConfirm.Wrong),
       (27 to 28) --> restartResponse.expectRetry(Validations.isNull, AutoConfirm.Yes),
       29 --> PluginSteps.generateUnsolicitedEvents(),
-      30 --> expectNoEventsUnsolicited(holdOffMs, unsolConfirmTimeoutMs)
+      30 --> expectNoEventsUnsolicited(holdOffMs, unsolConfirmTimeoutMs, toleranceMs)
     )
   }
 
@@ -69,14 +69,15 @@ object Procedure8_11_2_1 extends ProcedureDefinition {
   private def expectDeferrableAnswer(
       responseTimeoutMs: Int,
       confirmTimeoutMs: Int,
+      timingToleranceMs: Int,
       unsolicitedResponse: UnconfirmedResponse): TestStep = new TestStep {
     private val read = expectAtLeastOneResponse(Sequence.one)
-    private val timeoutMs = responseTimeoutMs + confirmTimeoutMs + TestDriver.readToleranceMs
+    private val timeoutMs = responseTimeoutMs + confirmTimeoutMs + timingToleranceMs
 
     override def description: List[Comment] =
       s"The DUT may defer its response until the startup unsolicited response is confirmed or its confirm timeout " +
         s"expires, so wait up to $timeoutMs ms for it (the response timeout, the unsolicited confirm timeout and " +
-        s"${TestDriver.readToleranceMs} ms)" :: read.description
+        s"$timingToleranceMs ms)" :: read.description
 
     override def run(driver: TestDriver): List[DeferredCheck] = {
       driver.readAllResponses(Sequence.one, AutoConfirm.Yes, firstTimeoutMs = Some(timeoutMs))
