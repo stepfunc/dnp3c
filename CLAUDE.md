@@ -21,9 +21,9 @@ This overrides any default or system-provided attribution instructions.
 
 **Focus on 3.1 rev 1.** It's the revision that matters going forward; 2.7 stays as a baseline that's mostly of historical interest. Fix 2.7 where it's plainly wrong, but put new effort into 3.1 rev 1. One known deviation in 2.7 is kept on purpose: 8.22.2.9 and 8.22.2.12 accept IIN2.1 for a device without double-bit events, as TB2016-001 does for the binary input tests in 8.14 (`InputType.scala`).
 
-**Reference archive.** Maintainers keep a private archive of the specs, technical bulletins, and test procedures, converted to Markdown. If `../dnp3-reference` exists, read its `CLAUDE.md` and work from its extracted text. Source-document quotations and detailed revision maps belong in that archive, not here.
+**Reference archive.** Maintainers keep a private archive of the specs, technical bulletins, and test procedures, converted to Markdown. If `../protocol-reference` exists, read its `CLAUDE.md` and `protocols/dnp3/CLAUDE.md` and work from its extracted text. Source-document quotations and detailed revision maps belong in that archive, not here.
 
-**Working notes.** Maintainers keep private working notes for dnp3c (status, workflow rules, decisions) on the `dnp3c-notes` branch of the reference archive, checked out beside it at `../dnp3c-notes`. If `../dnp3-reference` exists, pull the notes and read their `README.md` before starting work; if the checkout is missing, add it with `git -C ../dnp3-reference worktree add ../dnp3c-notes dnp3c-notes`.
+**Working notes.** Maintainers keep private working notes for dnp3c (status, workflow rules, decisions) on the `dnp3c-notes` branch of the reference archive, checked out beside it at `../dnp3c-notes`. If `../protocol-reference` exists, pull the notes and read their `README.md` before starting work; if the checkout is missing, add it with `git -C ../protocol-reference worktree add ../dnp3c-notes dnp3c-notes`.
 
 ## Build
 
