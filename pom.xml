@@ -154,6 +154,9 @@
                     </includes>
                     <reportFormat>brief</reportFormat>
                     <useFile>false</useFile>
+                    <!-- the forked JVM talks to Maven over TCP, not its stdout, which the console output tests print
+                         writes to directly (Jansi's AnsiConsole), and which would otherwise corrupt that channel -->
+                    <forkNode implementation="org.apache.maven.plugin.surefire.extensions.SurefireForkNodeFactory"/>
                 </configuration>
             </plugin>
             <plugin>
@@ -265,6 +268,10 @@
                                         <exclude>META-INF/*.DSA</exclude>
                                         <exclude>META-INF/*.RSA</exclude>
                                         <exclude>META-INF/MANIFEST.MF</exclude>
+                                        <!-- the dependencies' module descriptors: the runnable jar is one jar on the
+                                             class path, not a module -->
+                                        <exclude>module-info.class</exclude>
+                                        <exclude>META-INF/versions/*/module-info.class</exclude>
                                     </excludes>
                                 </filter>
                             </filters>

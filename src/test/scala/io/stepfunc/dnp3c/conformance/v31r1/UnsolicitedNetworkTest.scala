@@ -87,12 +87,13 @@ class UnsolicitedNetworkTest extends AnyFunSuite with Matchers {
       case c: UdpConnection =>
         val overUdp = setup.mode != NetworkMode.Tcp && (solicited || !tcpOpen || udpAfterTcp)
         overUdp &&
-        (if (solicited) setup.udpResponses match {
-           case UdpDestination.Fixed(p) if !dataTo20000 => port(c) == p
-           case _ if dataTo20000 => port(c) == 20000
-           case UdpDestination.OriginatingPort => true
-         }
-         else port(c) == destination(isNull))
+        (if (!solicited) port(c) == destination(isNull)
+         else if (dataTo20000) port(c) == 20000
+         else
+           setup.udpResponses match {
+             case UdpDestination.Fixed(p) => port(c) == p
+             case UdpDestination.OriginatingPort => true
+           })
     }
 
     override def connect(c: Connection, keep: Boolean): InetSocketAddress = {

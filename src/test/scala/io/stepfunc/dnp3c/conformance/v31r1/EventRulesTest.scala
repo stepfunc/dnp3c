@@ -110,11 +110,12 @@ class EventRulesTest extends AnyFunSuite with Matchers {
       List(Revisions.v3_1r1.elements("8.14.2m").asInstanceOf[io.stepfunc.dnp3c.conformance.api.TestProcedure])
     an[ConfigurationException] should be thrownBy Revisions.v3_1r1.validate(Options.from(base), test)
     Revisions.v3_1r1.validate(
-      Options.from(base + (TimeSyncOptions.timeToUnsynchronizedMs.id -> "0") +
-        (
-          io.stepfunc.dnp3c.conformance.api.options.AnalogInputOptions.valueReturnDeadband.id -> "10",
-          io.stepfunc.dnp3c.conformance.api.options.ClassOptions.class1.binaryInputs.id -> "0",
-          io.stepfunc.dnp3c.conformance.api.options.ClassOptions.class2.binaryInputs.id -> "1, 2")),
+      Options.from(base ++ Map(
+        TimeSyncOptions.timeToUnsynchronizedMs.id -> "0",
+        io.stepfunc.dnp3c.conformance.api.options.AnalogInputOptions.valueReturnDeadband.id -> "10",
+        io.stepfunc.dnp3c.conformance.api.options.ClassOptions.class1.binaryInputs.id -> "0",
+        io.stepfunc.dnp3c.conformance.api.options.ClassOptions.class2.binaryInputs.id -> "1, 2"
+      )),
       test
     ) should
       equal(2)

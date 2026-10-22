@@ -135,6 +135,7 @@ class CollisionAvoidanceTest extends AnyFunSuite with Matchers {
       case ProcedureOutcome.Passed => (true, "")
       case ProcedureOutcome.Failed(why) => (false, why)
       case ProcedureOutcome.Skipped(why) => (false, why)
+      case ProcedureOutcome.Excluded(why) => (false, why)
     }
 
   test("a DUT that backs off as it should passes, at both settings, which are restored") {
