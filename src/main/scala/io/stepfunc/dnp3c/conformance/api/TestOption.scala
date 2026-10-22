@@ -50,6 +50,8 @@ trait IndexListOption extends TypedTestOption[List[Index]]
 trait RequiredIntegerOption extends TypedTestOption[Option[Int]] {
   final override def required: Boolean = true
 }
+// the technical bulletins a device implements, by id
+trait BulletinsOption extends TypedTestOption[Set[Bulletin]]
 // procedures to leave out of a run, by revision and id, each with the reason: a family of properties, one per
 // procedure, under the option's id, e.g. "test.exclude.3.1r1/8.26.2 = <reason>". Each is keyed by the rest of its key,
 // e.g. "3.1r1/8.26.2", which the revisions check: the options don't know them
@@ -124,6 +126,9 @@ object OptionTypes {
   // one of the allowed words, in any case
   def choice(group: OptionGroup, name: String, default: String, desc: String, allowed: List[String]): StringOption =
     ChoiceOptionImpl(group, name, default, desc, allowed)
+  // a comma separated list of bulletin ids, none by default
+  def bulletins(group: OptionGroup, name: String, desc: String): BulletinsOption =
+    BulletinsOptionImpl(group, name, desc)
 
   private case class StringOptionImpl(group: OptionGroup, name: String, default: String, description: String)
       extends StringOption {
@@ -161,6 +166,22 @@ object OptionTypes {
     override def parse(s: String): String =
       allowed.find(_.equalsIgnoreCase(s.trim)).getOrElse(throw new Exception(s"'${s.trim}' isn't one of ${allowed
           .mkString(", ")}"))
+  }
+
+  private case class BulletinsOptionImpl(group: OptionGroup, name: String, desc: String) extends BulletinsOption {
+
+    private def known: String = Bulletin.values.map(_.id).mkString(", ")
+
+    override def description: String = s"$desc, of: $known"
+
+    override def default: Set[Bulletin] = Set.empty
+
+    override def defaultAsString: String = ""
+
+    override def parse(s: String): Set[Bulletin] =
+      s.split(",").map(_.trim).filter(_.nonEmpty).map { id =>
+        Bulletin.fromId(id).getOrElse(throw new Exception(s"'$id' isn't a bulletin dnp3c knows: $known"))
+      }.toSet
   }
 
   private case class BooleanOptionImpl(group: OptionGroup, name: String, default: Boolean, description: String)

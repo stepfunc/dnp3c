@@ -112,14 +112,38 @@ object PluginSteps {
   }
 
   def generateBinaryInputChangeEvents(): TestStep =
-    action("Change binary inputs several times, one or more of them, to create events") {
+    binaryEvents("Change binary inputs several times, one or more of them, to create events") {
       (plugin, reporter) =>
         plugin.generateInputChanges(reporter, PointKind.BinaryInput)
     }
 
   def generateExactBinaryInputChangeEvents(numEvents: Int): TestStep =
-    action(s"Generate ${numEvents} Binary Input Change Event(s)") { (plugin, reporter) =>
+    binaryEvents(s"Generate ${numEvents} Binary Input Change Event(s)") { (plugin, reporter) =>
       plugin.generateExactInputEvents(reporter, PointKind.BinaryInput, numEvents)
+    }
+
+  // a step that generates binary or double-bit input events, recording the time quality the plugin reports for the
+  // DUT's clock before and after, for the checks of how the events are reported (IntegrationPlugin.timeQuality)
+  private def binaryEvents(desc: Comment*)(generate: (IntegrationPlugin, PluginReporter) => Unit): TestStep =
+    new TestStep {
+      override def description: List[Comment] = desc.toList
+
+      override def run(driver: TestDriver): List[DeferredCheck] = {
+        val plugin = driver.reporter.plugin
+        val before = plugin.timeQuality(driver.reporter.pluginReporter())
+        generate(plugin, driver.reporter.pluginReporter())
+        val after = plugin.timeQuality(driver.reporter.pluginReporter())
+        driver.reporter.recordEventClock(before, after)
+        (before, after) match {
+          case (Some(b), Some(a)) if a == b =>
+            driver.reporter.info(s"The plugin reports the DUT's clock ${b.toString.toLowerCase}")
+          case (Some(b), Some(a)) =>
+            driver.reporter.info(
+              s"The plugin reports the DUT's clock ${b.toString.toLowerCase} before the events and ${a.toString.toLowerCase} after")
+          case _ => ()
+        }
+        Nil
+      }
     }
 
   // Double-bit Binary Inputs
@@ -129,13 +153,13 @@ object PluginSteps {
   }
 
   def generateDoubleBitBinaryInputChangeEvents(): TestStep =
-    action("Change double-bit binary inputs several times, one or more of them, to create events") {
+    binaryEvents("Change double-bit binary inputs several times, one or more of them, to create events") {
       (plugin, reporter) =>
         plugin.generateInputChanges(reporter, PointKind.DoubleBitInput)
     }
 
   def generateExactDoubleBitBinaryInputChangeEvents(numEvents: Int): TestStep =
-    action(s"Generate ${numEvents} Double-bit Binary Input Change Event(s)") { (plugin, reporter) =>
+    binaryEvents(s"Generate ${numEvents} Double-bit Binary Input Change Event(s)") { (plugin, reporter) =>
       plugin.generateExactInputEvents(reporter, PointKind.DoubleBitInput, numEvents)
     }
 

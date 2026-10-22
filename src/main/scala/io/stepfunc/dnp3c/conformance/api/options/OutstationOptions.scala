@@ -3,7 +3,9 @@
 
 package io.stepfunc.dnp3c.conformance.api.options
 
-import io.stepfunc.dnp3c.conformance.api.{ IntegerOption, OptionGroup, OptionTypes, RequiredIntegerOption, TestOption }
+import io.stepfunc.dnp3c.conformance.api.{
+  BulletinsOption, IntegerOption, OptionGroup, OptionTypes, RequiredIntegerOption, TestOption
+}
 import io.stepfunc.dnp3c.dnp3.transport.Transport
 
 object OutstationOptions extends OptionGroup {
@@ -38,6 +40,13 @@ object OutstationOptions extends OptionGroup {
     List(1, 2, 3)
   )
 
+  val bulletins: BulletinsOption = OptionTypes.bulletins(
+    this,
+    "bulletins",
+    "Technical bulletins the outstation implements, comma separated, which change what some steps of a revision " +
+      "check: none by default, so a run checks each revision as published"
+  )
+
   def prefix: String = "outstation"
 
   def description: String = "Outstation application layer options"
@@ -47,5 +56,6 @@ object OutstationOptions extends OptionGroup {
     selectTimeout,
     responseTimeout,
     appConfirmTimeout,
-    configuredFragmentSize)
+    configuredFragmentSize,
+    bulletins)
 }

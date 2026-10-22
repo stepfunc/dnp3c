@@ -136,6 +136,8 @@ To fail a step, throw an exception with a message saying what went wrong. The pr
 
 A few actions are used only by 3.1r1's tests, e.g. `setColdRestartSupport` (8.8.2). They have a default that throws `UnsupportedOperationException`, so a plugin written before them keeps compiling; override one if the device runs a test that uses it. `DefaultIntegrationPlugin` prompts for them like any other.
 
+`timeQuality` tells dnp3c whether the device's clock is synchronized, for the events it records now. dnp3c asks before and after each batch of binary and double-bit input events it has the plugin generate, and checks the variations the device reports them in against that: an event recorded while the clock was synchronized in the variation requested, one recorded while it was unsynchronized with relative time after an unsynchronized CTO (g51v2). 3.1r1's rules for event reporting (8.14.1.1) require that, and so does 2.7 for a device that lists TB2017-003a in `outstation.bulletins`. The default returns `None`, for a plugin that doesn't know: the checks then accept either way, as long as all the events are reported the same way.
+
 3.1r1's network tests (section 9) set up the device's network with `configureNetwork`, which gives the whole setup: TCP or UDP, the port to listen on, the masters to accept. Each test ends with `restoreNetwork`, which puts back the setup the device had before, even when the test fails.
 
 Every method gets a `PluginReporter` (verifications get a `CheckReporter`, which extends it). Anything you pass to its `log` method appears in the procedure's log, e.g. what the plugin did, or the values it compared.

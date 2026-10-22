@@ -158,4 +158,15 @@ final class ProcedureReporter(logger: Logger, val plugin: IntegrationPlugin) ext
   }
 
   def warnings: List[String] = warned.toList
+
+  private val clocks = scala.collection.mutable.ListBuffer.empty[(Option[TimeQuality], Option[TimeQuality])]
+
+  /**
+   * Record the time quality the plugin reported before and after the procedure generated a batch of binary or
+   * double-bit input events, for the checks of how they're reported
+   */
+  def recordEventClock(before: Option[TimeQuality], after: Option[TimeQuality]): Unit = clocks += before -> after
+
+  /** the time qualities recorded for each batch of events, oldest first */
+  def eventClocks: List[(Option[TimeQuality], Option[TimeQuality])] = clocks.toList
 }

@@ -7,7 +7,7 @@ import io.stepfunc.dnp3c.conformance.Revisions
 import io.stepfunc.dnp3c.conformance.api.{ ConfigurationException, Options }
 import io.stepfunc.dnp3c.conformance.api.options.{ BinaryInputOptions, OutstationOptions, TimeSyncOptions }
 import io.stepfunc.dnp3c.conformance.common.InputType.BinaryInput
-import io.stepfunc.dnp3c.conformance.v31r1.EventRules.Clock
+import io.stepfunc.dnp3c.conformance.common.EventTime.Clock
 import io.stepfunc.dnp3c.dnp3.Validate
 import io.stepfunc.dnp3c.dnp3.app.Message
 import io.stepfunc.dnp3c.dnp3.app.objects.{ Group2Var0, Group2Var1, Group2Var2, Group2Var3 }

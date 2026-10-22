@@ -7,6 +7,7 @@ import io.stepfunc.dnp3c.conformance.api._
 import io.stepfunc.dnp3c.conformance.common.GenericSteps._
 import io.stepfunc.dnp3c.conformance.common.InputEventProcedures.NoEvents
 import io.stepfunc.dnp3c.conformance.common.{ InputType, Validations }
+import io.stepfunc.dnp3c.conformance.common.EventTime.{ Batches, Clock }
 import io.stepfunc.dnp3c.dnp3.app._
 import io.stepfunc.dnp3c.dnp3.{ AutoConfirm, Comment, DeferredCheck, MessageValidation, Requests, TestDriver }
 
@@ -35,13 +36,15 @@ object InputEvents {
 
     import input._
 
-    // an event response: the events the plugin generated, a request for confirmation, the rules, and the flags
+    // an event response: the events the plugin generated, a request for confirmation, the rules, and the flags; the
+    // clock as the procedure knows it, or else as the plugin reported it for the batches the response reports
     protected def events(
         events: MessageValidation,
         requested: Variation,
         options: OptionSource,
-        clock: => EventRules.Clock = EventRules.Clock.Unknown): MessageValidation =
-      Validations.eventResponse(events, EventRules.consistent(input, requested, options, clock))
+        clock: => Clock = Clock.Unknown,
+        batches: Batches = Batches.Latest): MessageValidation =
+      Validations.eventResponse(events, EventRules.consistent(input, requested, options, clock, batches))
 
     // steps 1 to 3: read the events left and confirm them; a response with events must ask for confirmation
     protected def empty(seq: Sequence): List[LabeledStep] = List(
@@ -200,7 +203,10 @@ object InputEvents {
         19 --> generateEvents,
         20 --> send(Requests.readAllObjects(Sequence.four, anyVariation)),
         (21 to 23) -->
-          expectSingleResponse(Sequence.four, AutoConfirm.Yes, events(verifyOldAndNewEvents, anyVariation, options)),
+          expectSingleResponse(
+            Sequence.four,
+            AutoConfirm.Yes,
+            events(verifyOldAndNewEvents, anyVariation, options, batches = Batches.All)),
         24 --> send(Requests.readAllObjects(Sequence.five, anyVariation)),
         25 --> expectNullResponse(Sequence.five)
       )
@@ -227,7 +233,6 @@ object InputEvents {
   final class AllQualifierWithRelativeTime(input: InputType) extends EventTest(input) {
     import input._
     import io.stepfunc.dnp3c.conformance.api.options.TimeSyncOptions
-    import EventRules.Clock
 
     // 8.14.2m waits for the clock to go unsynchronized: how long is the manufacturer's to say
     override def configurationProblems(options: OptionSource): List[ConfigProblem] =
@@ -265,7 +270,7 @@ object InputEvents {
         // the third phase: a device that reports relative time and asks for the time
         val expires = options.get(withRelativeTime) && synchronize
         val expiry = "the DUT reports events with relative time and asks for the time"
-        // after step 17's time write the clock is synchronized; with no write, its state isn't known
+        // after step 17's time write the clock is synchronized; with no write, the procedure doesn't know its state
         def afterSync: Clock = if (synchronize && needTime) Clock.Synchronized else Clock.Unknown
         start ++ List(
           (3 to 4) -->
