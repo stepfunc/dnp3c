@@ -4,6 +4,7 @@
 package io.stepfunc.dnp3c.conformance.common
 
 import io.stepfunc.dnp3c.conformance.api._
+import io.stepfunc.dnp3c.conformance.api.options.OutstationOptions
 import io.stepfunc.dnp3c.conformance.common.GenericSteps._
 import io.stepfunc.dnp3c.dnp3.app._
 import io.stepfunc.dnp3c.dnp3.app.objects._
@@ -113,7 +114,7 @@ class InputEventSteps(inputType: InputType) {
     )
   }
 
-  def AllQualifierWithTimeSteps(supported: Boolean): List[LabeledStep] = {
+  def AllQualifierWithTimeSteps(supported: Boolean, options: OptionSource): List[LabeledStep] = {
     val steps1To5 = List(
       1 --> send(Requests.readAllObjects(Sequence.one, anyVariation)),
       (2 to 3) --> expectEventsEmptied(Sequence.one),
@@ -128,7 +129,7 @@ class InputEventSteps(inputType: InputType) {
         (7 to 12) --> expectSingleResponse(
           Sequence.two,
           AutoConfirm.Yes,
-          Validations.eventResponse(verifyLatestEvents, verifySingleVariationAndQualifiers(absoluteTimeVariation))
+          Validations.eventResponse(verifyLatestEvents, withTimeObjects(options))
         ),
         13 --> send(Requests.readAllObjects(Sequence.three, anyVariation)),
         14 --> expectNullResponse(Sequence.three)
@@ -146,7 +147,8 @@ class InputEventSteps(inputType: InputType) {
     steps1To5 ++ steps6To14
   }
 
-  def CountQualifierWithTimeSteps(numEvents: Int, twoBytesQualifier: Boolean): List[LabeledStep] = {
+  def CountQualifierWithTimeSteps(numEvents: Int, twoBytesQualifier: Boolean, options: OptionSource)
+      : List[LabeledStep] = {
     List(
       1 --> send(Requests.readAllObjects(Sequence.one, anyVariation)),
       (2 to 3) --> expectEventsEmptied(Sequence.one),
@@ -155,13 +157,13 @@ class InputEventSteps(inputType: InputType) {
       (6 to 11) --> expectSingleResponse(
         Sequence.two,
         AutoConfirm.Yes,
-        Validations.eventResponse(verifyFirstEvent, verifySingleVariationAndQualifiers(absoluteTimeVariation))
+        Validations.eventResponse(verifyFirstEvent, withTimeObjects(options))
       ),
       12 --> send(Requests.readCount(Sequence.three, absoluteTimeVariation, numEvents - 1, twoBytesQualifier)),
       (13 to 15) --> expectSingleResponse(
         Sequence.three,
         AutoConfirm.Yes,
-        Validations.eventResponse(verifyRestEvents, verifySingleVariationAndQualifiers(absoluteTimeVariation))
+        Validations.eventResponse(verifyRestEvents, withTimeObjects(options))
       ),
       16 --> send(Requests.readAllObjects(Sequence.four, anyVariation)),
       17 --> expectNullResponse(Sequence.four)
@@ -245,6 +247,13 @@ class InputEventSteps(inputType: InputType) {
   // events of any of the input's variations, a relative-time event preceded by a CTO (Table 8-4)
   private[common] def verifyValidGroupVariationAndQualifiers: MessageValidation =
     Validations.eventsWithCtos(List(noTimeVariation, absoluteTimeVariation, relativeTimeVariation))
+
+  // the events of a read of absolute time: in that variation only, as the steps require, or for a DUT that implements
+  // TB2017-003a, as its rules require
+  private def withTimeObjects(options: OptionSource): MessageValidation =
+    if (options.get(OutstationOptions.bulletins).contains(Bulletin.TB2017_003a))
+      EventTime.tb2017003a(inputType, absoluteTimeVariation, options.get(withRelativeTime))
+    else verifySingleVariationAndQualifiers(absoluteTimeVariation)
 
   // relative-time events only, each preceded by a CTO
   private[common] def verifyVar3WithCtoResponse: MessageValidation =

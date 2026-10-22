@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.0
+
+- **Technical bulletins:** `outstation.bulletins` lists the bulletins a device implements, where they change what a revision's steps check; none by default. The first is TB2017-003a: with it, 2.7's binary and double-bit event tests with time (8.14.2.9 to 8.14.2.11, 8.22.2.9 to 8.22.2.11) accept events recorded while the clock is unsynchronized with relative time after g51v2, and require it.
+- **Clock state:** integration plugins can tell dnp3c whether the device's clock is synchronized (`IntegrationPlugin.timeQuality`), so 3.1 rev 1's binary and double-bit event tests, and 2.7's with TB2017-003a, check each event's variation against the state it was recorded in. A batch of events recorded while the clock changed may be reported each way in one response.
+
+### Upgrading from 0.2.0
+
+- Integration plugins: `IntegrationPlugin.timeQuality` has a default, so a plugin keeps compiling; without it, the checks accept either way of reporting the events, as before.
+
 ## 0.2.0
 
 - **DNP3 IED Certification Procedure 3.1 rev 1**, subset levels 1 to 3, alongside 2.7. Choose the revision with `-rev`; `-revs` lists them.

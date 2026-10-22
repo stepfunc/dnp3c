@@ -121,6 +121,14 @@ final case class NetworkSetup(
   }
 }
 
+/**
+ * The time-quality state of a DUT's clock, which says how it reports binary and double-bit input events recorded in it
+ * (TB2017-003a 5.1.3.1): synchronized with a time source, or drifted since and needing synchronization
+ */
+enum TimeQuality {
+  case Synchronized, Unsynchronized
+}
+
 /** A DUT's collision avoidance delays: a backoff is the fixed delay plus a random one of up to maxRandomMs */
 final case class CollisionDelays(fixedMs: Int, maxRandomMs: Int)
 
@@ -184,6 +192,11 @@ trait IntegrationPlugin {
   def generateInputChanges(reporter: PluginReporter, kind: InputKind[?]): Unit
   // generates exactly numEvents events of the kind
   def generateExactInputEvents(reporter: PluginReporter, kind: InputKind[?], numEvents: Int): Unit
+  // the time-quality state of the DUT's clock now, for events it records, if the plugin knows it. Asked before and
+  // after each generation of binary and double-bit input events, it tells the checks of their variations how the
+  // events were recorded (3.1r1's 8.14.1.1, TB2017-003a 5.1.3.1.2). The default doesn't know, and those checks then
+  // accept any one way of reporting them throughout.
+  def timeQuality(reporter: PluginReporter): Option[TimeQuality] = None
   def generateClassEvents(reporter: PluginReporter, eventClass: EventClass): Unit
   def generateExactClassEvents(reporter: PluginReporter, eventClass: EventClass, numEvents: Int): Unit
   // sets the inputs of the kind to a known pattern: binary, double-bit and analog inputs

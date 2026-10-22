@@ -3,17 +3,15 @@
 
 package io.stepfunc.dnp3c.conformance.v31r1
 
-import scala.util.Try
-
 import io.stepfunc.dnp3c.conformance.api.{ ConfigProblem, OptionSource, ProcedureDefinition, TestProcedure }
 import io.stepfunc.dnp3c.conformance.api.options.{ OutstationOptions, TimeSyncOptions }
 import io.stepfunc.dnp3c.conformance.api.options.{ AnalogInputOptions, AnalogOutputOptions, ClassOptions }
 import io.stepfunc.dnp3c.conformance.api.options.SupportOptions
 import io.stepfunc.dnp3c.conformance.api.options.SupportOptions.{ Inputs, Outputs }
-import io.stepfunc.dnp3c.conformance.common.{ InputType, Validations }
+import io.stepfunc.dnp3c.conformance.common.{ EventTime, InputType }
+import io.stepfunc.dnp3c.conformance.common.EventTime.{ Batches, Clock, Form }
 import io.stepfunc.dnp3c.dnp3.{ Comment, DeferredCheck, MessageValidation, ProcedureReporter }
 import io.stepfunc.dnp3c.dnp3.app.{ Message, Variation }
-import io.stepfunc.dnp3c.dnp3.app.objects.{ Group51Var1, Group51Var2 }
 
 /**
  * 3.1r1's rules for reporting binary (8.14.1.1) and double-bit (8.22) input events: which variation reports each
@@ -25,24 +23,12 @@ import io.stepfunc.dnp3c.dnp3.app.objects.{ Group51Var1, Group51Var2 }
  * variation after an unsynchronized CTO (g51v2); one recorded without time, without time.
  *
  * How the events were recorded follows from the options, which say whether the device's events carry time (all points
- * of an input type alike), and from the clock's state where the procedure knows it. Where it doesn't, the response
- * must be consistent with one state throughout. The order of the events is checked against the order they were
+ * of an input type alike), and from the clock's state where the procedure knows it, or else where the plugin reported
+ * it while the events were generated (IntegrationPlugin.timeQuality). Where neither does, the response must be
+ * consistent with one state throughout. The order of the events is checked against the order they were
  * generated, by the event checks the plugin does.
  */
 object EventRules {
-
-  /** how the device's clock stood when it recorded the events, as far as the procedure knows */
-  sealed trait Clock
-  object Clock {
-    case object Synchronized extends Clock
-    case object Unsynchronized extends Clock
-    case object Unknown extends Clock
-  }
-
-  // a way to report the events: the variations they may use, and the CTOs that may come with them
-  private case class Form(name: String, events: Variation, ctos: Set[Variation]) {
-    def validation: MessageValidation = Validations.eventsWithCtos(List(events), ctos)
-  }
 
   /**
    * What 3.1r1 needs configured whatever procedures a run selects: e.g. at subset levels 2 and 3, reads of every input
@@ -126,45 +112,35 @@ object EventRules {
   /**
    * The response reports the input's events as the rules require, for a read of `requested`
    *
-   * @param clock how the device's clock stood when it recorded the events, if the procedure knows
+   * @param clock how the device's clock stood when it recorded the events, if the procedure knows; if it doesn't, as
+   *   the plugin reported it while generating them (EventTime.recorded), if it did
+   * @param batches the batches of events the response reports
    */
   def consistent(
       input: InputType,
       requested: Variation,
       options: OptionSource,
-      clock: => Clock = Clock.Unknown): MessageValidation = new MessageValidation {
+      clock: => Clock = Clock.Unknown,
+      batches: Batches = Batches.Latest): MessageValidation = new MessageValidation {
 
-    private def forms: List[Form] = {
+    private def forms(clock: Clock): List[Form] = {
       val preferredVariation = preferred(input, requested, options)
       val withTime = options.get(input.withTime) || options.get(input.withRelativeTime)
-      val relativeTime = options.get(input.withRelativeTime)
-      val noTime = Form("without time", input.noTimeVariation, Set.empty)
-      val unsynchronized =
-        Form("unsynchronized: relative time after g51v2", input.relativeTimeVariation, Set(Group51Var2))
-      val synchronized =
-        if (preferredVariation == input.relativeTimeVariation)
-          Form("synchronized: relative time after g51v1", input.relativeTimeVariation, Set(Group51Var1))
-        else Form(s"synchronized: $preferredVariation", preferredVariation, Set.empty)
-      if (preferredVariation == input.noTimeVariation || !withTime) List(noTime)
-      else
-        clock match {
-          case Clock.Synchronized => List(synchronized)
-          case Clock.Unsynchronized => List(unsynchronized)
-          // only a device that reports relative time can report unsynchronized events as the rules require
-          case Clock.Unknown => if (relativeTime) List(synchronized, unsynchronized) else List(synchronized)
-        }
+      if (preferredVariation == input.noTimeVariation || !withTime)
+        List(Form("without time", List(input.noTimeVariation), Set.empty))
+      else EventTime.withTime(input, preferredVariation, options.get(input.withRelativeTime), clock)
     }
 
     def description: List[Comment] = List(Comment(
-      s"Verify that the events are reported as 3.1r1's rules for event reporting require, for a read of $requested"))
+      s"Verify that the events are reported as 3.1r1's rules for event reporting require, for a read of $requested, " +
+        "by the state of the DUT's clock when it recorded them, where the procedure or the plugin knows it"))
 
     def validate(reporter: ProcedureReporter, message: Message): List[DeferredCheck] = {
-      val allowed = forms
-      if (!allowed.exists(f => Try(f.validation.validate(reporter, message)).isSuccess))
-        throw new Exception(
-          s"The events aren't reported as 3.1r1's rules require for a read of $requested; expected " +
-            allowed.map(f => s"${f.name} (${f.events}${if (f.ctos.isEmpty) "" else s", ${f.ctos.mkString(" or ")}"})")
-              .mkString(" or "))
+      val known = clock match {
+        case Clock.Unknown => EventTime.recorded(reporter, batches)
+        case c => c
+      }
+      EventTime.oneOf(message, reporter, forms(known), s"3.1r1's rules require for a read of $requested", known)
       Nil
     }
   }

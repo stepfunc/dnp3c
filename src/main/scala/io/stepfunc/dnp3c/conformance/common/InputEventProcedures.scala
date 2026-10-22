@@ -67,13 +67,13 @@ object InputEventProcedures {
   // runs whether or not the DUT reports events with time: a DUT without them must reject the request
   abstract class AllQualifierWithTime(input: InputType) extends EventProcedure(input) {
     override protected def steps(options: OptionSource): Iterable[LabeledStep] =
-      events.AllQualifierWithTimeSteps(options.get(input.withTime))
+      events.AllQualifierWithTimeSteps(options.get(input.withTime), options)
   }
 
   abstract class CountQualifierWithTime(input: InputType, twoByteCount: Boolean)
       extends EventProcedure(input, List(input.withTime)) {
     override protected def steps(options: OptionSource): Iterable[LabeledStep] =
-      events.CountQualifierWithTimeSteps(options.get(input.numEventsGenerated), twoByteCount)
+      events.CountQualifierWithTimeSteps(options.get(input.numEventsGenerated), twoByteCount, options)
   }
 
   // runs whether or not the DUT reports events with relative time: a DUT without them must reject the request
